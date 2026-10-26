@@ -763,6 +763,13 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       list.map(x => '<div class="li ' + lvl(x.done ? 'green' : x.level) + '"><button class="ic" style="border:0;cursor:pointer" data-a="imptog" data-v="' + esc(x.id) + '" aria-label="' + (x.done ? 'Als offen markieren' : 'Als erledigt markieren') + '">' + icon(x.done ? 'check' : 'other', 17) + '</button><div class="grow col" style="gap:3px"><span class="main-t sm"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.title) + '</span><span class="sm">' + esc(x.text) + '</span>' + (x.sources && x.sources.length ? '<span class="src">' + srcLinks(x.sources) + '</span>' : '') + '</div>' + (x.done ? pill('green', 'Erledigt') : x.level !== 'none' ? pill(x.level, x.level === 'yellow' ? 'Verbessern' : x.level === 'orange' ? 'Wichtig' : 'Dringend') : '') + '</div>').join('') +
       '</div><p class="xs" style="margin-top:10px">Tippe auf das Symbol links, um einen Punkt abzuhaken.</p></section>';
   }
+  function shopCard(t) {
+    const list = TL.SHOP[t.species];
+    if (!list) return '';
+    return '<section class="card"><div class="card-h"><h3>Passende Leuchtmittel suchen</h3></div><div class="list">' +
+      list.map(x => '<div class="li"><div class="ic">' + icon('lamp', 17) + '</div><div class="grow col" style="gap:3px"><span class="main-t sm">' + esc(x.title) + '</span><span class="sm">' + esc(x.why) + '</span><span class="src">' + srcLinks(x.sources) + '</span></div><a class="btn sm" href="' + esc(TL.shopLink(x.q)) + '" target="_blank" rel="noopener">Bei Amazon suchen</a></div>').join('') +
+      '</div><p class="xs" style="margin-top:10px">Die Links öffnen eine Amazon-Suche, sortiert nach Kundenbewertung. Welche Marke gerade beliebt ist, wie teuer sie ist und ob sie lieferbar ist, siehst du dort. Das kann die App nicht abrufen. Prüfe vor dem Kauf, ob Fassung und Länge in deine Abdeckung passen: Eine T5-Röhre braucht eine passende T5-Fassung mit Vorschaltgerät, ein Metalldampfstrahler ein eigenes Vorschaltgerät.</p></section>';
+  }
   function equipCard(t) {
     const e = t.equip || { covers: '', ballast: null, notes: '' };
     return '<form id="equip-form" class="card" novalidate><div class="card-h"><h3>Abdeckung und Technik</h3></div><div class="grid g-2">' +
@@ -801,7 +808,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     if (S.tab === 'klima') h += tabKlima(t) + improveCard(t);
     else if (S.tab === 'verlauf') h += tabVerlauf(t);
     else if (S.tab === 'setup') h += tabSetup(t);
-    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + equipCard(t) + lightingCard(t, false) + lampSourceNote();
+    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + shopCard(t) + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + equipCard(t) + lightingCard(t, false) + lampSourceNote();
     else if (S.tab === 'aufgaben') h += '<section class="card"><div class="card-h"><h3>Aufgaben für dieses Terrarium</h3><button class="btn sm" data-a="knew" data-v="' + t.id + '">' + icon('plus', 16) + 'Aufgabe</button></div>' + (tl.length ? '<div class="list">' + tl.map(x => taskRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Aufgaben.</div>') + '</section><p class="xs">Die Intervalle sind Startwerte der App, keine Haltungsvorschrift. Pass sie über den Stift an deinen Rhythmus an.</p>';
     else h += tabAnimals(t);
     return h;

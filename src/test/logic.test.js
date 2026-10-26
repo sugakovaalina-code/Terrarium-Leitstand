@@ -318,3 +318,13 @@ test('Lampenprüfung: Metalldampf bei Zone 1–2 wird angemerkt', () => {
   const j = TL.newTerrarium('jc', 'Cham'); l.tid = j.id;
   assert.ok(!TL.lampAdvice(j, [l]).some(a => /Metalldampf/.test(a.text)));
 });
+
+test('Einkaufshilfe: Suchlinks und Quellen sind gültig', () => {
+  for (const sp of ['kn', 'jc', 'rg']) {
+    assert.ok(TL.SHOP[sp].length >= 2);
+    for (const x of TL.SHOP[sp]) {
+      assert.ok(TL.shopLink(x.q).startsWith('https://www.amazon.de/s?'));
+      for (const k of x.sources) assert.ok(TL.SOURCES[k], 'Quelle fehlt: ' + k);
+    }
+  }
+});

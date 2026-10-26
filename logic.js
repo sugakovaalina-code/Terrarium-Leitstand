@@ -106,6 +106,27 @@
     }
   };
 
+
+  /* Einkaufshilfe: Was zum Tier passt. Nur Bauarten und Marken, die in den Quellen stehen. Die Amazon-Links sind Suchanfragen, keine Produktempfehlungen mit Preis. */
+  const SHOP = {
+    kn: [
+      { title: 'UV-B-Röhre T5, schwach (2,4 % oder 6 %)', why: 'Passt zu Ferguson-Zone 1–2. Nur über einen Teil des Terrariums, damit es Schatten gibt.', q: 'UVB T5 Röhre 6% Terrarium', sources: ['baines', 'rsZ1', 'rsZ2'] },
+      { title: 'Halogenstrahler für den Sonnenplatz, dimmbar', why: 'Weißes Licht am Tag statt Infrarot. Mit Thermostat oder Dimmer und Schutzkorb.', q: 'Halogen Wärmespot Terrarium Reptilien', sources: ['dtschbKn', 'biodudeRed'] },
+      { title: 'Keramikstrahler ohne Licht', why: 'Nur falls es nachts unter 18 °C fällt. Immer mit Thermostat.', q: 'Keramik Wärmestrahler Terrarium Thermostat', sources: ['biodudeRed'] }
+    ],
+    jc: [
+      { title: 'UV-B-Röhre T5 mit 12 %', why: 'Passt zu Ferguson-Zone 3. Reptile Systems nennt das Jemenchamäleon als Beispiel dafür.', q: 'UVB T5 Röhre 12% Terrarium Chamäleon', sources: ['baines', 'rsZ3', 'dtschbJc'] },
+      { title: 'Wärmespot, dimmbar', why: 'Lokale Wärme bis etwa 40 °C am Sonnenplatz, mit Schutzgitter. UV-B und Wärme sollen auf denselben Ast treffen.', q: 'Halogen Spot Terrarium Wärme dimmbar', sources: ['dtschbJc'] }
+    ],
+    rg: [
+      { title: 'Arcadia ShadeDweller (schwache T5-UV-B-Röhre)', why: 'The Bio Dude nennt sie für diese Art.', q: 'Arcadia ShadeDweller T5', sources: ['biodude'] },
+      { title: 'Zoo Med 5.0 (schwache UV-B-Röhre)', why: 'Sundown Reptiles nennt sie als Beispiel.', q: 'Zoo Med 5.0 UVB Röhre', sources: ['sundown'] },
+      { title: 'Kleiner Halogenstrahler am Dimmer (25–50 W)', why: 'Sonnenplatz von etwa 28–31 °C. Gedimmt betreiben.', q: 'Halogen Strahler 50W Terrarium Dimmer', sources: ['biodude', 'sundown'] }
+    ]
+  };
+  const AMAZON = 'https://www.amazon.de/s?s=review-rank&k=';
+  function shopLink(q) { return AMAZON + encodeURIComponent(q); }
+
   /** Prüft die Lampen eines Terrariums gegen den Bedarf der Art. Gibt Hinweise mit Stufe zurück, schlimmste zuerst. */
   function lampAdvice(t, lampList) {
     const out = [];
@@ -789,7 +810,7 @@
   }
 
   return {
-    SOURCES, PRESETS, SIZE_RULES, LIGHTING, lightCheck, lampAdvice, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
+    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, lightCheck, lampAdvice, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,
