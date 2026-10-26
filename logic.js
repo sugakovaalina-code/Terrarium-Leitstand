@@ -119,11 +119,13 @@
       { title: 'Wärmespot, dimmbar', why: 'Lokale Wärme bis etwa 40 °C am Sonnenplatz, mit Schutzgitter. UV-B und Wärme sollen auf denselben Ast treffen.', q: 'Halogen Spot Terrarium Wärme dimmbar', sources: ['dtschbJc'] }
     ],
     rg: [
-      { title: 'Arcadia ShadeDweller (schwache T5-UV-B-Röhre)', why: 'The Bio Dude nennt sie für diese Art.', q: 'Arcadia ShadeDweller T5', sources: ['biodude'] },
-      { title: 'Zoo Med 5.0 (schwache UV-B-Röhre)', why: 'Sundown Reptiles nennt sie als Beispiel.', q: 'Zoo Med 5.0 UVB Röhre', sources: ['sundown'] },
+      { title: 'Arcadia ShadeDweller (schwache T5-UV-B-Röhre)', why: 'The Bio Dude nennt sie für diese Art.', q: 'Arcadia ShadeDweller T5', brand: true, sources: ['biodude'] },
+      { title: 'Zoo Med 5.0 (schwache UV-B-Röhre)', why: 'Sundown Reptiles nennt sie als Beispiel.', q: 'Zoo Med 5.0 UVB Röhre', brand: true, sources: ['sundown'] },
       { title: 'Kleiner Halogenstrahler am Dimmer (25–50 W)', why: 'Sonnenplatz von etwa 28–31 °C. Gedimmt betreiben.', q: 'Halogen Strahler 50W Terrarium Dimmer', sources: ['biodude', 'sundown'] }
     ]
   };
+  /** Exo-Terra-Abdeckungen nehmen nur Exo-Terra-Leuchtmittel auf. Lampenschirme mit freier Fassung nehmen jede Marke mit passender Fassung. */
+  function hasExoCover(t) { return /exo\s*-?\s*terra/i.test(t && t.equip && t.equip.covers || ''); }
   const AMAZON = 'https://www.amazon.de/s?s=review-rank&k=';
   function shopLink(q) { return AMAZON + encodeURIComponent(q); }
 
@@ -810,7 +812,7 @@
   }
 
   return {
-    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, lightCheck, lampAdvice, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
+    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, hasExoCover, lightCheck, lampAdvice, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,

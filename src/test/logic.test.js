@@ -328,3 +328,9 @@ test('Einkaufshilfe: Suchlinks und Quellen sind gültig', () => {
     }
   }
 });
+
+test('Einkaufshilfe: Exo-Terra-Abdeckung wird erkannt', () => {
+  assert.equal(TL.hasExoCover({ equip: { covers: 'Exo Terra Abdeckung groß' } }), true);
+  assert.equal(TL.hasExoCover({ equip: { covers: 'Lampenschirm' } }), false);
+  assert.equal(TL.hasExoCover({}), false);
+});

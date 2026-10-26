@@ -766,9 +766,14 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
   function shopCard(t) {
     const list = TL.SHOP[t.species];
     if (!list) return '';
-    return '<section class="card"><div class="card-h"><h3>Passende Leuchtmittel suchen</h3></div><div class="list">' +
-      list.map(x => '<div class="li"><div class="ic">' + icon('lamp', 17) + '</div><div class="grow col" style="gap:3px"><span class="main-t sm">' + esc(x.title) + '</span><span class="sm">' + esc(x.why) + '</span><span class="src">' + srcLinks(x.sources) + '</span></div><a class="btn sm" href="' + esc(TL.shopLink(x.q)) + '" target="_blank" rel="noopener">Bei Amazon suchen</a></div>').join('') +
-      '</div><p class="xs" style="margin-top:10px">Die Links öffnen eine Amazon-Suche, sortiert nach Kundenbewertung. Welche Marke gerade beliebt ist, wie teuer sie ist und ob sie lieferbar ist, siehst du dort. Das kann die App nicht abrufen. Prüfe vor dem Kauf, ob Fassung und Länge in deine Abdeckung passen: Eine T5-Röhre braucht eine passende T5-Fassung mit Vorschaltgerät, ein Metalldampfstrahler ein eigenes Vorschaltgerät.</p></section>';
+    const exo = TL.hasExoCover(t);
+    const btn = (q, label) => '<a class="btn sm" href="' + esc(TL.shopLink(q)) + '" target="_blank" rel="noopener">' + label + '</a>';
+    return '<section class="card"><div class="card-h"><h3>Passende Leuchtmittel suchen</h3></div>' +
+      (exo ? '<div class="banner lv-yellow" style="margin-bottom:10px"><span class="grow">Deine Abdeckungen sind von Exo Terra. Dort passen nur Exo-Terra-Leuchtmittel. In Fassungen mit Lampenschirm geht jede Marke, wenn Fassung und Leistung passen.</span></div>' : '') +
+      '<div class="list">' +
+      list.map(x => '<div class="li"><div class="ic">' + icon('lamp', 17) + '</div><div class="grow col" style="gap:3px"><span class="main-t sm">' + esc(x.title) + '</span><span class="sm">' + esc(x.why) + '</span>' + (x.brand && exo ? '<span class="sm">Diese Marke passt nicht in die Exo-Terra-Abdeckung, nur in einen Lampenschirm oder eine andere Armatur.</span>' : '') + '<span class="src">' + srcLinks(x.sources) + '</span></div><div class="col" style="gap:6px">' +
+        (x.brand ? btn(x.q, 'Für Lampenschirm suchen') : (exo ? btn('Exo Terra ' + x.q, 'Für Exo-Terra-Abdeckung') + btn(x.q, 'Für Lampenschirm') : btn(x.q, 'Bei Amazon suchen'))) + '</div></div>').join('') +
+      '</div><p class="xs" style="margin-top:10px">Die Links öffnen eine Amazon-Suche, sortiert nach Kundenbewertung. Welche Marke gerade beliebt ist, wie teuer sie ist und ob sie lieferbar ist, siehst du dort. Das kann die App nicht abrufen. Prüfe vor dem Kauf, ob Fassung, Länge und Leistung zu deiner Abdeckung passen. Ein Metalldampfstrahler braucht ein eigenes Vorschaltgerät.</p></section>';
   }
   function equipCard(t) {
     const e = t.equip || { covers: '', ballast: null, notes: '' };
