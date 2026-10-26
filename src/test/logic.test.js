@@ -334,3 +334,17 @@ test('Einkaufshilfe: Exo-Terra-Abdeckung wird erkannt', () => {
   assert.equal(TL.hasExoCover({ equip: { covers: 'Lampenschirm' } }), false);
   assert.equal(TL.hasExoCover({}), false);
 });
+
+test('Plätze: belegte und freie Fassungen', () => {
+  const t = { id: 'a', equip: { slots: { exo: 2, shade: 2 } } };
+  const ls = [
+    { tid: 'a', type: 'uvbCompact', fixture: 'Exo Terra Abdeckung klein' },
+    { tid: 'a', type: 'other', fixture: 'Exo Terra Abdeckung klein' },
+    { tid: 'a', type: 'led', fixture: 'LED-Leuchte' },
+    { tid: 'a', type: 'incand', fixture: 'Lampenschirm' },
+    { tid: 'b', type: 'incand', fixture: 'Lampenschirm' }
+  ];
+  const u = TL.slotUse(t, ls);
+  assert.deepEqual([u.exo.used, u.exo.free, u.shade.used, u.shade.free], [2, 0, 1, 1]);
+  assert.equal(TL.slotUse({ id: 'a' }, ls).exo.free, null);
+});

@@ -766,13 +766,16 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
   function shopCard(t) {
     const list = TL.SHOP[t.species];
     if (!list) return '';
-    const exo = TL.hasExoCover(t);
+    const exo = TL.hasExoCover(t), su = TL.slotUse(t, lamps());
+    const slotTxt = (n, k) => su[k].total === null ? '' : n + ': ' + su[k].used + ' von ' + su[k].total + ' belegt, ' + su[k].free + ' frei';
+    const slotLine = [slotTxt('Exo-Terra-Abdeckung', 'exo'), slotTxt('Fassung mit Schirm', 'shade')].filter(Boolean).join(' · ');
+    const exoOk = exo && su.exo.free !== 0, shadeOk = su.shade.free !== 0;
     const btn = (q, label) => '<a class="btn sm" href="' + esc(TL.shopLink(q)) + '" target="_blank" rel="noopener">' + label + '</a>';
     return '<section class="card"><div class="card-h"><h3>Passende Leuchtmittel suchen</h3></div>' +
       (exo ? '<div class="banner lv-yellow" style="margin-bottom:10px"><span class="grow">Deine Abdeckungen sind von Exo Terra. Dort passen nur Exo-Terra-Leuchtmittel. In Fassungen mit Lampenschirm geht jede Marke, wenn Fassung und Leistung passen.</span></div>' : '') +
       '<div class="list">' +
       list.map(x => '<div class="li"><div class="ic">' + icon('lamp', 17) + '</div><div class="grow col" style="gap:3px"><span class="main-t sm">' + esc(x.title) + '</span><span class="sm">' + esc(x.why) + '</span>' + (x.brand && exo ? '<span class="sm">Diese Marke passt nicht in die Exo-Terra-Abdeckung, nur in einen Lampenschirm oder eine andere Armatur.</span>' : '') + '<span class="src">' + srcLinks(x.sources) + '</span></div><div class="col" style="gap:6px">' +
-        (x.brand ? btn(x.q, 'Für Lampenschirm suchen') : (exo ? btn('Exo Terra ' + x.q, 'Für Exo-Terra-Abdeckung') + btn(x.q, 'Für Lampenschirm') : btn(x.q, 'Bei Amazon suchen'))) + '</div></div>').join('') +
+        (x.brand ? btn(x.q, 'Für Lampenschirm suchen') : (exo ? (exoOk ? btn('Exo Terra ' + x.q, 'Für Exo-Terra-Abdeckung') : '') + (shadeOk ? btn(x.q, 'Für Lampenschirm') : '') + (!exoOk && !shadeOk ? btn('Exo Terra ' + x.q, 'Zum Ersetzen suchen') : '') : btn(x.q, 'Bei Amazon suchen'))) + '</div></div>').join('') +
       '</div><p class="xs" style="margin-top:10px">Die Links öffnen eine Amazon-Suche, sortiert nach Kundenbewertung. Welche Marke gerade beliebt ist, wie teuer sie ist und ob sie lieferbar ist, siehst du dort. Das kann die App nicht abrufen. Prüfe vor dem Kauf, ob Fassung, Länge und Leistung zu deiner Abdeckung passen. Ein Metalldampfstrahler braucht ein eigenes Vorschaltgerät.</p></section>';
   }
   function equipCard(t) {
@@ -780,7 +783,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     return '<form id="equip-form" class="card" novalidate><div class="card-h"><h3>Abdeckung und Technik</h3></div><div class="grid g-2">' +
       '<label class="f">Abdeckungen und Fassungen<textarea id="q-covers" placeholder="z. B. Exo Terra Abdeckung groß mit LED und einer Fassung">' + esc(e.covers) + '</textarea></label>' +
       '<div class="col" style="gap:12px"><label class="f">Vorschaltgerät für Röhren<select id="q-ballast"><option value=""' + (e.ballast === null ? ' selected' : '') + '>weiß nicht</option><option value="1"' + (e.ballast === true ? ' selected' : '') + '>vorhanden</option><option value="0"' + (e.ballast === false ? ' selected' : '') + '>keins</option></select></label>' +
-      '<label class="f">Notiz<input id="q-notes" value="' + esc(e.notes) + '"></label></div></div><div class="row" style="margin-top:12px"><button type="submit" class="btn">Technik speichern</button></div></form>';
+      '<label class="f">Notiz<input id="q-notes" value="' + esc(e.notes) + '"></label></div></div><div class="grid g-2" style="margin-top:12px"><label class="f">Plätze in Exo-Terra-Abdeckungen (ohne fest eingebaute LED)<input id="q-slexo" inputmode="numeric" value="' + (e.slots && e.slots.exo != null ? esc(e.slots.exo) : '') + '"></label><label class="f">Plätze in Fassungen mit Schirm<input id="q-slshade" inputmode="numeric" value="' + (e.slots && e.slots.shade != null ? esc(e.slots.shade) : '') + '"></label></div><div class="row" style="margin-top:12px"><button type="submit" class="btn">Technik speichern</button></div></form>';
   }
   function lightingCard(t, compact) {
     const li = TL.LIGHTING[t.species];
@@ -1435,7 +1438,10 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       const v = x => (document.getElementById(x) || {}).value ?? '';
       const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === S.tid); if (!t) return;
       const b = v('q-ballast');
+      const n = x => { const m = parseInt(v(x), 10); return Number.isFinite(m) && m >= 0 && m <= 20 ? m : null; };
       t.equip = { covers: v('q-covers').trim(), ballast: b === '1' ? true : b === '0' ? false : null, notes: v('q-notes').trim() };
+      const sl = { exo: n('q-slexo'), shade: n('q-slshade') };
+      if (sl.exo !== null || sl.shade !== null) t.equip.slots = sl;
       saveConfig(cc); toast('Technik gespeichert'); render();
     } else if (id === 'task-form') {
       const k = Object.assign({}, S.edit, readTaskForm());

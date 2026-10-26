@@ -126,6 +126,17 @@
   };
   /** Exo-Terra-Abdeckungen nehmen nur Exo-Terra-Leuchtmittel auf. Lampenschirme mit freier Fassung nehmen jede Marke mit passender Fassung. */
   function hasExoCover(t) { return /exo\s*-?\s*terra/i.test(t && t.equip && t.equip.covers || ''); }
+  /** Plätze für Leuchtmittel: Exo-Terra-Abdeckung (nur Exo Terra) und Fassung mit Schirm (jede Marke). Fest eingebaute LEDs zählen nicht. */
+  function slotUse(t, lampList) {
+    const sl = t && t.equip && t.equip.slots || {};
+    const out = { exo: { total: Number.isFinite(sl.exo) ? sl.exo : null, used: 0 }, shade: { total: Number.isFinite(sl.shade) ? sl.shade : null, used: 0 } };
+    (lampList || []).filter(l => l.tid === t.id && l.type !== 'led').forEach(l => {
+      const f = String(l.fixture || '');
+      if (/exo\s*-?\s*terra/i.test(f)) out.exo.used++; else if (/schirm|fassung/i.test(f)) out.shade.used++;
+    });
+    ['exo', 'shade'].forEach(k => { out[k].free = out[k].total === null ? null : Math.max(0, out[k].total - out[k].used); });
+    return out;
+  }
   const AMAZON = 'https://www.amazon.de/s?s=review-rank&k=';
   function shopLink(q) { return AMAZON + encodeURIComponent(q); }
 
@@ -812,7 +823,7 @@
   }
 
   return {
-    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, hasExoCover, lightCheck, lampAdvice, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
+    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, hasExoCover, slotUse, lightCheck, lampAdvice, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,
