@@ -1,0 +1,1494 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Terrarium">
+<meta name="theme-color" content="#121A17"><link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+</head><body>
+<title>Terrarium Leitstand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Leitstand: dunkle Seitenleiste wie in einer Steuerzentrale, ruhige Arbeitsfläche rechts.
+   Gebaut für das iPad im Querformat, darunter wird die Seitenleiste zur Tab-Leiste unten. */
+:root {
+  --bg: #F2F4F3; --surface: #FFFFFF; --surface2: #F7F9F8; --line: #DFE5E2; --line2: #EBEFED; --fg: #15201C; --muted: #5B6B65; --faint: #8A9893;
+  --side: #121A17; --side2: #1A2521; --sidefg: #E3ECE8; --sidemuted: #8FA39B; --sideline: #26332E;
+  --ac: #1F7A5C; --acfg: #FFFFFF; --acsoft: #E3F1EB;
+  --kn: #6D52C4; --jc: #0E8574; --rg: #A86A0A; --ot: #3C6BB5;
+  --g: #1E9A5C; --gs: #E2F4EA; --gt: #145A37; --y: #C08F00; --ys: #FBF2D2; --yt: #5E4600; --o: #E0701C; --os: #FDE9DA; --otx: #8A3500; --r: #D23B3B; --rs: #FBE3E3; --rt: #7C1414; --n: #8796A0; --ns: #EEF1F0; --nt: #4A5862;
+  --track: rgba(21, 32, 28, 0.08); --zone: rgba(30, 154, 92, 0.22); --band: rgba(30, 154, 92, 0.11); --night: rgba(40, 60, 90, 0.06); --shadow: 0 1px 2px rgba(21, 32, 28, 0.06), 0 4px 16px rgba(21, 32, 28, 0.05);
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1412; --surface: #151D1A; --surface2: #19221F; --line: #26322D; --line2: #1F2925; --fg: #E6EEEA; --muted: #98A9A2; --faint: #6E7F78;
+    --side: #0A0F0D; --side2: #121A17; --sidefg: #E3ECE8; --sidemuted: #8FA39B; --sideline: #1E2925;
+    --ac: #4CC79A; --acfg: #062016; --acsoft: #173229;
+    --kn: #A893FF; --jc: #3CD2BC; --rg: #F0B34E; --ot: #7FB0FF;
+    --g: #45D58E; --gs: #133325; --gt: #9CF0C6; --y: #F0CF4A; --ys: #322B0E; --yt: #F8E59A; --o: #FF9C4A; --os: #3A2312; --otx: #FFC796; --r: #FF6464; --rs: #3B1717; --rt: #FFB0B0; --n: #7E8E96; --ns: #1E2724; --nt: #BCC8CE;
+    --track: rgba(230, 238, 234, 0.08); --zone: rgba(69, 213, 142, 0.28); --band: rgba(69, 213, 142, 0.12); --night: rgba(130, 150, 190, 0.08); --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1412; --surface: #151D1A; --surface2: #19221F; --line: #26322D; --line2: #1F2925; --fg: #E6EEEA; --muted: #98A9A2; --faint: #6E7F78;
+  --side: #0A0F0D; --side2: #121A17; --sidefg: #E3ECE8; --sidemuted: #8FA39B; --sideline: #1E2925;
+  --ac: #4CC79A; --acfg: #062016; --acsoft: #173229;
+  --kn: #A893FF; --jc: #3CD2BC; --rg: #F0B34E; --ot: #7FB0FF;
+  --g: #45D58E; --gs: #133325; --gt: #9CF0C6; --y: #F0CF4A; --ys: #322B0E; --yt: #F8E59A; --o: #FF9C4A; --os: #3A2312; --otx: #FFC796; --r: #FF6464; --rs: #3B1717; --rt: #FFB0B0; --n: #7E8E96; --ns: #1E2724; --nt: #BCC8CE;
+  --track: rgba(230, 238, 234, 0.08); --zone: rgba(69, 213, 142, 0.28); --band: rgba(69, 213, 142, 0.12); --night: rgba(130, 150, 190, 0.08); --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--ac); }
+h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: 22px; } h2 { font-size: 17px; } h3 { font-size: 15px; } h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+p { margin: 0; }
+.num, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); } .faint { color: var(--faint); } .xs { font-size: 12.5px; color: var(--muted); } .sm { font-size: 13.5px; }
+.row { display: flex; align-items: center; gap: 10px; } .wrap { flex-wrap: wrap; } .col { display: flex; flex-direction: column; gap: 4px; } .grow { flex: 1; min-width: 0; } .between { justify-content: space-between; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.sp-kn { --sp: var(--kn); } .sp-jc { --sp: var(--jc); } .sp-rg { --sp: var(--rg); } .sp-other { --sp: var(--ot); }
+.lv-green { --lc: var(--g); --ls: var(--gs); --lt: var(--gt); } .lv-yellow { --lc: var(--y); --ls: var(--ys); --lt: var(--yt); } .lv-orange { --lc: var(--o); --ls: var(--os); --lt: var(--otx); } .lv-red { --lc: var(--r); --ls: var(--rs); --lt: var(--rt); } .lv-none { --lc: var(--n); --ls: var(--ns); --lt: var(--nt); }
+
+/* Rahmen */
+.shell { display: grid; grid-template-columns: 1fr; min-height: 100vh; }
+.side { display: none; }
+.main { min-width: 0; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+.topbar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); display: flex; align-items: center; gap: 12px; }
+.topbar .title { flex: 1; min-width: 0; }
+.topbar h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.content { padding: 18px max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left)); display: flex; flex-direction: column; gap: 18px; max-width: 1400px; }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--side); border-top: 1px solid var(--sideline); padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); display: grid; grid-template-columns: repeat(5, 1fr); }
+.tabbar button { background: none; border: 0; color: var(--sidemuted); display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 500; padding: 6px 2px; border-radius: 10px; position: relative; cursor: pointer; min-height: 48px; }
+.tabbar button.on { color: var(--sidefg); background: var(--side2); }
+.cnt { position: absolute; top: 2px; right: calc(50% - 22px); background: var(--o); color: #1a0c00; font: 600 10.5px/16px var(--mono); min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px; text-align: center; }
+@media (min-width: 900px) {
+  .shell { grid-template-columns: 252px 1fr; }
+  .side { display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--side); color: var(--sidefg); padding: 18px 12px 18px max(12px, env(safe-area-inset-left)); gap: 18px; }
+  .main { padding-bottom: 24px; }
+  .tabbar { display: none; }
+  .topbar { padding-left: 24px; padding-right: max(24px, env(safe-area-inset-right)); }
+  .content { padding: 22px max(24px, env(safe-area-inset-right)) 32px 24px; }
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px; }
+.brand .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, #2FA77B, #1B5E47); display: grid; place-items: center; color: #fff; }
+.brand b { display: block; font-size: 15px; } .brand span { font-size: 11.5px; color: var(--sidemuted); }
+.snav { display: flex; flex-direction: column; gap: 2px; }
+.snav button { display: flex; align-items: center; gap: 11px; width: 100%; background: none; border: 0; color: var(--sidemuted); padding: 9px 10px; border-radius: 9px; font-size: 14.5px; font-weight: 500; cursor: pointer; text-align: left; position: relative; }
+.snav button:hover { background: var(--side2); color: var(--sidefg); }
+.snav button.on { background: var(--side2); color: var(--sidefg); box-shadow: inset 3px 0 0 #3CC08F; }
+.snav .badge-n { margin-left: auto; background: var(--o); color: #1a0c00; font: 600 11px/18px var(--mono); padding: 0 6px; border-radius: 9px; }
+.side h4 { color: var(--sidemuted); padding: 0 10px; font-size: 11px; }
+.sterr { display: flex; flex-direction: column; gap: 4px; }
+.sterr button { display: grid; grid-template-columns: 10px 1fr; column-gap: 10px; align-items: center; background: none; border: 1px solid transparent; color: var(--sidefg); padding: 8px 10px; border-radius: 10px; cursor: pointer; text-align: left; }
+.sterr button:hover, .sterr button.on { background: var(--side2); border-color: var(--sideline); }
+.sterr .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--lc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lc) 25%, transparent); }
+.sterr .nm { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sterr .vals { grid-column: 2; font: 12px var(--mono); color: var(--sidemuted); }
+.side .foot { margin-top: auto; font-size: 11.5px; color: var(--sidemuted); padding: 0 10px; display: flex; flex-direction: column; gap: 6px; }
+
+/* Bausteine */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 16px; min-width: 0; }
+.card.flat { box-shadow: none; }
+.card-h { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.card-h h2, .card-h h3 { flex: 1; min-width: 0; }
+.grid { display: grid; gap: 16px; }
+.g-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g-3 { grid-template-columns: 1fr; }
+.g-2 { grid-template-columns: 1fr; }
+@media (min-width: 700px) { .g-kpi { grid-template-columns: repeat(4, minmax(0, 1fr)); } .g-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1000px) { .g-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .g-2w { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); } }
+.kpi { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; position: relative; overflow: hidden; }
+.kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--lc); }
+.kpi .lab { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.kpi .val { font: 600 28px/1.1 var(--mono); letter-spacing: -0.02em; }
+.kpi .val small { font-size: 15px; color: var(--muted); font-weight: 500; }
+.kpi .sub { font-size: 12.5px; color: var(--muted); }
+button.kpi { text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: color-mix(in srgb, var(--fg) 25%, var(--line)); }
+.btn.pri { background: var(--ac); border-color: var(--ac); color: var(--acfg); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.sm { min-height: 34px; padding: 0 11px; font-size: 13px; border-radius: 9px; }
+.btn.danger { color: var(--r); }
+.btn.dangerfill { background: var(--r); border-color: var(--r); color: #fff; }
+.btn:focus-visible, .seg button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .snav button:focus-visible, .tabs button:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--ls); color: var(--lt); white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--lc); }
+.tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 2px 8px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.sptag { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.sptag::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--sp); }
+.store { font-size: 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
+.store i { width: 7px; height: 7px; border-radius: 50%; background: var(--lc); }
+.seg { display: inline-flex; background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; padding: 6px 12px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.seg button.on { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; margin: -4px 0 0; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
+.tabs button.on { color: var(--fg); border-bottom-color: var(--sp, var(--ac)); }
+.tabs .cnt2 { font: 600 11px/17px var(--mono); padding: 0 6px; border-radius: 9px; background: var(--os); color: var(--otx); }
+.empty { padding: 22px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.list { display: flex; flex-direction: column; }
+.li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line2); min-width: 0; }
+.li:first-child { border-top: 0; }
+.li .ic { width: 36px; height: 36px; flex: none; border-radius: 10px; background: var(--ls, var(--surface2)); color: var(--lc, var(--muted)); display: grid; place-items: center; }
+.li .main-t { font-weight: 600; font-size: 14.5px; }
+.li .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.li.stackm { flex-wrap: wrap; }
+.quick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--ys); color: var(--yt); border-radius: 10px; padding: 8px 10px; width: 100%; margin-top: 6px; font-size: 13.5px; }
+.li .quick input { width: 110px; min-height: 34px; padding: 4px 10px; }
+.li .quick input[type="date"] { width: 160px; }
+.bar { height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--lc); border-radius: 4px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(92px + env(safe-area-inset-bottom)); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; z-index: 20; max-width: calc(100% - 32px); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25); }
+@media (min-width: 900px) { .toast { bottom: 28px; left: calc(50% + 126px); } }
+.banner { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; background: var(--ls); color: var(--lt); font-size: 14px; }
+.banner .grow { min-width: 200px; }
+.confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--rs); color: var(--rt); padding: 8px 10px; border-radius: 10px; font-size: 13.5px; }
+
+/* Terrarium-Kacheln */
+.tpanel { display: flex; flex-direction: column; gap: 12px; border-top: 4px solid var(--sp); }
+.tpanel .hd { display: flex; align-items: flex-start; gap: 10px; }
+.rings { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ringbox { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ringbox svg { width: 100%; max-width: 132px; height: auto; }
+.ringbox .cap { font-size: 12px; color: var(--muted); text-align: center; }
+.ring-track { fill: none; stroke: var(--track); stroke-width: 9; stroke-linecap: round; }
+.ring-zone { fill: none; stroke: var(--zone); stroke-width: 9; stroke-linecap: butt; }
+.ring-val { fill: none; stroke: var(--lc); stroke-width: 9; stroke-linecap: round; }
+.ring-dot { fill: var(--surface); stroke: var(--lc); stroke-width: 3; }
+.ring-num { fill: var(--fg); font-family: var(--mono); font-weight: 600; text-anchor: middle; }
+.ring-unit { fill: var(--muted); font-size: 10px; text-anchor: middle; font-family: var(--sans); }
+.sparks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.spark { width: 100%; height: 38px; display: block; }
+.spark-l { font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--muted); }
+.big-rings .ringbox svg { max-width: 190px; }
+.targets { display: grid; grid-template-columns: auto auto auto; justify-content: space-between; gap: 4px 12px; font-size: 13px; align-items: center; background: var(--surface2); border-radius: 10px; padding: 8px 12px; }
+.targets .ph { font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.targets .ph.on { color: var(--sp, var(--ac)); }
+.targets .num { white-space: nowrap; }
+.lgrid { display: grid; gap: 10px; }
+.lrow { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: start; }
+.lrow .ic { width: 34px; height: 34px; border-radius: 9px; background: var(--surface2); color: var(--sp, var(--muted)); display: grid; place-items: center; }
+.lrow b { display: block; font-size: 13.5px; }
+.lrow p { font-size: 13.5px; }
+.uvi { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.uvi .tag { white-space: normal; }
+
+/* Diagramm */
+.chart { width: 100%; height: auto; display: block; touch-action: pan-y; }
+.chart text { fill: var(--muted); font-size: 10px; font-family: var(--mono); }
+.readout { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 12px; background: var(--surface2); border-radius: 10px; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 700px) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.stat { background: var(--surface2); border-radius: 10px; padding: 10px 12px; }
+.stat b { display: block; font: 600 18px var(--mono); }
+
+/* Tabellen */
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 8px; border-bottom: 1px solid var(--line2); vertical-align: middle; }
+.tbl-wrap { overflow-x: auto; }
+
+/* Formulare */
+.form { display: flex; flex-direction: column; gap: 16px; }
+fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 0; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+legend { font-weight: 600; font-size: 14px; padding: 0 6px; }
+label.f { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600; color: var(--muted); min-width: 0; }
+input[type="text"], input[type="date"], input[type="time"], input[type="datetime-local"], input:not([type]), select, textarea { width: 100%; min-height: 42px; padding: 8px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 15px; font-weight: 500; }
+input.num-in { font-family: var(--mono); }
+textarea { min-height: 76px; resize: vertical; }
+.f-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.f-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 700px) { .f-grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; } }
+@media (max-width: 699px) { .f-grid4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+.ferr { display: block; color: var(--r); font-size: 12.5px; font-weight: 600; }
+.has-err input, .has-err select { border-color: var(--r); }
+.hint { font-size: 12.5px; color: var(--muted); font-weight: 400; }
+.src { font-size: 12.5px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+.src a { word-break: break-word; }
+.zt { table-layout: fixed; }
+.zt th:first-child, .zt td:first-child { width: 58px; }
+.zt th { white-space: normal; text-align: center; padding: 6px 4px; }
+.zt td { padding: 6px 4px; }
+.zt td input { min-height: 38px; text-align: center; padding: 6px 4px; }
+.zt td:first-child { font-weight: 600; }
+.sizebox { padding: 12px 14px; border-radius: 10px; background: var(--ls); color: var(--lt); font-size: 13.5px; display: flex; flex-direction: column; gap: 4px; }
+.steppers { display: flex; gap: 6px; align-items: center; }
+.steppers input { text-align: center; font: 600 22px var(--mono); min-height: 52px; }
+.steppers .btn { min-width: 52px; min-height: 52px; font-size: 18px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 99px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--muted); }
+.chip.on { background: var(--acsoft); border-color: var(--ac); color: var(--fg); }
+.split { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .split { grid-template-columns: 300px minmax(0, 1fr); } }
+.selbtn { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 10px; padding: 10px; cursor: pointer; }
+.selbtn.on { background: var(--acsoft); border-color: var(--line); }
+ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.exp { width: 100%; min-height: 160px; font: 12px var(--mono); }
+[hidden] { display: none !important; }
+@media (max-width: 520px) { .hide-s { display: none !important; } .li { flex-wrap: wrap; } .li .actions { width: 100%; justify-content: flex-start; padding-left: 48px; } }
+</style>
+
+<div id="app" aria-live="polite"></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="logic.js"></script>
+<script>
+(function () {
+  'use strict';
+  const TL = window.TL;
+  const $app = document.getElementById('app');
+
+  /* ================= Zustand ================= */
+  const S = {
+    docs: {}, ver: 0, demo: false, demoDocs: null,
+    view: 'dash', tab: 'klima', tid: null, aid: null,
+    chartKind: 't', chartRange: '7', taskFilter: 'all', lampFilter: 'all',
+    edit: null, pf: null, errors: {}, confirm: null, entry: null,
+    ready: false, pendingRender: false, exportText: null, importDocs: null, sensor: [], devices: null
+  };
+
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = TL.fmt;
+  const now = () => Date.now();
+  const rank = l => TL.LEVELS.indexOf(l || 'none');
+
+  function docs() { return S.demo ? S.demoDocs : S.docs; }
+  function cfg() { return docs().config; }
+  function terrs() { return cfg().terrariums; }
+  function terr(id) { return terrs().find(t => t.id === id) || terrs()[0]; }
+  function lamps() { return cfg().lamps || []; }
+  function tasks() { return cfg().tasks || []; }
+  function animals() { return cfg().animals || []; }
+
+  let cacheVer = -1, cacheR = [], cacheJ = [];
+  function bump() { S.ver++; }
+  function refresh() {
+    const key = S.ver * 2 + (S.demo ? 1 : 0);
+    if (cacheVer === key) return;
+    cacheR = S.demo || !S.sensor.length ? TL.collectReadings(docs()) : TL.collectReadings(docs()).concat(S.sensor).sort((a, b) => a.ts - b.ts); cacheJ = TL.collectJournal(docs()); cacheVer = key;
+  }
+  function allReadings() { refresh(); return cacheR; }
+  function allJournal() { refresh(); return cacheJ; }
+  function readingsOf(tid) { return allReadings().filter(r => r.tid === tid); }
+  function lastReading(tid) { const r = readingsOf(tid); return r.length ? r[r.length - 1] : null; }
+
+  /* ================= Speicher ================= */
+  const LKEY = 'tcc.v1.docs';
+  function readLocal() { try { const s = localStorage.getItem(LKEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+  function writeLocal() { try { localStorage.setItem(LKEY, JSON.stringify(S.docs)); return true; } catch (e) { return false; } }
+  function localOk() { try { localStorage.setItem('tcc.probe', '1'); localStorage.removeItem('tcc.probe'); return true; } catch (e) { return false; } }
+
+  /* Supabase-Betrieb: nur in der eigenständigen Web-App, wenn config.js die Verbindung setzt */
+  const SUPA = window.TCC_SUPABASE && window.supabase ? window.TCC_SUPABASE : null;
+  let sb = null, sbUid = null;
+  const sensorRow = x => ({ id: 's' + x.id, sid: x.id, tid: x.tid, ts: Date.parse(x.ts), t: x.t === null ? null : Number(x.t), h: x.h === null ? null : Number(x.h), src: 'sensor', battery: x.battery, n: '' });
+
+  const Store = {
+    mode: 'loading', col: null, queue: {},
+    async init() {
+      if (SUPA) {
+        sb = window.supabase.createClient(SUPA.url, SUPA.anonKey, { auth: { persistSession: true, autoRefreshToken: true } });
+        const { data } = await sb.auth.getSession();
+        if (!data.session) { this.mode = 'login'; return; }
+        return this.loadSupa(data.session.user.id);
+      }
+      const local = readLocal();
+      let db = null, user = null, id = null;
+      if (window.claude && typeof window.claude.use === 'function') {
+        try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch (e) { db = null; }
+        if (db && user) { try { id = await user.id(); } catch (e) { id = null; } }
+      }
+      if (db && id) {
+        try {
+          this.col = db.collection('data/users/' + id);
+          const snap = await this.col.get();
+          const d = {};
+          snap.docs.forEach(s => { if (s.exists) d[s.id] = clone(s.data()); });
+          if (!d.config && local && local.config) {
+            for (const [k, v] of Object.entries(local)) { await this.col.doc(k).set(v); d[k] = v; }
+            S.movedLocal = true;
+          }
+          S.docs = d; this.mode = 'cloud';
+          this.subscribe();
+          return;
+        } catch (e) { this.col = null; }
+      }
+      this.mode = localOk() ? 'local' : 'memory';
+      S.docs = local || {};
+    },
+    async loadSupa(uid) {
+      sbUid = uid;
+      const { data, error } = await sb.from('app_docs').select('key, body');
+      if (error) { this.mode = 'memory'; S.docs = {}; toast('Supabase nicht erreichbar: ' + error.message); return; }
+      const d = {}; data.forEach(x => { d[x.key] = x.body; });
+      S.docs = d;
+      const since = new Date(now() - 400 * TL.DAY).toISOString();
+      const all = []; let from = 0;
+      for (;;) {
+        const res = await sb.from('sensor_readings').select('id, tid, ts, t, h, battery').gte('ts', since).order('ts').range(from, from + 999);
+        if (res.error || !res.data.length) break;
+        all.push(...res.data.map(sensorRow)); if (res.data.length < 1000) break; from += 1000;
+      }
+      S.sensor = all;
+      this.mode = 'supa';
+      sb.channel('tcc').on('postgres_changes', { event: '*', schema: 'public', table: 'app_docs', filter: 'user_id=eq.' + uid }, ev => {
+        if (ev.eventType === 'DELETE') { const k = ev.old && ev.old.key; if (k && S.docs[k]) { delete S.docs[k]; } }
+        else if (JSON.stringify(S.docs[ev.new.key]) !== JSON.stringify(ev.new.body)) S.docs[ev.new.key] = ev.new.body; else return;
+        if (!S.demo) { prepareConfig(); bump(); softRender(); }
+      }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sensor_readings', filter: 'user_id=eq.' + uid }, ev => {
+        S.sensor.push(sensorRow(ev.new)); bump(); if (!S.demo) softRender();
+      }).subscribe();
+    },
+    subscribe() {
+      this.col.onSnapshot(snap => {
+        let changed = false;
+        for (const ch of snap.docChanges()) {
+          if (ch.doc.metadata.hasPendingWrites) continue;
+          if (ch.type === 'removed') { if (S.docs[ch.doc.id]) { delete S.docs[ch.doc.id]; changed = true; } }
+          else {
+            const body = clone(ch.doc.data());
+            if (JSON.stringify(S.docs[ch.doc.id]) !== JSON.stringify(body)) { S.docs[ch.doc.id] = body; changed = true; }
+          }
+        }
+        if (changed && !S.demo) { prepareConfig(); bump(); softRender(); }
+      }, err => { if (err && err.code === 'revoked') { Store.mode = 'memory'; softRender(); } });
+    },
+    put(key, body) {
+      if (S.demo) { S.demoDocs[key] = body; bump(); return Promise.resolve(); }
+      S.docs[key] = body; bump();
+      if (this.mode === 'cloud') return this.enqueue(key, () => this.col.doc(key).set(body));
+      if (this.mode === 'supa') return this.enqueue(key, () => sb.from('app_docs').upsert({ user_id: sbUid, key, body }).then(r => { if (r.error) throw r.error; }));
+      if (this.mode === 'local' && !writeLocal()) toast('Speichern im Browser fehlgeschlagen. Exportiere ein Backup.');
+      return Promise.resolve();
+    },
+    remove(key) {
+      if (S.demo) { delete S.demoDocs[key]; bump(); return Promise.resolve(); }
+      delete S.docs[key]; bump();
+      if (this.mode === 'cloud') return this.enqueue(key, () => this.col.doc(key).delete());
+      if (this.mode === 'supa') return this.enqueue(key, () => sb.from('app_docs').delete().eq('user_id', sbUid).eq('key', key).then(r => { if (r.error) throw r.error; }));
+      if (this.mode === 'local') writeLocal();
+      return Promise.resolve();
+    },
+    enqueue(key, fn) {
+      const run = () => fn().catch(e => {
+        if (e && e.code === 'unavailable') return new Promise(r => setTimeout(r, 600 + Math.random() * 600)).then(fn);
+        throw e;
+      });
+      const p = (this.queue[key] || Promise.resolve()).then(run).catch(e => {
+        toast(e && e.code === 'quota_exceeded' ? 'Speicher voll. Lösche alte Messwerte oder exportiere ein Backup.' : 'Speichern fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut.');
+      });
+      this.queue[key] = p;
+      return p;
+    }
+  };
+
+  /* Legt Einstellungen an oder bringt alte auf den neuen Stand. Gibt true zurück, wenn ergänzt wurde. */
+  function prepareConfig() {
+    if (!S.docs.config) { S.docs.config = TL.defaultConfig(); Store.put('config', S.docs.config); return false; }
+    const c = clone(S.docs.config);
+    if (TL.migrateConfig(c)) { Store.put('config', c); return true; }
+    return false;
+  }
+  function saveConfig(c) { return Store.put('config', c); }
+
+  /* ================= Änderungen ================= */
+  function addReading(tid, v, note) {
+    const key = TL.readingDocKey(tid, v.ts);
+    const d = clone(docs()[key] || { tid, month: TL.monthKey(v.ts), rows: [] });
+    d.rows.push({ id: TL.uid('m'), ts: v.ts, t: v.t, h: v.h, src: 'manual', n: note || '' });
+    d.rows.sort((a, b) => a.ts - b.ts);
+    return Store.put(key, d);
+  }
+  function deleteReading(r) {
+    if (r.src === 'sensor' && sb) {
+      S.sensor = S.sensor.filter(x => x.id !== r.id); bump();
+      return sb.from('sensor_readings').delete().eq('id', r.sid).then(res => { if (res.error) toast('Löschen fehlgeschlagen'); });
+    }
+    const key = TL.readingDocKey(r.tid, r.ts);
+    const d = docs()[key]; if (!d) return;
+    const nd = clone(d); nd.rows = nd.rows.filter(x => x.id !== r.id);
+    return nd.rows.length ? Store.put(key, nd) : Store.remove(key);
+  }
+  function addJournal(e) {
+    const key = TL.journalDocKey(e.ts);
+    const d = clone(docs()[key] || { year: new Date(e.ts).getFullYear(), rows: [] });
+    d.rows.push(e);
+    return Store.put(key, d);
+  }
+  function deleteJournal(e) {
+    const key = TL.journalDocKey(e.ts);
+    const d = docs()[key]; if (!d) return;
+    const nd = clone(d); nd.rows = nd.rows.filter(x => x.id !== e.id);
+    return nd.rows.length ? Store.put(key, nd) : Store.remove(key);
+  }
+
+  /* ================= Auswertung ================= */
+  function assessOf(t) { return TL.assessTerrarium(t, lastReading(t.id), now()); }
+  function taskList(tid) {
+    return tasks().filter(k => !tid || tid === 'all' || k.tid === tid)
+      .map(k => ({ k, d: TL.dueInfo(k, now(), cfg().settings?.dueSoonDays) }))
+      .sort((a, b) => (a.d.daysLeft ?? 99999) - (b.d.daysLeft ?? 99999));
+  }
+  function lampList(tid) {
+    return lamps().filter(l => !tid || tid === 'all' || l.tid === tid)
+      .map(l => ({ l, i: TL.lampInfo(l, now()) }))
+      .sort((a, b) => (a.i.daysLeft ?? 99999) - (b.i.daysLeft ?? 99999));
+  }
+  const urgent = l => l === 'orange' || l === 'red';
+  function climateIssues() { return terrs().map(t => ({ t, a: assessOf(t) })).filter(x => rank(x.a.level) >= rank('yellow')); }
+  function counts() {
+    const tl = taskList(), ll = lampList();
+    return {
+      tasksDue: tl.filter(x => urgent(x.d.level)).length,
+      tasksSoon: tl.filter(x => x.d.level === 'yellow').length,
+      tasksNoDate: tl.filter(x => x.d.daysLeft === null).length,
+      lampsDue: ll.filter(x => urgent(x.i.level)).length,
+      lampsSoon: ll.filter(x => x.i.level === 'yellow').length,
+      lampsNoDate: ll.filter(x => x.i.daysLeft === null).length,
+      climate: climateIssues().filter(x => urgent(x.a.level)).length,
+      lampWarn: terrs().reduce((n, t) => n + TL.lampAdvice(t, lamps()).filter(a => urgent(a.level)).length, 0)
+    };
+  }
+
+  /* ================= Grafik ================= */
+  const ICONS = {
+    dash: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+    terr: '<rect x="3" y="5" width="18" height="15" rx="3"/><path d="M8 20c0-5 3-8 8-9M12 20c0-3 1-5 4-6"/>',
+    care: '<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>',
+    paw: '<circle cx="7" cy="9" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="17" cy="9" r="2"/><path d="M8 17c0-3 2-5 4-5s4 2 4 5c0 2-2 3-4 3s-4-1-4-3z"/>',
+    more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    temp: '<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/>',
+    drop: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+    lamp: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+    uvb: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    spray: '<path d="M9 3h4v4H9zM8 7h6l1 4v9a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-9z"/><path d="M17 4h2M17 7h3M17 10h2"/>',
+    water: '<path d="M4 15c2-2 4 2 6 0s4 2 6 0 4 2 4 2M4 19c2-2 4 2 6 0s4 2 6 0 4 2 4 2M12 3s4 4 4 7a4 4 0 0 1-8 0c0-3 4-7 4-7z"/>',
+    soil: '<path d="M3 17h18M5 21h14M7 17c0-4 2-7 5-9M12 8c2 0 4-2 4-5-3 0-5 2-4 5z"/>',
+    clean: '<path d="M4 20l7-7M14 4l6 6-7 7-6-6z"/>',
+    plants: '<path d="M12 21V10M12 10c0-4 3-7 8-7 0 5-3 7-8 7zM12 14c0-3-2-5-7-5 0 4 2 5 7 5z"/>',
+    batt: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 11v2M7 10v4M11 10v4"/>',
+    other: '<circle cx="12" cy="12" r="8"/><path d="M12 8v5M12 16h.01"/>',
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20h4"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+    edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+    back: '<path d="M15 5l-7 7 7 7"/>',
+    check: '<path d="M5 12l5 5 9-10"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>',
+    swap: '<path d="M4 8h13l-3-3M20 16H7l3 3"/>'
+  };
+  const icon = (n, s) => '<svg width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[n] || ICONS.other) + '</svg>';
+  const lampIcon = l => (TL.LAMP_TYPES[l.type] || {}).group === 'uvb' ? 'uvb' : 'lamp';
+
+  function sp(t) { return 'sp-' + (TL.SPECIES[t.species] && t.species !== 'other' ? t.species : 'other'); }
+  function lvl(l) { return 'lv-' + (l || 'none'); }
+  function pill(level, text) { return '<span class="pill ' + lvl(level) + '">' + esc(text || TL.LEVEL_INFO[level].label) + '</span>'; }
+  function ageText(ts) {
+    const m = Math.round((now() - ts) / 60000);
+    if (m < 1) return 'gerade eben';
+    if (m < 60) return 'vor ' + m + ' Min.';
+    const h = Math.round(m / 60);
+    if (h < 48) return 'vor ' + h + ' Std.';
+    return 'vor ' + Math.round(h / 24) + ' Tagen';
+  }
+  function dateTime(ts) {
+    const d = new Date(ts);
+    return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  }
+  function dateLong(ts) { return new Date(ts).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+  function dayTxt(iso) { const t = Date.parse(iso); return Number.isFinite(t) ? dateLong(t) : '–'; }
+  function rangeTxt(r, unit) { return TL.rangeSet(r) ? fmt(r.min, unit === '%' ? 0 : 1) + '–' + fmt(r.max, unit === '%' ? 0 : 1) + ' ' + unit : 'nicht festgelegt'; }
+  function numStr(v, d) { return v === null || v === undefined || v === '' ? '' : fmt(v, d).replace(/\./g, '').replace(/,0$/, ''); }
+  function terrName(tid) { const t = terrs().find(x => x.id === tid); return t ? t.name : 'Ohne Terrarium'; }
+
+  function ring(o) {
+    const cx = 60, cy = 60, R = 46, start = 135, sweep = 270;
+    const pol = deg => { const a = deg * Math.PI / 180; return [cx + R * Math.cos(a), cy + R * Math.sin(a)]; };
+    const arc = (a0, a1) => { const [x0, y0] = pol(a0), [x1, y1] = pol(a1); return 'M' + x0.toFixed(2) + ' ' + y0.toFixed(2) + ' A' + R + ' ' + R + ' 0 ' + (a1 - a0 > 180 ? 1 : 0) + ' 1 ' + x1.toFixed(2) + ' ' + y1.toFixed(2); };
+    const f = v => Math.max(0, Math.min(1, (v - o.lo) / (o.hi - o.lo)));
+    let s = '<svg viewBox="0 0 120 108" role="img" aria-label="' + esc(o.aria) + '" class="' + lvl(o.level) + '">';
+    s += '<path class="ring-track" d="' + arc(start, start + sweep) + '"/>';
+    if (o.range && TL.rangeSet(o.range)) s += '<path class="ring-zone" d="' + arc(start + sweep * f(o.range.min), start + sweep * f(o.range.max)) + '"/>';
+    if (Number.isFinite(o.value)) {
+      const a = start + sweep * Math.max(0.004, f(o.value));
+      s += '<path class="ring-val" d="' + arc(start, a) + '"/>';
+      const [dx, dy] = pol(a);
+      s += '<circle class="ring-dot" cx="' + dx.toFixed(2) + '" cy="' + dy.toFixed(2) + '" r="5"/>';
+      s += '<text class="ring-num" x="60" y="66" font-size="22">' + fmt(o.value, o.digits) + '</text>';
+    } else s += '<text class="ring-num" x="60" y="66" font-size="22">–</text>';
+    s += '<text class="ring-unit" x="60" y="82">' + esc(o.unit) + '</text></svg>';
+    return s;
+  }
+  function ringsFor(t, a, r) {
+    const tr = a.ranges ? a.ranges.temp : TL.rangesAt(t, now()).temp, hr = a.ranges ? a.ranges.hum : TL.rangesAt(t, now()).hum;
+    const tv = r ? r.t : null, hv = r ? r.h : null;
+    const tlo = Math.min(TL.rangeSet(tr) ? tr.min - 6 : 15, Number.isFinite(tv) ? tv - 2 : 99), thi = Math.max(TL.rangeSet(tr) ? tr.max + 6 : 35, Number.isFinite(tv) ? tv + 2 : -99);
+    return '<div class="rings">' +
+      '<div class="ringbox">' + ring({ value: tv, range: tr, lo: tlo, hi: thi, unit: '°C', level: a.temp.level, digits: 1, aria: 'Temperatur ' + (Number.isFinite(tv) ? fmt(tv) + ' Grad' : 'kein Wert') }) + '<span class="cap">' + (a.phase === 'night' ? 'Ziel Nacht ' : 'Ziel Tag ') + rangeTxt(tr, '°C') + '</span></div>' +
+      '<div class="ringbox">' + ring({ value: hv, range: hr, lo: 0, hi: 100, unit: '% rF', level: a.hum.level, digits: 0, aria: 'Luftfeuchte ' + (Number.isFinite(hv) ? fmt(hv, 0) + ' Prozent' : 'kein Wert') }) + '<span class="cap">' + (a.phase === 'night' ? 'Ziel Nacht ' : 'Ziel Tag ') + rangeTxt(hr, '%') + '</span></div></div>';
+  }
+  function spark(rows, kind) {
+    const pts = rows.filter(r => Number.isFinite(r[kind]));
+    if (pts.length < 2) return '<div class="spark xs" style="display:flex;align-items:center">Noch kein Verlauf</div>';
+    const W = 200, H = 38, x0 = pts[0].ts, x1 = pts[pts.length - 1].ts;
+    const vs = pts.map(p => p[kind]); const lo = Math.min(...vs), hi = Math.max(...vs); const span = hi - lo || 1;
+    const X = ts => ((ts - x0) / (x1 - x0 || 1)) * (W - 6) + 3, Y = v => H - 4 - ((v - lo) / span) * (H - 10);
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + X(p.ts).toFixed(1) + ' ' + Y(p[kind]).toFixed(1)).join(' ');
+    return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true"><path d="' + d + ' L' + X(x1).toFixed(1) + ' ' + H + ' L3 ' + H + ' Z" fill="color-mix(in srgb, var(--sp) 14%, transparent)" stroke="none"/><path d="' + d + '" fill="none" stroke="var(--sp)" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>';
+  }
+
+  let chartState = null;
+  function chartSvg(t, rows, kind, from, to) {
+    const W = 720, H = 250, L = 36, R = 10, T = 10, B = 26;
+    const key = kind === 't' ? 'temp' : 'hum';
+    const unit = kind === 't' ? '°C' : '%';
+    const pts = rows.filter(r => Number.isFinite(r[kind]) && r.ts >= from && r.ts <= to);
+    const samples = [];
+    const step = Math.max(15 * 60000, (to - from) / 300);
+    for (let ts = from; ts <= to; ts += step) samples.push({ ts, ...TL.rangesAt(t, ts) });
+    let vals = pts.map(p => p[kind]);
+    samples.forEach(s => { const r = s[key]; if (TL.rangeSet(r)) vals.push(r.min, r.max); });
+    if (!vals.length) vals = kind === 't' ? [20, 30] : [40, 80];
+    let lo = Math.floor(Math.min(...vals) - (kind === 't' ? 1 : 5)), hi = Math.ceil(Math.max(...vals) + (kind === 't' ? 1 : 5));
+    if (kind === 'h') { lo = Math.max(0, lo); hi = Math.min(100, hi); }
+    if (hi - lo < 4) hi = lo + 4;
+    const X = ts => L + (ts - from) / (to - from) * (W - L - R);
+    const Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+    let s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Verlauf ' + (kind === 't' ? 'Temperatur' : 'Luftfeuchte') + '">';
+    let nStart = null;
+    samples.forEach((smp, i) => {
+      const isN = smp.phase === 'night';
+      if (isN && nStart === null) nStart = smp.ts;
+      if ((!isN || i === samples.length - 1) && nStart !== null) {
+        const end = isN ? to : smp.ts;
+        s += '<rect x="' + X(nStart).toFixed(1) + '" y="' + T + '" width="' + Math.max(0, X(end) - X(nStart)).toFixed(1) + '" height="' + (H - T - B) + '" fill="var(--night)"/>';
+        nStart = null;
+      }
+    });
+    for (let i = 0; i <= 4; i++) {
+      const v = lo + (hi - lo) * i / 4, y = Y(v);
+      s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="var(--line2)" stroke-width="1"/>';
+      s += '<text x="' + (L - 6) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end">' + fmt(v, 0) + '</text>';
+    }
+    const segs = []; let cur = [];
+    samples.forEach(smp => { const r = smp[key]; if (TL.rangeSet(r)) cur.push({ ts: smp.ts, r }); else if (cur.length) { segs.push(cur); cur = []; } });
+    if (cur.length) segs.push(cur);
+    segs.forEach(seg => {
+      const top = seg.map((p, i) => (i ? 'L' : 'M') + X(p.ts).toFixed(1) + ' ' + Y(Math.min(hi, p.r.max)).toFixed(1)).join(' ');
+      const bot = seg.slice().reverse().map(p => 'L' + X(p.ts).toFixed(1) + ' ' + Y(Math.max(lo, p.r.min)).toFixed(1)).join(' ');
+      s += '<path d="' + top + ' ' + bot + ' Z" fill="var(--band)" stroke="none"/>';
+    });
+    const days = (to - from) / TL.DAY;
+    const xt = days <= 1.1 ? 8 : days <= 8 ? 7 : 6;
+    for (let i = 0; i <= xt; i++) {
+      const ts = from + (to - from) * i / xt;
+      const d = new Date(ts);
+      const lab = days <= 1.1 ? d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+      s += '<text x="' + X(ts).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="' + (i === 0 ? 'start' : i === xt ? 'end' : 'middle') + '">' + lab + '</text>';
+    }
+    let d = '', prev = null;
+    pts.forEach(p => { d += (prev && p.ts - prev.ts < 12 * TL.HOUR ? 'L' : 'M') + X(p.ts).toFixed(1) + ' ' + Y(p[kind]).toFixed(1) + ' '; prev = p; });
+    if (d) s += '<path d="' + d + '" fill="none" stroke="var(--sp)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    pts.forEach(p => {
+      const a = TL.assess(p[kind], TL.rangesAt(t, p.ts)[key], key, t.tol);
+      if (urgent(a.level)) s += '<circle class="' + lvl(a.level) + '" cx="' + X(p.ts).toFixed(1) + '" cy="' + Y(p[kind]).toFixed(1) + '" r="3.2" fill="var(--lc)"/>';
+    });
+    s += '<line id="cx-line" x1="0" x2="0" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--fg)" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>';
+    s += '<circle id="cx-dot" cx="0" cy="0" r="5" fill="var(--surface)" stroke="var(--sp)" stroke-width="3" opacity="0"/></svg>';
+    chartState = { pts, X, Y, kind, unit, W, t, key };
+    return s;
+  }
+  function bindChart() {
+    const svg = document.querySelector('svg.chart');
+    if (!svg || !chartState || !chartState.pts.length) return;
+    const pick = ev => {
+      const rect = svg.getBoundingClientRect();
+      const x = (ev.clientX - rect.left) / rect.width * chartState.W;
+      let best = null, bd = Infinity;
+      for (const p of chartState.pts) { const dd = Math.abs(chartState.X(p.ts) - x); if (dd < bd) { bd = dd; best = p; } }
+      if (!best) return;
+      const px = chartState.X(best.ts), py = chartState.Y(best[chartState.kind]);
+      const ln = svg.querySelector('#cx-line'), dt = svg.querySelector('#cx-dot');
+      ln.setAttribute('x1', px); ln.setAttribute('x2', px); ln.setAttribute('opacity', '0.5');
+      dt.setAttribute('cx', px); dt.setAttribute('cy', py); dt.setAttribute('opacity', '1');
+      const ro = document.getElementById('readout');
+      if (ro) {
+        const rg = TL.rangesAt(chartState.t, best.ts);
+        const a = TL.assess(best[chartState.kind], rg[chartState.key], chartState.key, chartState.t.tol);
+        ro.innerHTML = '<div class="col"><span class="xs">' + esc(dateTime(best.ts)) + ' · ' + (rg.phase === 'night' ? 'Nacht' : 'Tag') + '</span><b class="num">' + fmt(best[chartState.kind], chartState.unit === '%' ? 0 : 1) + ' ' + chartState.unit + '</b></div>' + pill(a.level);
+      }
+    };
+    svg.addEventListener('pointerdown', pick);
+    svg.addEventListener('pointermove', ev => { if (ev.buttons || ev.pointerType === 'mouse') pick(ev); });
+  }
+
+  /* ================= Bausteine ================= */
+  function storeBadge() {
+    if (S.demo) return '<span class="store lv-yellow"><i></i>Beispieldaten</span>';
+    if (Store.mode === 'cloud') return '<span class="store lv-green"><i></i>Im Konto gespeichert</span>';
+    if (Store.mode === 'supa') return '<span class="store lv-green"><i></i>In Supabase gespeichert</span>';
+    if (Store.mode === 'local') return '<span class="store lv-yellow"><i></i>Nur auf diesem Gerät</span>';
+    return '<span class="store lv-red"><i></i>Nicht gespeichert</span>';
+  }
+  function confirmBox(key, text, action, v) {
+    if (S.confirm !== key) return '';
+    return '<div class="confirm"><span class="grow">' + esc(text) + '</span><button class="btn sm dangerfill" data-a="' + action + '" data-v="' + esc(v) + '">Löschen</button><button class="btn sm" data-a="cancel">Abbrechen</button></div>';
+  }
+  function err(k) { return S.errors[k] ? '<span class="ferr">' + esc(S.errors[k]) + '</span>' : ''; }
+  function ec(k) { return S.errors[k] ? ' has-err' : ''; }
+  function srcLinks(keys) {
+    return keys.map(k => TL.SOURCES[k] ? '<a href="' + esc(TL.SOURCES[k].url) + '" target="_blank" rel="noopener">' + esc(TL.SOURCES[k].label) + '</a>' : '').join('');
+  }
+
+  function taskRow(x, showTerr) {
+    const k = x.k, d = x.d;
+    const noDate = d.daysLeft === null && TL.parseNum(k.every);
+    let s = '<div class="li stackm ' + lvl(d.level) + '"><div class="ic">' + icon(TL.TASK_KINDS[k.kind] ? k.kind : 'other', 18) + '</div>' +
+      '<div class="grow col" style="gap:2px"><span class="main-t">' + esc(k.title) + '</span><span class="xs">' +
+      (showTerr ? esc(terrName(k.tid)) + ' · ' : '') + 'alle ' + esc(k.every) + ' Tage' + (k.last ? ' · zuletzt ' + esc(dayTxt(k.last)) : '') + (k.preset ? ' · Startwert' : '') + '</span></div>' +
+      '<div class="actions">' + (d.daysLeft !== null ? pill(d.level, d.label) : '') +
+      (d.daysLeft !== null ? '<button class="btn sm" data-a="tdone" data-v="' + k.id + '">' + icon('check', 16) + 'Erledigt</button>' : '') +
+      '<button class="btn sm ghost" data-a="kedit" data-v="' + k.id + '" aria-label="Bearbeiten">' + icon('edit', 16) + '</button></div>';
+    if (noDate) s += '<div class="quick"><span>Wann zuletzt erledigt?</span><input type="date" id="qd-' + k.id + '" max="' + TL.isoDay(now()) + '" aria-label="Zuletzt erledigt am"><button class="btn sm" data-a="tlast" data-v="' + k.id + '">Speichern</button><button class="btn sm" data-a="tdone" data-v="' + k.id + '">Heute erledigt</button></div>';
+    return s + '</div>';
+  }
+
+  function lampRow(x, showTerr) {
+    const l = x.l, i = x.i, ty = TL.LAMP_TYPES[l.type] || TL.LAMP_TYPES.other;
+    const life = l.lifeMonths ? l.lifeMonths + ' Monate' : (l.lifeHours ? fmt(l.lifeHours, 0) + ' Std. bei ' + esc(l.hoursPerDay) + ' Std./Tag' : 'Lebensdauer offen');
+    let s = '<div class="li stackm ' + lvl(i.level) + '"><div class="ic">' + icon(lampIcon(l), 18) + '</div>' +
+      '<div class="grow col" style="gap:4px"><div class="row between wrap" style="gap:6px"><span class="main-t">' + esc(l.name) + '</span>' + (i.daysLeft !== null ? pill(i.level, i.label) : '') + '</div>' +
+      '<span class="xs">' + (showTerr ? esc(terrName(l.tid)) + ' · ' : '') + esc(ty.label) + (l.model ? ' · ' + esc(l.model) : '') + (l.watt ? ' · ' + esc(l.watt) + ' W' : ' · Watt offen') + (l.uvbPct ? ' · ' + esc(l.uvbPct) + ' % UV-B' : '') + (ty.months || l.lifeHours ? ' · ' + life : '') + '</span>' +
+      ((l.fixture || l.pos || l.night) ? '<span class="uvi">' + (l.fixture ? '<span class="tag">' + esc(l.fixture) + '</span>' : '') + (l.pos === 'inside' ? '<span class="tag">im Terrarium' + (l.guard === true ? ', mit Schutzkorb' : l.guard === false ? ', ohne Schutzkorb' : '') + '</span>' : l.pos === 'above' ? '<span class="tag">über dem Gitter</span>' : '') + (l.night ? '<span class="tag">auch nachts an</span>' : '') + '</span>' : '');
+    const own = adviceOf(terrs().find(x => x.id === l.tid) || terrs()[0]).filter(a => a.lid === l.id && a.level !== 'none');
+    if (own.length) s += own.map(a => '<span class="xs ' + lvl(a.level) + '" style="color:var(--lt);background:var(--ls);border-radius:8px;padding:6px 9px">' + esc(a.text) + '</span>').join('');
+    if (i.pct !== null) s += '<div class="bar" role="img" aria-label="' + i.pct + ' Prozent der Lebensdauer verbraucht"><i style="width:' + i.pct + '%"></i></div><span class="xs">Eingesetzt ' + esc(dayTxt(l.installed)) + ' · tauschen am <b class="num">' + esc(dateLong(i.dueAt)) + '</b></span>';
+    s += '</div><div class="actions">' + (l.installed ? '<button class="btn sm" data-a="lnew" data-v="' + l.id + '">' + icon('swap', 16) + 'Neue Lampe eingesetzt</button>' : '') +
+      '<button class="btn sm ghost" data-a="ledit" data-v="' + l.id + '" aria-label="Bearbeiten">' + icon('edit', 16) + '</button></div>';
+    if (!l.installed) s += '<div class="quick"><span>Wie alt ist die Lampe?</span><input class="num-in" inputmode="decimal" id="qa-' + l.id + '" placeholder="Monate" aria-label="Alter in Monaten"><button class="btn sm" data-a="lage" data-v="' + l.id + '">Speichern</button><button class="btn sm" data-a="lnew" data-v="' + l.id + '">Heute neu eingesetzt</button></div>';
+    else if (i.daysLeft === null) s += '<div class="quick"><span>Lebensdauer fehlt. Trag sie von der Verpackung ein.</span><button class="btn sm" data-a="ledit" data-v="' + l.id + '">Eintragen</button></div>';
+    return s + '</div>';
+  }
+
+  /* ================= Ansichten ================= */
+  function viewDash() {
+    const c = counts(), list = terrs();
+    const inTarget = list.filter(t => assessOf(t).level === 'green').length;
+    const latest = allReadings().length ? allReadings()[allReadings().length - 1].ts : null;
+    const climLv = c.climate ? 'red' : climateIssues().length ? 'yellow' : inTarget ? 'green' : 'none';
+    let h = '<div class="grid g-kpi">' +
+      '<button class="card kpi ' + lvl(climLv) + '" data-a="go" data-v="warn"><span class="lab">Klima im Zielbereich</span><span class="val">' + inTarget + '<small> / ' + list.length + '</small></span><span class="sub">' + (c.climate ? c.climate + ' Terrarium braucht dich' : climateIssues().length ? 'Beobachten' : latest ? 'Alles ruhig' : 'Noch keine Messwerte') + '</span></button>' +
+      '<button class="card kpi ' + lvl(c.tasksDue ? 'orange' : c.tasksSoon ? 'yellow' : 'green') + '" data-a="go" data-v="tasks"><span class="lab">Aufgaben fällig</span><span class="val">' + c.tasksDue + '</span><span class="sub">' + (c.tasksSoon ? c.tasksSoon + ' bald' : 'keine bald fällig') + (c.tasksNoDate ? ' · ' + c.tasksNoDate + ' ohne Datum' : '') + '</span></button>' +
+      '<button class="card kpi ' + lvl(c.lampsDue || c.lampWarn ? 'orange' : c.lampsSoon ? 'yellow' : c.lampsNoDate ? 'none' : 'green') + '" data-a="go" data-v="lamps"><span class="lab">Lampen tauschen / prüfen</span><span class="val">' + c.lampsDue + '</span><span class="sub">' + (c.lampWarn ? c.lampWarn + ' Hinweise · ' : '') + (c.lampsSoon ? c.lampsSoon + ' bald' : 'keine bald') + (c.lampsNoDate ? ' · ' + c.lampsNoDate + ' ohne Alter' : '') + '</span></button>' +
+      '<div class="card kpi ' + lvl(latest ? ((now() - latest) / TL.HOUR > 24 ? 'yellow' : 'green') : 'none') + '"><span class="lab">Letzte Messung</span><span class="val" style="font-size:20px;padding:5px 0">' + (latest ? esc(ageText(latest)) : '–') + '</span><span class="sub">' + (latest ? esc(dateTime(latest)) : 'Trag den ersten Wert ein') + '</span></div></div>';
+    h += '<div class="grid g-3">' + list.map(t => {
+      const r = lastReading(t.id), a = assessOf(t), rows = readingsOf(t.id).filter(x => x.ts >= now() - 2 * TL.DAY);
+      const sm = TL.SPECIES[t.species] || TL.SPECIES.other;
+      return '<section class="card tpanel ' + sp(t) + '"><div class="hd"><div class="grow col" style="gap:2px"><h2>' + esc(t.name) + '</h2><span class="sptag">' + esc(sm.name) + ' · ' + (a.phase === 'night' ? 'Nacht' : 'Tag') + '</span></div>' + pill(a.level, a.reason === 'nodata' ? 'Kein Messwert' : a.stale ? 'Messwert alt' : null) + '</div>' +
+        ringsFor(t, a, r) + targetsHtml(t) +
+        '<div class="sparks"><div><div class="spark-l"><span>Temperatur 48 Std.</span></div>' + spark(rows, 't') + '</div><div><div class="spark-l"><span>Luftfeuchte 48 Std.</span></div>' + spark(rows, 'h') + '</div></div>' +
+        '<div class="row between"><span class="xs">' + (r ? 'Gemessen ' + esc(ageText(r.ts)) : 'Noch nicht gemessen') + '</span><div class="row" style="gap:6px"><button class="btn sm" data-a="open" data-v="' + t.id + '">Details</button><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div></div></section>';
+    }).join('') + '</div>';
+    const tl = taskList().filter(x => x.d.daysLeft !== null).slice(0, 6);
+    const noDate = taskList().filter(x => x.d.daysLeft === null).length;
+    const ll = lampList();
+    const iss = climateIssues();
+    const impr = list.map(t => ({ t, n: (t.improve || []).filter(x => !x.done).length })).filter(x => x.n);
+    const pats = [];
+    list.forEach(t => TL.patterns(t, readingsOf(t.id), now(), 7).list.slice(0, 2).forEach(p => pats.push({ t, p })));
+    h += '<div class="grid g-3">' +
+      '<section class="card"><div class="card-h"><h3>Als Nächstes zu tun</h3><button class="btn sm ghost" data-a="go" data-v="tasks">Alle</button></div>' +
+      (tl.length ? '<div class="list">' + tl.map(x => taskRow(x, true)).join('') + '</div>' : '') +
+      (noDate ? '<div class="banner lv-yellow" style="margin-top:10px"><span class="grow">' + noDate + ' Aufgaben ohne Datum. Trag ein, wann du sie zuletzt gemacht hast, dann rechnet die App mit.</span><button class="btn sm" data-a="go" data-v="tasks">Eintragen</button></div>' : '') + '</section>' +
+      '<section class="card"><div class="card-h"><h3>Lampen</h3><button class="btn sm ghost" data-a="go" data-v="lamps">Alle</button></div><div class="list">' +
+      (ll.length ? ll.slice(0, 6).map(x => lampMini(x)).join('') : '<p class="xs">Keine Lampen eingetragen.</p>') + '</div></section>' +
+      '<section class="card"><div class="card-h"><h3>Auffällig</h3><button class="btn sm ghost" data-a="go" data-v="warn">Warnungen</button></div>' +
+      (iss.length || pats.length || impr.length ? '<div class="list">' + impr.map(x => '<div class="li lv-yellow"><div class="ic">' + icon('care', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t">' + esc(x.t.name) + '</span><span class="xs">' + x.n + ' Verbesserungen offen</span></div><button class="btn sm" data-a="open" data-v="' + x.t.id + '">Ansehen</button></div>').join('') + iss.map(x => '<div class="li ' + lvl(x.a.level) + '"><div class="ic">' + icon('bell', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t">' + esc(x.t.name) + '</span><span class="xs">' + esc(describe(x.a)) + '</span></div></div>').join('') +
+        pats.map(x => '<div class="li ' + lvl(x.p.level) + '"><div class="ic">' + icon(x.p.kind === 'temp' ? 'temp' : 'drop', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t">' + esc(x.t.name) + '</span><span class="xs">' + esc(x.p.text) + '</span></div></div>').join('') + '</div>'
+        : '<p class="xs">Keine Auffälligkeiten in den letzten 7 Tagen.' + (allReadings().length ? '' : ' Dafür braucht die App Messwerte.') + '</p>') + '</section></div>';
+    return h;
+  }
+  function lampMini(x) {
+    const l = x.l, i = x.i;
+    return '<div class="li ' + lvl(i.level) + '"><div class="ic">' + icon(lampIcon(l), 18) + '</div><div class="grow col" style="gap:4px"><div class="row between" style="gap:6px"><span class="main-t sm">' + esc(l.name) + '</span><span class="xs">' + esc(terrName(l.tid)) + '</span></div>' +
+      (i.pct !== null ? '<div class="bar"><i style="width:' + i.pct + '%"></i></div><span class="xs">' + esc(i.label) + '</span>' : '<span class="xs" style="color:var(--yt)">' + esc(i.label) + '</span>') + '</div></div>';
+  }
+  function describe(a) {
+    if (a.reason === 'nodata') return 'Noch kein Messwert.';
+    if (a.reason === 'noprofile') return 'Keine Zielwerte festgelegt.';
+    const parts = [];
+    if (a.temp.level !== 'green' && a.temp.level !== 'none') parts.push(a.temp.edge ? 'Temperatur knapp am Rand' : 'Temperatur ' + fmt(a.temp.dev) + ' °C ' + (a.temp.dir > 0 ? 'zu hoch' : 'zu niedrig'));
+    if (a.hum.level !== 'green' && a.hum.level !== 'none') parts.push(a.hum.edge ? 'Luftfeuchte knapp am Rand' : 'Luftfeuchte ' + fmt(a.hum.dev, 0) + ' % ' + (a.hum.dir > 0 ? 'zu hoch' : 'zu niedrig'));
+    if (a.stale) parts.push('letzter Wert ' + Math.round(a.ageH) + ' Std. alt');
+    return parts.length ? parts.join(', ') + '.' : 'Im Zielbereich.';
+  }
+
+  function targetsHtml(t) {
+    const ph = TL.phaseAt(t, now());
+    const n = v => fmt(v, Number.isInteger(v) ? 0 : 1);
+    const rt = (r, u) => TL.rangeSet(r) ? n(r.min) + '–' + n(r.max) + ' ' + u : 'offen';
+    const row = (k, l, ic) => '<span class="ph' + (ph === k ? ' on' : '') + '">' + icon(ic, 15) + l + '</span><span class="num">' + esc(rt(t[k].temp, '°C')) + '</span><span class="num">' + esc(rt(t[k].hum, '%')) + '</span>';
+    return '<div class="targets" aria-label="Zielwerte">' + row('day', 'Tag', 'sun') + row('night', 'Nacht', 'moon') + '<span class="xs" style="grid-column:1/-1">Tag ' + esc(t.dayStart) + '–' + esc(t.dayEnd) + ' Uhr, sonst Nacht</span></div>';
+  }
+  function adviceOf(t, list) { return TL.lampAdvice(t, list || lamps()); }
+  function adviceLine(x, withSrc) {
+    return '<div class="li ' + lvl(x.level) + '"><div class="ic">' + icon(x.level === 'none' ? 'other' : 'bell', 17) + '</div><div class="grow col" style="gap:3px"><span class="sm">' + esc(x.text) + '</span>' + (withSrc && x.sources.length ? '<span class="src">' + srcLinks(x.sources) + '</span>' : '') + '</div>' + (x.level !== 'none' ? pill(x.level, x.level === 'yellow' ? 'Nicht optimal' : x.level === 'orange' ? 'Achtung' : 'Dringend') : '') + '</div>';
+  }
+  function adviceCard(t) {
+    const adv = adviceOf(t), bad = adv.filter(x => x.level !== 'none'), info = adv.filter(x => x.level === 'none');
+    return '<section class="card"><div class="card-h"><h3>Prüfung deiner Lampen</h3>' + (bad.length ? pill(bad[0].level, bad.length + (bad.length === 1 ? ' Hinweis' : ' Hinweise')) : pill('green', 'Passt soweit')) + '</div>' +
+      (bad.length ? '<div class="list">' + bad.map(x => adviceLine(x, true)).join('') + '</div>' : '<p class="sm">Nach dem, was eingetragen ist, passt die Beleuchtung zum Bedarf der Art.</p>') +
+      (info.length ? '<h4 style="margin:14px 0 6px">Noch offen</h4><div class="list">' + info.map(x => adviceLine(x, false)).join('') + '</div>' : '') + '</section>';
+  }
+  function improveCard(t) {
+    const list = t.improve || [];
+    if (!list.length) return '';
+    const open = list.filter(x => !x.done);
+    return '<section class="card"><div class="card-h"><h3>Verbesserungen</h3>' + (open.length ? pill(open.some(x => x.level === 'orange' || x.level === 'red') ? 'orange' : 'yellow', open.length + ' offen') : pill('green', 'Alles erledigt')) + '</div><div class="list">' +
+      list.map(x => '<div class="li ' + lvl(x.done ? 'green' : x.level) + '"><button class="ic" style="border:0;cursor:pointer" data-a="imptog" data-v="' + esc(x.id) + '" aria-label="' + (x.done ? 'Als offen markieren' : 'Als erledigt markieren') + '">' + icon(x.done ? 'check' : 'other', 17) + '</button><div class="grow col" style="gap:3px"><span class="main-t sm"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.title) + '</span><span class="sm">' + esc(x.text) + '</span>' + (x.sources && x.sources.length ? '<span class="src">' + srcLinks(x.sources) + '</span>' : '') + '</div>' + (x.done ? pill('green', 'Erledigt') : x.level !== 'none' ? pill(x.level, x.level === 'yellow' ? 'Verbessern' : x.level === 'orange' ? 'Wichtig' : 'Dringend') : '') + '</div>').join('') +
+      '</div><p class="xs" style="margin-top:10px">Tippe auf das Symbol links, um einen Punkt abzuhaken.</p></section>';
+  }
+  function equipCard(t) {
+    const e = t.equip || { covers: '', ballast: null, notes: '' };
+    return '<form id="equip-form" class="card" novalidate><div class="card-h"><h3>Abdeckung und Technik</h3></div><div class="grid g-2">' +
+      '<label class="f">Abdeckungen und Fassungen<textarea id="q-covers" placeholder="z. B. Exo Terra Abdeckung groß mit LED und einer Fassung">' + esc(e.covers) + '</textarea></label>' +
+      '<div class="col" style="gap:12px"><label class="f">Vorschaltgerät für Röhren<select id="q-ballast"><option value=""' + (e.ballast === null ? ' selected' : '') + '>weiß nicht</option><option value="1"' + (e.ballast === true ? ' selected' : '') + '>vorhanden</option><option value="0"' + (e.ballast === false ? ' selected' : '') + '>keins</option></select></label>' +
+      '<label class="f">Notiz<input id="q-notes" value="' + esc(e.notes) + '"></label></div></div><div class="row" style="margin-top:12px"><button type="submit" class="btn">Technik speichern</button></div></form>';
+  }
+  function lightingCard(t, compact) {
+    const li = TL.LIGHTING[t.species];
+    if (!li) return '<section class="card ' + sp(t) + '"><div class="card-h"><h3>Licht für ' + esc(t.name) + '</h3></div><p class="xs">Für diese Art hat die App keine Lichtempfehlung.</p></section>';
+    const ck = TL.lightCheck(t, lamps());
+    const item = (ic, title, body) => '<div class="lrow"><div class="ic">' + icon(ic, 17) + '</div><div><b>' + title + '</b><p>' + body + '</p></div></div>';
+    return '<section class="card ' + sp(t) + '" style="border-top:4px solid var(--sp)"><div class="card-h"><div class="grow col" style="gap:2px"><h3>' + (compact ? 'Licht: ' + esc(t.name) : 'Welches Licht braucht dieses Tier?') + '</h3><span class="sptag">' + esc(TL.SPECIES[t.species].name) + '</span></div>' +
+      (ck.issues.length ? pill('orange', 'Lampe fehlt') : pill('green', 'UV-B und Wärme eingetragen')) + '</div><div class="lgrid">' +
+      item('uvb', 'UV-B', esc(li.uvb) + '<span class="uvi"><span class="tag">Ferguson-Zone ' + esc(li.zone) + '</span>' + (li.uviMax ? '<span class="tag">UV-Index am Sonnenplatz höchstens ' + esc(li.uviMax) + '</span>' : '') + (li.uviRange ? '<span class="tag">übriges Terrarium ' + esc(li.uviRange) + '</span>' : '') + '</span>') +
+      (compact ? '' : item('other', 'Wie wichtig ist UV-B?', esc(li.uvbNeed))) +
+      item('lamp', 'Wärme', esc(li.heat)) + item('sun', 'Lichtdauer', esc(li.hours)) + item('moon', 'Nacht', esc(li.night)) + '</div>' +
+      (ck.issues.length ? '<div class="banner lv-orange" style="margin-top:12px"><span class="grow">' + esc(ck.issues.join(' ')) + '</span><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">Lampe eintragen</button></div>' : '') +
+      (compact ? '' : '<p class="xs" style="margin-top:12px">Ob die Stärke passt, hängt vom Abstand und von Gitter oder Glas zwischen Lampe und Tier ab. Sicher weißt du es nur mit einem UV-Index-Messgerät am Sonnenplatz.</p><div class="src" style="margin-top:8px"><b>Quellen</b>' + srcLinks(li.sources) + '</div>') + '</section>';
+  }
+
+  function viewTerrs() {
+    return '<div class="grid g-3">' + terrs().map(t => {
+      const a = assessOf(t), r = lastReading(t.id), sz = t.size || {};
+      return '<button class="card tpanel ' + sp(t) + '" data-a="open" data-v="' + t.id + '" style="text-align:left;cursor:pointer;font:inherit;color:inherit"><div class="hd"><div class="grow col" style="gap:2px"><h2>' + esc(t.name) + '</h2><span class="sptag">' + esc((TL.SPECIES[t.species] || TL.SPECIES.other).name) + '</span></div>' + pill(a.level, a.reason === 'nodata' ? 'Kein Messwert' : null) + '</div>' +
+        '<div class="meta"><span class="tag">' + (sz.l && sz.b && sz.h ? esc(sz.l + ' × ' + sz.b + ' × ' + sz.h + ' cm') : 'Maße fehlen') + '</span><span class="tag">' + (r ? esc(fmt(r.t)) + ' °C · ' + esc(fmt(r.h, 0)) + ' %' : 'kein Wert') + '</span><span class="tag">' + lamps().filter(l => l.tid === t.id).length + ' Lampen</span><span class="tag">' + tasks().filter(k => k.tid === t.id).length + ' Aufgaben</span></div></button>';
+    }).join('') + '</div><div><button class="btn" data-a="tnew">' + icon('plus', 16) + 'Terrarium hinzufügen</button></div>';
+  }
+
+  const TABS = [['klima', 'Klima'], ['verlauf', 'Verlauf'], ['setup', 'Einrichtung'], ['lampen', 'Lampen'], ['aufgaben', 'Aufgaben'], ['tiere', 'Tiere']];
+  function viewTerr() {
+    const t = terr(S.tid);
+    const tl = taskList(t.id), ll = lampList(t.id);
+    const cnt = { lampen: ll.filter(x => urgent(x.i.level)).length, aufgaben: tl.filter(x => urgent(x.d.level)).length };
+    let h = '<div class="tabs" role="tablist">' + TABS.map(([k, l]) => '<button role="tab" class="' + (S.tab === k ? 'on' : '') + '" aria-selected="' + (S.tab === k) + '" data-a="tab" data-v="' + k + '">' + l + (cnt[k] ? '<span class="cnt2">' + cnt[k] + '</span>' : '') + '</button>').join('') + '</div>';
+    if (S.tab === 'klima') h += tabKlima(t) + improveCard(t);
+    else if (S.tab === 'verlauf') h += tabVerlauf(t);
+    else if (S.tab === 'setup') h += tabSetup(t);
+    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + equipCard(t) + lightingCard(t, false) + lampSourceNote();
+    else if (S.tab === 'aufgaben') h += '<section class="card"><div class="card-h"><h3>Aufgaben für dieses Terrarium</h3><button class="btn sm" data-a="knew" data-v="' + t.id + '">' + icon('plus', 16) + 'Aufgabe</button></div>' + (tl.length ? '<div class="list">' + tl.map(x => taskRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Aufgaben.</div>') + '</section><p class="xs">Die Intervalle sind Startwerte der App, keine Haltungsvorschrift. Pass sie über den Stift an deinen Rhythmus an.</p>';
+    else h += tabAnimals(t);
+    return h;
+  }
+  function tabKlima(t) {
+    const r = lastReading(t.id), a = assessOf(t), rows = readingsOf(t.id);
+    const adv = TL.adviceFor(a), pats = TL.patterns(t, rows, now(), 7);
+    let h = '<div class="grid g-2 g-2w"><section class="card big-rings"><div class="card-h"><h3>Aktuell</h3>' + pill(a.level, a.reason === 'nodata' ? 'Kein Messwert' : a.stale ? 'Messwert alt' : null) + '</div>' + ringsFor(t, a, r) +
+      targetsHtml(t) + '<div class="row between" style="margin-top:12px"><span class="xs">' + (r ? esc(dateTime(r.ts)) + ' · ' + (a.phase === 'night' ? 'Nachtwerte' : 'Tagwerte') + ' · ' + (r.src === 'sensor' ? 'Sensor' : 'manuell') : 'Noch kein Messwert') + '</span><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div></section>' +
+      '<section class="card"><div class="card-h"><h3>Was prüfen?</h3></div>' + (a.level === 'green' ? '<p class="sm">Alles im Zielbereich. Nichts zu tun.</p>' : '<ul class="adv">' + adv.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>') +
+      '<h4 style="margin:16px 0 8px">Letzte 7 Tage</h4>' + (pats.list.length ? '<div class="list">' + pats.list.map(p => '<div class="li ' + lvl(p.level) + '"><div class="ic">' + icon(p.kind === 'temp' ? 'temp' : 'drop', 18) + '</div><div class="grow col" style="gap:2px"><span class="sm">' + esc(p.text) + '</span><span class="xs">' + esc(p.tip) + '</span></div></div>').join('') + '</div>' : '<p class="xs">' + (pats.considered ? 'Keine wiederkehrenden Abweichungen.' : 'Noch zu wenige Messwerte.') + '</p>') + '</section></div>';
+    const last = rows.slice(-12).reverse();
+    h += '<section class="card"><div class="card-h"><h3>Letzte Messwerte</h3><span class="xs">' + rows.length + ' insgesamt</span></div>' +
+      (last.length ? '<div class="tbl-wrap"><table><thead><tr><th>Zeit</th><th>Phase</th><th>Temperatur</th><th>Luftfeuchte</th><th class="hide-s">Notiz</th><th></th></tr></thead><tbody>' + last.map(x => {
+        const rg = TL.rangesAt(t, x.ts), at = TL.assess(x.t, rg.temp, 'temp', t.tol), ah = TL.assess(x.h, rg.hum, 'hum', t.tol);
+        return '<tr><td class="num">' + esc(dateTime(x.ts)) + '</td><td>' + (rg.phase === 'night' ? 'Nacht' : 'Tag') + '</td><td class="' + lvl(at.level) + '"><span class="pill">' + (x.t === null ? '–' : fmt(x.t) + ' °C') + '</span></td><td class="' + lvl(ah.level) + '"><span class="pill">' + (x.h === null ? '–' : fmt(x.h, 0) + ' %') + '</span></td><td class="hide-s xs">' + esc(x.n) + '</td><td style="text-align:right">' +
+          (S.confirm === 'r:' + x.id ? '<button class="btn sm dangerfill" data-a="rdel" data-v="' + x.id + '">Löschen</button> <button class="btn sm" data-a="cancel">Nein</button>' : '<button class="btn sm ghost" data-a="ask" data-v="r:' + x.id + '" aria-label="Messwert löschen">' + icon('trash', 16) + '</button>') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' : '<div class="empty">Noch keine Messwerte. Sobald die SwitchBot-Sensoren verbunden sind, kommen sie automatisch.<button class="btn pri" data-a="entry" data-v="' + t.id + '">Ersten Messwert eintragen</button></div>') + '</section>';
+    return h;
+  }
+  function tabVerlauf(t) {
+    const rows = readingsOf(t.id);
+    const days = +S.chartRange, to = now(), from = to - days * TL.DAY;
+    const inR = rows.filter(r => r.ts >= from);
+    const st = TL.stats(t, inR);
+    const sv = (o, k, u, d) => o ? fmt(o[k], d) + ' ' + u : '–';
+    return '<section class="card"><div class="row between wrap" style="margin-bottom:12px"><div class="seg">' + [['t', 'Temperatur'], ['h', 'Luftfeuchte']].map(([k, l]) => '<button class="' + (S.chartKind === k ? 'on' : '') + '" data-a="ckind" data-v="' + k + '">' + l + '</button>').join('') + '</div><div class="seg">' + [['1', '24 Std.'], ['7', '7 Tage'], ['30', '30 Tage']].map(([k, l]) => '<button class="' + (S.chartRange === k ? 'on' : '') + '" data-a="crange" data-v="' + k + '">' + l + '</button>').join('') + '</div></div>' +
+      chartSvg(t, rows, S.chartKind, from, to) +
+      '<div class="readout" id="readout"><span class="xs">' + (inR.length ? 'Tippe auf das Diagramm für einzelne Werte. Grau = Nacht, grünes Band = Zielbereich.' : 'In diesem Zeitraum gibt es keine Messwerte.') + '</span></div></section>' +
+      '<div class="stats"><div class="stat"><span class="xs">Messwerte</span><b>' + st.count + '</b></div><div class="stat"><span class="xs">Temperatur Ø</span><b>' + sv(st.temp, 'avg', '°C', 1) + '</b><span class="xs">' + (st.temp ? fmt(st.temp.min) + ' bis ' + fmt(st.temp.max) : '') + '</span></div><div class="stat"><span class="xs">Luftfeuchte Ø</span><b>' + sv(st.hum, 'avg', '%', 0) + '</b><span class="xs">' + (st.hum ? fmt(st.hum.min, 0) + ' bis ' + fmt(st.hum.max, 0) : '') + '</span></div><div class="stat"><span class="xs">Zeit im Ziel</span><b>' + (st.inRange.temp === null ? '–' : st.inRange.temp + ' %') + ' / ' + (st.inRange.hum === null ? '–' : st.inRange.hum + ' %') + '</b><span class="xs">Temp. / Feuchte</span></div></div>';
+  }
+
+  /* Einrichtung: Formular direkt im Reiter */
+  function pfFrom(t) {
+    const p = clone(t);
+    for (const ph of ['day', 'night']) for (const k of ['temp', 'hum']) p[ph][k] = { min: numStr(t[ph][k].min, k === 'temp' ? 1 : 0), max: numStr(t[ph][k].max, k === 'temp' ? 1 : 0) };
+    p.tol = Object.assign({}, TL.DEFAULT_TOL, t.tol);
+    p.tolT = numStr(p.tol.tempOrange, 1); p.tolH = numStr(p.tol.humOrange, 0);
+    const sz = t.size || {};
+    p.size = { l: sz.l ?? '', b: sz.b ?? '', h: sz.h ?? '' };
+    p.animalLen = t.animalLen ?? ''; p.count = t.count ?? 1; p.staleHours = t.staleHours ?? 24;
+    return p;
+  }
+  function readPf() {
+    const v = id => { const el = document.getElementById(id); return el ? el.value : null; };
+    const p = clone(S.pf);
+    const set = (path, id) => { const x = v(id); if (x !== null) path(x.trim()); };
+    set(x => p.name = x, 'p-name'); set(x => p.species = x, 'p-species');
+    set(x => p.size.l = x, 'p-l'); set(x => p.size.b = x, 'p-b'); set(x => p.size.h = x, 'p-h');
+    set(x => p.animalLen = x, 'p-len'); set(x => p.count = x, 'p-count');
+    set(x => p.dayStart = x, 'p-dayStart'); set(x => p.dayEnd = x, 'p-dayEnd');
+    for (const ph of ['day', 'night']) for (const k of ['temp', 'hum']) { set(x => p[ph][k].min = x, 'p-' + ph + '-' + k + '-min'); set(x => p[ph][k].max = x, 'p-' + ph + '-' + k + '-max'); }
+    set(x => p.tolT = x, 'p-tolT'); set(x => p.tolH = x, 'p-tolH'); set(x => p.staleHours = x, 'p-stale');
+    return p;
+  }
+  function sizeHtml(p) {
+    const rule = TL.SIZE_RULES[p.species];
+    if (!rule) return '<div class="sizebox lv-none">Für diese Art kennt die App keine Mindestmaße.</div>';
+    const m = TL.minSize(p.species, p.animalLen, p.count);
+    if (!m) return '<div class="sizebox lv-none"><b>Mindestmaße</b><span>Trag die ' + (rule.basis === 'GL' ? 'Gesamtlänge' : 'Kopf-Rumpf-Länge') + ' deines größten Tieres ein, dann rechnet die App die Mindestmaße aus.</span></div>';
+    const ck = TL.checkSize(p.species, p.size, p.animalLen, p.count);
+    const mt = '<span>Mindestens <b class="num">' + m.l + ' × ' + m.b + ' × ' + m.h + ' cm</b> (L × T × H) für ' + esc(p.count) + (String(p.count) === '1' ? ' Tier' : ' Tiere') + '.</span>';
+    if (!ck) return '<div class="sizebox lv-none"><b>Mindestmaße</b>' + mt + '<span>Trag die Maße deines Terrariums ein für den Vergleich.</span></div>';
+    return '<div class="sizebox ' + (ck.ok ? 'lv-green' : 'lv-orange') + '"><b>' + (ck.ok ? 'Größe passt' : 'Terrarium kleiner als empfohlen') + '</b>' + mt + ck.issues.map(i => '<span>' + esc(i) + '</span>').join('') + '</div>';
+  }
+  function tabSetup(t) {
+    if (!S.pf || S.pf.id !== t.id) { S.pf = pfFrom(t); S.errors = {}; }
+    const p = S.pf, pr = TL.PRESETS[p.species], rule = TL.SIZE_RULES[p.species];
+    const zin = (ph, k, which) => '<input class="num-in" inputmode="decimal" id="p-' + ph + '-' + k + '-' + which + '" value="' + esc(p[ph][k][which]) + '" aria-label="' + (ph === 'day' ? 'Tag' : 'Nacht') + ' ' + (k === 'temp' ? 'Temperatur' : 'Luftfeuchte') + ' ' + (which === 'min' ? 'min' : 'max') + '">';
+    const zrow = (ph, k) => '<td>' + zin(ph, k, 'min') + '</td><td>' + zin(ph, k, 'max') + '</td>';
+    const zerr = ['day.temp', 'day.hum', 'night.temp', 'night.hum'].filter(k => S.errors[k]).map(k => '<span class="ferr">' + (k.startsWith('day') ? 'Tag' : 'Nacht') + ', ' + (k.endsWith('temp') ? 'Temperatur' : 'Luftfeuchte') + ': ' + esc(S.errors[k]) + '</span>').join('');
+    return '<form id="profile-form" class="form" novalidate><div class="grid g-2">' +
+      '<fieldset><legend>Terrarium</legend><div class="f-grid"><label class="f' + ec('name') + '">Name<input id="p-name" value="' + esc(p.name) + '">' + err('name') + '</label>' +
+      '<label class="f">Tierart<select id="p-species">' + Object.entries(TL.SPECIES).map(([k, s]) => '<option value="' + k + '"' + (p.species === k ? ' selected' : '') + '>' + esc(s.name) + '</option>').join('') + '</select></label></div>' +
+      '<details' + (p.size.l || p.size.b || p.size.h || p.animalLen ? ' open' : '') + ' class="col" style="gap:12px"><summary class="sm" style="cursor:pointer;font-weight:600">Größe (freiwillig)</summary><span class="hint">Maße innen in Zentimetern</span><div class="f-grid3"><label class="f' + ec('size') + '">Länge<input class="num-in" inputmode="decimal" id="p-l" value="' + esc(p.size.l) + '" placeholder="cm"></label><label class="f' + ec('size') + '">Tiefe<input class="num-in" inputmode="decimal" id="p-b" value="' + esc(p.size.b) + '" placeholder="cm"></label><label class="f' + ec('size') + '">Höhe<input class="num-in" inputmode="decimal" id="p-h" value="' + esc(p.size.h) + '" placeholder="cm"></label></div>' + err('size') +
+      '<div class="f-grid"><label class="f' + ec('animalLen') + '">' + (rule && rule.basis === 'KRL' ? 'Kopf-Rumpf-Länge größtes Tier' : 'Länge größtes Tier') + '<input class="num-in" inputmode="decimal" id="p-len" value="' + esc(p.animalLen) + '" placeholder="cm">' + err('animalLen') + '</label>' +
+      '<label class="f' + ec('count') + '">Anzahl Tiere<input class="num-in" inputmode="numeric" id="p-count" value="' + esc(p.count) + '">' + err('count') + '</label></div>' +
+      '<div id="size-check">' + sizeHtml(p) + '</div>' + (rule ? '<div class="src"><span>' + esc(rule.text) + '</span>' + srcLinks([rule.src]) + '</div>' : '') + '</details></fieldset>' +
+      '<fieldset><legend>Zielwerte</legend>' + (pr ? '<div class="banner lv-green" style="padding:10px 12px"><span class="grow sm">Vorausgefüllt aus belegten Quellen für ' + esc(TL.SPECIES[p.species].name) + '. Du kannst jeden Wert ändern.</span><button type="button" class="btn sm" data-a="preset">Vorschlag neu eintragen</button></div>' : '') +
+      '<div class="tbl-wrap"><table class="zt"><thead><tr><th></th><th>°C min</th><th>°C max</th><th>% min</th><th>% max</th></tr></thead><tbody>' +
+      '<tr><td>Tag</td>' + zrow('day', 'temp') + zrow('day', 'hum') + '</tr><tr><td>Nacht</td>' + zrow('night', 'temp') + zrow('night', 'hum') + '</tr></tbody></table></div>' + zerr +
+      (pr ? '<p class="xs">Hotspot: ' + esc(pr.hotspot) + '. Die App bewertet die Luft am Sensor, nicht den Sonnenplatz.</p>' : '') +
+      '<div class="f-grid"><label class="f' + ec('dayStart') + '">Licht an (Tag beginnt)<input type="time" id="p-dayStart" value="' + esc(p.dayStart) + '">' + err('dayStart') + '</label><label class="f' + ec('dayEnd') + '">Licht aus (Nacht beginnt)<input type="time" id="p-dayEnd" value="' + esc(p.dayEnd) + '">' + err('dayEnd') + '</label></div>' +
+      '<div class="f-grid3"><label class="f' + ec('tempOrange') + '">Orange bis ± °C<input class="num-in" inputmode="decimal" id="p-tolT" value="' + esc(p.tolT) + '">' + err('tempOrange') + '</label><label class="f' + ec('humOrange') + '">Orange bis ± %<input class="num-in" inputmode="decimal" id="p-tolH" value="' + esc(p.tolH) + '">' + err('humOrange') + '</label><label class="f' + ec('staleHours') + '">Wert alt nach Std.<input class="num-in" inputmode="numeric" id="p-stale" value="' + esc(p.staleHours) + '">' + err('staleHours') + '</label></div>' +
+      '<span class="hint">Grün im Ziel, gelb knapp am Rand, orange leicht daneben, rot weiter daneben als die Orange-Grenze.</span>' +
+      (pr ? '<div class="src"><b>Quellen</b>' + srcLinks(pr.sources) + pr.notes.map(n => '<span>' + esc(n) + '</span>').join('') + '</div>' : '') + '</fieldset></div>' +
+      '<div class="row wrap"><button type="submit" class="btn pri">Einrichtung speichern</button><button type="button" class="btn" data-a="pfreset">Änderungen verwerfen</button><span class="grow"></span>' +
+      (terrs().length > 1 ? (S.confirm === 'tdel' ? '' : '<button type="button" class="btn danger ghost" data-a="ask" data-v="tdel">' + icon('trash', 16) + 'Terrarium entfernen</button>') : '') + '</div>' +
+      confirmBox('tdel', 'Terrarium mit seinen Lampen und Aufgaben entfernen? Messwerte bleiben im Backup.', 'tdel', t.id) + '</form>';
+  }
+  function lampSourceNote() {
+    return '<p class="xs">Tauschintervalle für UV-B-Lampen: T5 12 Monate laut Arcadia, die anderen Arten nach CTT Light (bei Spannen die untere Grenze). UV-B lässt nach, bevor die Lampe dunkel wird. Für deine genaue Lampe gilt die Herstellerangabe. ' + srcLinks(['arcadia', 'ctt']).replace(/<\/a><a/g, '</a> · <a') + '</p>';
+  }
+
+  function tabAnimals(t) {
+    const list = animals().filter(a => a.tid === t.id);
+    return '<section class="card"><div class="card-h"><h3>Tiere in diesem Terrarium</h3><button class="btn sm" data-a="anew" data-v="' + t.id + '">' + icon('plus', 16) + 'Tier</button></div>' +
+      (list.length ? '<div class="list">' + list.map(a => animalLi(a)).join('') + '</div>' : '<div class="empty">Noch kein Tier eingetragen.</div>') + '</section>';
+  }
+  function animalLi(a) {
+    const j = allJournal().filter(e => e.aid === a.id);
+    const w = j.find(e => e.type === 'weight'), f = j.find(e => e.type === 'feed');
+    return '<div class="li"><div class="ic">' + icon('paw', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t">' + esc(a.name) + '</span><span class="xs">' + esc(terrName(a.tid)) + (w ? ' · ' + fmt(w.value, 0) + ' g' : '') + (f ? ' · gefüttert ' + esc(dateLong(f.ts)) : '') + '</span></div><button class="btn sm" data-a="aopen" data-v="' + a.id + '">Tagebuch</button></div>';
+  }
+
+  function viewTasks() {
+    const f = S.taskFilter;
+    const tl = taskList(f);
+    const groups = [['Überfällig und heute', tl.filter(x => urgent(x.d.level))], ['Bald fällig', tl.filter(x => x.d.level === 'yellow')], ['Datum fehlt', tl.filter(x => x.d.daysLeft === null)], ['Später', tl.filter(x => x.d.level === 'green')]];
+    return filterChips(f, 'kfilter') +
+      groups.filter(g => g[1].length).map(g => '<section class="card"><div class="card-h"><h3>' + g[0] + '</h3><span class="xs">' + g[1].length + '</span></div><div class="list">' + g[1].map(x => taskRow(x, f === 'all')).join('') + '</div></section>').join('') +
+      (tl.length ? '' : '<div class="empty">Keine Aufgaben.</div>') + '<p class="xs">Die vorgegebenen Intervalle sind Startwerte der App, keine Haltungsvorschrift. Mit dem Stift änderst du Intervall, Name und Terrarium.</p>';
+  }
+  function viewLamps() {
+    const f = S.lampFilter, ll = lampList(f);
+    const cards = f === 'all' ? '<div class="grid g-3">' + terrs().map(t => lightingCard(t, true)).join('') + '</div><p class="xs">Quellen und Details im Reiter Lampen des jeweiligen Terrariums.</p>' : lightingCard(terr(f), false);
+    return filterChips(f, 'lfilter') + cards + '<section class="card"><div class="card-h"><h3>Deine Lampen</h3></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, f === 'all')).join('') + '</div>' : '<div class="empty">Keine Lampen.</div>') + '</section>' + lampSourceNote();
+  }
+  function filterChips(f, act) {
+    return '<div class="chips"><button class="chip ' + (f === 'all' ? 'on' : '') + '" data-a="' + act + '" data-v="all">Alle</button>' + terrs().map(t => '<button class="chip ' + (f === t.id ? 'on' : '') + '" data-a="' + act + '" data-v="' + t.id + '">' + esc(t.name) + '</button>').join('') + '</div>';
+  }
+
+  function viewWarn() {
+    const iss = climateIssues(), ll = lampList().filter(x => x.i.level !== 'green'), tl = taskList().filter(x => x.d.level !== 'green');
+    const col = (title, items, emptyTxt) => '<section class="card"><div class="card-h"><h3>' + title + '</h3><span class="xs">' + items.length + '</span></div>' + (items.length ? '<div class="list">' + items.join('') + '</div>' : '<p class="xs">' + emptyTxt + '</p>') + '</section>';
+    const climItems = iss.map(x => '<div class="li stackm ' + lvl(x.a.level) + '"><div class="ic">' + icon('bell', 18) + '</div><div class="grow col" style="gap:4px"><div class="row between"><span class="main-t">' + esc(x.t.name) + '</span>' + pill(x.a.level) + '</div><span class="xs">' + esc(describe(x.a)) + '</span><ul class="adv xs">' + TL.adviceFor(x.a).slice(0, 3).map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></div></div>');
+    terrs().forEach(t => TL.patterns(t, readingsOf(t.id), now(), 7).list.forEach(p => climItems.push('<div class="li ' + lvl(p.level) + '"><div class="ic">' + icon(p.kind === 'temp' ? 'temp' : 'drop', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t sm">' + esc(t.name) + '</span><span class="xs">' + esc(p.text) + ' ' + esc(p.tip) + '</span></div></div>')));
+    return '<div class="grid g-3">' + col('Klima', climItems, 'Alle Terrarien im Zielbereich oder noch ohne Messwert.') + col('Lampen', terrs().flatMap(t => TL.lampAdvice(t, lamps()).filter(a => a.level !== 'none').map(a => adviceLine(Object.assign({}, a, { text: t.name + ': ' + a.text }), false))).concat(ll.map(x => lampMini(x))), 'Alle Lampen passen und haben noch Zeit.') + col('Aufgaben', tl.map(x => taskRow(x, true)), 'Nichts fällig.') + '</div>';
+  }
+
+  function viewAnimals() {
+    const list = animals();
+    const a = list.find(x => x.id === S.aid) || null;
+    return '<div class="split"><section class="card"><div class="card-h"><h3>Tiere</h3><button class="btn sm" data-a="anew">' + icon('plus', 16) + 'Tier</button></div>' +
+      (list.length ? list.map(x => '<button class="selbtn ' + (a && a.id === x.id ? 'on' : '') + '" data-a="aopen" data-v="' + x.id + '"><span class="ic">' + icon('paw', 18) + '</span><span class="col grow" style="gap:0"><b>' + esc(x.name) + '</b><span class="xs">' + esc(terrName(x.tid)) + '</span></span></button>').join('') : '<div class="empty">Noch kein Tier.<button class="btn pri" data-a="anew">Tier anlegen</button></div>') + '</section>' +
+      '<div class="stack">' + (a ? animalDetail(a) : (list.length ? '<div class="empty">Wähle links ein Tier.</div>' : '')) + '</div></div>';
+  }
+  function animalDetail(a) {
+    const j = allJournal().filter(e => e.aid === a.id);
+    const ws = j.filter(e => e.type === 'weight').slice().reverse().map(e => ({ ts: e.ts, w: e.value }));
+    const t = terrs().find(x => x.id === a.tid) || terrs()[0];
+    let h = '<section class="card ' + sp(t) + '"><div class="card-h"><div class="grow col" style="gap:2px"><h2>' + esc(a.name) + '</h2><span class="xs">' + esc(terrName(a.tid)) + (a.sex ? ' · ' + (a.sex === 'm' ? 'männlich' : a.sex === 'w' ? 'weiblich' : 'unbekannt') : '') + (a.hatch ? ' · Schlupf ' + esc(dayTxt(a.hatch)) : '') + '</span></div><button class="btn sm" data-a="aedit" data-v="' + a.id + '">' + icon('edit', 16) + 'Bearbeiten</button></div>' +
+      (ws.length >= 2 ? '<div class="spark-l"><span>Gewicht</span><span class="num">' + fmt(ws[ws.length - 1].w, 0) + ' g</span></div>' + spark(ws, 'w') : '') +
+      '<div class="chips" style="margin-top:12px">' + Object.entries(TL.JOURNAL_TYPES).map(([k, v]) => '<button class="chip" data-a="jnew" data-v="' + k + '">+ ' + esc(v.label) + '</button>').join('') + '</div>';
+    if (S.edit && S.edit._journal) {
+      const e = S.edit, ty = TL.JOURNAL_TYPES[e.type];
+      h += '<form id="journal-form" class="form" style="margin-top:14px" novalidate><fieldset><legend>' + esc(ty.label) + '</legend><div class="f-grid"><label class="f' + ec('ts') + '">Datum<input type="date" id="j-ts" value="' + esc(e.ts) + '" max="' + TL.isoDay(now()) + '">' + err('ts') + '</label>' +
+        (e.type === 'weight' ? '<label class="f' + ec('value') + '">Gewicht in g<input class="num-in" inputmode="decimal" id="j-value" value="' + esc(e.value) + '">' + err('value') + '</label>' : '<span></span>') + '</div>' +
+        '<label class="f' + ec('note') + '">Notiz<textarea id="j-note">' + esc(e.note) + '</textarea>' + err('note') + '</label><div class="row"><button type="submit" class="btn pri">Eintragen</button><button type="button" class="btn" data-a="jcancel">Abbrechen</button></div></fieldset></form>';
+    }
+    h += '</section><section class="card"><div class="card-h"><h3>Tagebuch</h3><span class="xs">' + j.length + '</span></div>' + (j.length ? '<div class="list">' + j.slice(0, 40).map(e => '<div class="li"><div class="grow col" style="gap:2px"><span class="sm"><b>' + esc(TL.JOURNAL_TYPES[e.type]?.label || e.type) + '</b>' + (e.type === 'weight' ? ' · <span class="num">' + fmt(e.value, 0) + ' g</span>' : '') + '</span><span class="xs">' + esc(dateLong(e.ts)) + (e.note ? ' · ' + esc(e.note) : '') + '</span></div>' +
+      (S.confirm === 'j:' + e.id ? '<button class="btn sm dangerfill" data-a="jdel" data-v="' + e.id + '">Löschen</button><button class="btn sm" data-a="cancel">Nein</button>' : '<button class="btn sm ghost" data-a="ask" data-v="j:' + e.id + '" aria-label="Eintrag löschen">' + icon('trash', 16) + '</button>') + '</div>').join('') + '</div>' : '<p class="xs">Noch keine Einträge.</p>') + '</section>';
+    return h;
+  }
+
+  /* Sensoren (nur im Supabase-Betrieb) */
+  async function sensorCall(action) {
+    const { data } = await sb.auth.getSession();
+    const res = await fetch(SUPA.url + '/functions/v1/switchbot-poll?action=' + action, { headers: { Authorization: 'Bearer ' + data.session.access_token, apikey: SUPA.anonKey } });
+    const body = await res.json().catch(() => ({ error: 'Keine Antwort' }));
+    if (!res.ok || body.error) throw new Error(body.error || ('Fehler ' + res.status));
+    return body;
+  }
+  function sensorCard() {
+    if (Store.mode !== 'supa') return '<section class="card"><div class="card-h"><h3>Sensoren</h3>' + pill('none', 'In dieser Ansicht nicht möglich') + '</div><p class="sm">SwitchBot-Sensoren laufen über die eigenständige App mit Supabase. Hier trägst du Werte von Hand ein.</p></section>';
+    const last = tid => { const r = S.sensor.filter(x => x.tid === tid); return r.length ? r[r.length - 1] : null; };
+    const dev = S.devices;
+    return '<section class="card"><div class="card-h"><h3>Sensoren (SwitchBot)</h3><button class="btn sm" data-a="sdev">Geräte laden</button><button class="btn sm" data-a="stest">Jetzt abrufen</button></div>' +
+      '<p class="xs" style="margin-bottom:10px">Die Werte kommen alle 10 Minuten automatisch. Ordne jedem Terrarium seinen Sensor zu.</p><div class="list">' +
+      terrs().map(t => { const se = t.sensor || {}, l = last(t.id);
+        return '<div class="li stackm ' + sp(t) + '"><div class="grow col" style="gap:2px"><span class="main-t">' + esc(t.name) + '</span><span class="xs">' + (se.type === 'switchbot' ? 'Sensor: ' + esc(se.name || se.deviceId) : 'Kein Sensor zugeordnet') + (l ? ' · letzter Wert ' + esc(ageText(l.ts)) + ' · ' + fmt(l.t) + ' °C · ' + fmt(l.h, 0) + ' %' + (l.battery != null ? ' · Batterie ' + l.battery + ' %' : '') : '') + '</span></div>' +
+          (dev ? '<select data-sensor="' + t.id + '" aria-label="Sensor für ' + esc(t.name) + '" style="max-width:260px"><option value="">kein Sensor</option>' + dev.map(d => '<option value="' + esc(d.id) + '"' + (se.deviceId === d.id ? ' selected' : '') + '>' + esc(d.name) + ' (' + esc(d.type) + ')</option>').join('') + '</select>' : '') + '</div>'; }).join('') + '</div>' +
+      (S.sensorMsg ? '<div class="banner ' + lvl(S.sensorMsg.level) + '" style="margin-top:10px"><span class="grow">' + esc(S.sensorMsg.text) + '</span></div>' : '') + '</section>';
+  }
+  function viewLogin() {
+    return '<form id="login-form" class="card form" style="max-width:420px;margin:40px auto" novalidate><h2>Anmelden</h2><p class="sm muted">Deine Terrarium-Daten liegen geschützt in deinem Supabase-Projekt.</p>' +
+      '<label class="f">E-Mail<input id="lg-mail" type="email" autocomplete="username"></label><label class="f">Passwort<input id="lg-pw" type="password" autocomplete="current-password"></label>' + err('login') +
+      '<div class="row wrap"><button type="submit" class="btn pri">Anmelden</button><button type="button" class="btn" data-a="signup">Konto anlegen</button></div></form>';
+  }
+
+  function viewSettings() {
+    const theme = getTheme();
+    let h = '<div class="grid g-2"><section class="card"><div class="card-h"><h3>Speicher</h3>' + storeBadge() + '</div><p class="sm">' +
+      (Store.mode === 'cloud' ? 'Deine Daten liegen privat in deinem Claude-Konto. Auf dem iPad und am Rechner siehst du dieselben Daten.' : Store.mode === 'local' ? 'Deine Daten liegen nur in diesem Browser. Mach regelmäßig ein Backup.' : 'Dieser Browser speichert nichts. Exportiere vor dem Schließen ein Backup.') + '</p>' +
+      '<div class="row wrap" style="margin-top:12px"><button class="btn" data-a="exp-json">Backup exportieren</button><button class="btn" data-a="exp-csv">Messwerte als CSV</button><label class="btn" for="imp-file">Backup einspielen</label><input type="file" id="imp-file" accept=".json,application/json" hidden>' + (Store.mode === 'supa' ? '<button class="btn ghost" data-a="logout">Abmelden</button>' : '') + '</div>';
+    if (S.exportText) h += '<div class="col" style="margin-top:12px"><span class="xs">Download ist hier nicht möglich. Kopiere den Text und speichere ihn als Datei.</span><textarea id="exp-text" class="exp" readonly>' + esc(S.exportText) + '</textarea><button class="btn sm" data-a="exp-copy">Kopieren</button></div>';
+    if (S.importDocs) h += '<div class="banner lv-yellow" style="margin-top:12px"><span class="grow">Backup vom ' + esc(S.importInfo) + ' einspielen? Deine aktuellen Daten werden ersetzt.</span><button class="btn sm dangerfill" data-a="imp-go">Ersetzen</button><button class="btn sm" data-a="imp-cancel">Abbrechen</button></div>';
+    h += '<div style="margin-top:14px">' + (S.confirm === 'wipe' ? confirmBox('wipe', 'Alle Messwerte, Tiere, Aufgaben und Lampen löschen?', 'wipe', '') : '<button class="btn danger ghost" data-a="ask" data-v="wipe">' + icon('trash', 16) + 'Alle Daten löschen</button>') + '</div></section>' +
+      '<section class="card"><div class="card-h"><h3>Darstellung</h3></div><div class="seg">' + [['auto', 'Automatisch'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([k, l]) => '<button class="' + (theme === k ? 'on' : '') + '" data-a="theme" data-v="' + k + '">' + l + '</button>').join('') + '</div>' +
+      '<h4 style="margin:18px 0 8px">Beispieldaten</h4><p class="sm">Zeigt die App mit erfundenen Beispielwerten, damit du alles ausprobieren kannst. Nichts davon wird gespeichert.</p><div style="margin-top:10px">' + (S.demo ? '<button class="btn" data-a="demo-off">Zurück zu meinen Daten</button>' : '<button class="btn" data-a="demo-on">Beispieldaten ansehen</button>') + '</div>' +
+      '<h4 style="margin:18px 0 8px">Auf den Home-Bildschirm</h4><p class="sm">In Safari auf Teilen tippen und „Zum Home-Bildschirm“ wählen.</p></section>' +
+      '<section class="card"><div class="card-h"><h3>Terrarien</h3><button class="btn sm" data-a="tnew">' + icon('plus', 16) + 'Terrarium</button></div><div class="list">' + terrs().map(t => '<div class="li ' + sp(t) + '"><div class="grow col" style="gap:2px"><span class="main-t">' + esc(t.name) + '</span><span class="sptag">' + esc((TL.SPECIES[t.species] || TL.SPECIES.other).name) + '</span></div><button class="btn sm" data-a="opentab" data-v="' + t.id + ':setup">Einrichten</button></div>').join('') + '</div></section>' +
+      sensorCard() + '<section class="card" hidden><div class="card-h"><h3>Sensoren</h3>' + pill('none', 'Noch nicht verbunden') + '</div><p class="sm">Geplant: SwitchBot Thermo-Hygrometer (IP65) mit Hub Mini. Sobald die Sensoren da sind, verbinde ich sie über einen kleinen eigenen Server. Dann kommen die Werte automatisch und du musst nichts mehr eintippen. Bis dahin trägst du Werte von Hand ein.</p></section>' +
+      '<section class="card"><div class="card-h"><h3>Tiere</h3><button class="btn sm" data-a="go" data-v="animals">Öffnen</button></div><p class="sm">' + animals().length + ' Tiere mit Tagebuch für Fütterung, Gewicht und Häutung.</p></section>' +
+      '<section class="card"><div class="card-h"><h3>Warnungen</h3><button class="btn sm" data-a="go" data-v="warn">Öffnen</button></div><p class="sm">Klima, Lampen und Aufgaben auf einen Blick.</p></section></div>';
+    return h;
+  }
+
+  /* Formulare als eigene Seiten */
+  function nowLocalInput(ts) { const d = new Date(ts); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); }
+  function viewEntry() {
+    const e = S.entry, t = terr(e.tid);
+    return '<form id="entry-form" class="form card ' + sp(t) + '" novalidate style="max-width:720px"><div class="chips">' + terrs().map(x => '<button type="button" class="chip ' + (x.id === e.tid ? 'on' : '') + '" data-a="etid" data-v="' + x.id + '">' + esc(x.name) + '</button>').join('') + '</div>' +
+      '<div class="grid g-2"><label class="f' + ec('t') + '">Temperatur °C<div class="steppers"><button type="button" class="btn" data-a="stp" data-v="t:-0.5" aria-label="Weniger">−</button><input id="e-t" inputmode="decimal" value="' + esc(e.t) + '" placeholder="–"><button type="button" class="btn" data-a="stp" data-v="t:0.5" aria-label="Mehr">+</button></div>' + err('t') + '</label>' +
+      '<label class="f' + ec('h') + '">Luftfeuchte %<div class="steppers"><button type="button" class="btn" data-a="stp" data-v="h:-1" aria-label="Weniger">−</button><input id="e-h" inputmode="decimal" value="' + esc(e.h) + '" placeholder="–"><button type="button" class="btn" data-a="stp" data-v="h:1" aria-label="Mehr">+</button></div>' + err('h') + '</label></div>' + err('form') +
+      '<div class="grid g-2"><label class="f' + ec('ts') + '">Zeitpunkt<input type="datetime-local" id="e-ts" value="' + esc(e.ts) + '">' + err('ts') + '</label><label class="f">Notiz<input id="e-n" value="' + esc(e.n) + '" placeholder="optional"></label></div>' +
+      '<div id="e-prev"></div><div class="row"><button type="submit" class="btn pri">Speichern</button><button type="button" class="btn" data-a="back">Abbrechen</button></div></form>';
+  }
+  function entryPreview() {
+    const box = document.getElementById('e-prev'); if (!box || !S.entry) return;
+    const t = terr(S.entry.tid), ts = Date.parse(S.entry.ts);
+    const tv = TL.parseNum(S.entry.t), hv = TL.parseNum(S.entry.h);
+    if (tv === null && hv === null) { box.innerHTML = '<p class="xs">Ziel jetzt: ' + esc(rangeTxt(TL.rangesAt(t, Number.isFinite(ts) ? ts : now()).temp, '°C')) + ', ' + esc(rangeTxt(TL.rangesAt(t, Number.isFinite(ts) ? ts : now()).hum, '%')) + '</p>'; return; }
+    const a = TL.assessTerrarium(t, { t: tv, h: hv, ts: Number.isFinite(ts) ? ts : now() }, now());
+    box.innerHTML = '<div class="banner ' + lvl(a.level) + '"><b>' + esc(TL.LEVEL_INFO[a.level].label) + '</b><span class="grow">' + esc(describe(a)) + '</span></div>';
+  }
+  function viewLampForm() {
+    const l = S.edit, ty = TL.LAMP_TYPES[l.type] || TL.LAMP_TYPES.other;
+    return '<form id="lamp-form" class="form" novalidate style="max-width:860px"><div class="grid g-2"><fieldset><legend>Lampe</legend>' +
+      '<label class="f' + ec('name') + '">Name<input id="l-name" value="' + esc(l.name) + '">' + err('name') + '</label>' +
+      '<label class="f' + ec('type') + '">Art<select id="l-type">' + Object.entries(TL.LAMP_TYPES).map(([k, v]) => '<option value="' + k + '"' + (l.type === k ? ' selected' : '') + '>' + esc(v.label) + '</option>').join('') + '</select>' + err('type') + '</label>' +
+      (ty.note ? '<span class="hint">' + esc(ty.note) + '</span>' : '') +
+      '<label class="f">Terrarium<select id="l-tid">' + terrs().map(t => '<option value="' + t.id + '"' + (l.tid === t.id ? ' selected' : '') + '>' + esc(t.name) + '</option>').join('') + '</select></label>' +
+      '<div class="f-grid"><label class="f">Modell<input id="l-model" value="' + esc(l.model) + '" placeholder="z. B. Arcadia T5 12 %"></label><label class="f' + ec('watt') + '">Watt<input class="num-in" inputmode="decimal" id="l-watt" value="' + esc(l.watt ?? '') + '">' + err('watt') + '</label></div>' +
+      '<div class="f-grid"><label class="f' + ec('uvbPct') + '">UV-B-Stärke in %<input class="num-in" inputmode="decimal" id="l-pct" value="' + esc(l.uvbPct ?? '') + '" placeholder="nur UV-B, z. B. 12">' + err('uvbPct') + '</label>' +
+      '<label class="f">Sitzt in<input id="l-fix" value="' + esc(l.fixture || '') + '" placeholder="z. B. Exo Terra Abdeckung klein"></label></div>' +
+      '<div class="f-grid"><label class="f">Position<select id="l-pos"><option value=""' + (!l.pos ? ' selected' : '') + '>weiß nicht</option><option value="above"' + (l.pos === 'above' ? ' selected' : '') + '>über dem Gitter / in der Abdeckung</option><option value="inside"' + (l.pos === 'inside' ? ' selected' : '') + '>im Terrarium</option></select></label>' +
+      '<label class="f">Schutzkorb<select id="l-guard"><option value=""' + (l.guard == null ? ' selected' : '') + '>weiß nicht</option><option value="1"' + (l.guard === true ? ' selected' : '') + '>ja</option><option value="0"' + (l.guard === false ? ' selected' : '') + '>nein</option></select></label></div>' +
+      '<label class="row sm" style="gap:8px"><input type="checkbox" id="l-night"' + (l.night ? ' checked' : '') + ' style="width:20px;height:20px"> Lampe ist auch nachts an</label>' +
+      '<div id="lamp-adv">' + lampFormAdvice(l) + '</div></fieldset>' +
+      '<fieldset><legend>Alter und Lebensdauer</legend><div class="f-grid"><label class="f' + ec('installed') + '">Eingesetzt am<input type="date" id="l-inst" value="' + esc(l.installed) + '" max="' + TL.isoDay(now()) + '">' + err('installed') + '</label>' +
+      '<label class="f' + ec('age') + '">oder Alter in Monaten<input class="num-in" inputmode="decimal" id="l-age" value="' + esc(l._age || '') + '" placeholder="z. B. 7">' + err('age') + '</label></div>' +
+      '<span class="hint">Weißt du das Datum nicht genau, trag das ungefähre Alter ein. Die App rechnet das Einbaudatum aus.</span>' +
+      '<div class="f-grid"><label class="f' + ec('lifeMonths') + '">Tauschen nach Monaten<input class="num-in" inputmode="numeric" id="l-months" value="' + esc(l.lifeMonths ?? '') + '">' + err('lifeMonths') + '</label>' +
+      '<label class="f' + ec('lifeHours') + '">oder Lebensdauer in Std.<input class="num-in" inputmode="numeric" id="l-hours" value="' + esc(l.lifeHours ?? '') + '" placeholder="Packung">' + err('lifeHours') + '</label></div>' +
+      '<label class="f' + ec('hoursPerDay') + '">Brennt Stunden pro Tag<input class="num-in" inputmode="numeric" id="l-hpd" value="' + esc(l.hoursPerDay ?? 12) + '">' + err('hoursPerDay') + '</label>' +
+      '<span class="hint">Sind Monate eingetragen, gelten die Monate. Sonst rechnet die App mit Stunden geteilt durch Stunden pro Tag.</span>' +
+      (ty.sources.length ? '<div class="src">' + srcLinks(ty.sources) + '</div>' : '') + '</fieldset></div>' +
+      '<div class="row wrap"><button type="submit" class="btn pri">Speichern</button><button type="button" class="btn" data-a="back">Abbrechen</button><span class="grow"></span>' +
+      (l.id && S.confirm !== 'ldel' ? '<button type="button" class="btn danger ghost" data-a="ask" data-v="ldel">' + icon('trash', 16) + 'Lampe löschen</button>' : '') + '</div>' + (l.id ? confirmBox('ldel', 'Diese Lampe löschen?', 'ldel', l.id) : '') +
+      ((l.log || []).length ? '<section class="card flat"><h4 style="margin-bottom:8px">Frühere Lampen</h4>' + l.log.slice().reverse().map(x => '<div class="xs">' + esc(dayTxt(x.installed)) + ' bis ' + esc(dayTxt(x.replaced)) + '</div>').join('') + '</section>' : '') + '</form>';
+  }
+  function readLampForm() {
+    const v = id => (document.getElementById(id) || {}).value ?? '';
+    const g = v('l-guard'), nEl = document.getElementById('l-night');
+    return Object.assign({}, S.edit, { name: v('l-name').trim(), type: v('l-type'), tid: v('l-tid'), model: v('l-model').trim(), watt: v('l-watt').trim(), installed: v('l-inst'), _age: v('l-age').trim(), lifeMonths: v('l-months').trim(), lifeHours: v('l-hours').trim(), hoursPerDay: v('l-hpd').trim(),
+      uvbPct: v('l-pct').trim(), fixture: v('l-fix').trim(), pos: v('l-pos'), guard: g === '1' ? true : g === '0' ? false : null, night: nEl ? nEl.checked : !!S.edit.night });
+  }
+  /* Live-Prüfung im Lampenformular: zeigt, was mit dieser Änderung nicht optimal wäre */
+  function lampFormAdvice(l) {
+    const t = terrs().find(x => x.id === l.tid); if (!t) return '';
+    const tmp = Object.assign({}, l, { id: l.id || '_neu', watt: TL.parseNum(l.watt), uvbPct: TL.parseNum(l.uvbPct) });
+    const list = lamps().filter(x => x.id !== tmp.id).concat(tmp);
+    const adv = adviceOf(t, list).filter(a => (a.lid === tmp.id || !a.lid) && a.level !== 'none');
+    if (!adv.length) return '<div class="banner lv-green"><span class="grow">Passt so zum Bedarf: ' + esc((TL.SPECIES[t.species] || TL.SPECIES.other).name) + '.</span></div>';
+    return '<div class="list">' + adv.map(a => adviceLine(a, true)).join('') + '</div>';
+  }
+  function viewTaskForm() {
+    const k = S.edit;
+    return '<form id="task-form" class="form" novalidate style="max-width:760px"><fieldset><legend>Aufgabe</legend>' +
+      (k.id ? '' : '<div class="chips">' + TL.TASK_TEMPLATES.map((tp, i) => '<button type="button" class="chip" data-a="ktpl" data-v="' + i + '">' + esc(tp.title) + '</button>').join('') + '</div>') +
+      '<label class="f' + ec('title') + '">Name<input id="k-title" value="' + esc(k.title) + '">' + err('title') + '</label>' +
+      '<div class="f-grid"><label class="f">Art<select id="k-kind">' + Object.entries(TL.TASK_KINDS).map(([x, l]) => '<option value="' + x + '"' + (k.kind === x ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select></label>' +
+      '<label class="f">Terrarium<select id="k-tid">' + terrs().map(t => '<option value="' + t.id + '"' + (k.tid === t.id ? ' selected' : '') + '>' + esc(t.name) + '</option>').join('') + '<option value=""' + (!k.tid ? ' selected' : '') + '>Alle / keins</option></select></label></div>' +
+      '<div class="f-grid"><label class="f' + ec('every') + '">Alle wie viele Tage?<input class="num-in" inputmode="numeric" id="k-every" value="' + esc(k.every) + '">' + err('every') + '</label>' +
+      '<label class="f' + ec('last') + '">Zuletzt erledigt<input type="date" id="k-last" value="' + esc(k.last) + '" max="' + TL.isoDay(now()) + '">' + err('last') + '</label></div>' +
+      '<label class="f">Notiz<textarea id="k-note">' + esc(k.note) + '</textarea></label></fieldset>' +
+      '<div class="row wrap"><button type="submit" class="btn pri">Speichern</button><button type="button" class="btn" data-a="back">Abbrechen</button><span class="grow"></span>' +
+      (k.id && S.confirm !== 'kdel' ? '<button type="button" class="btn danger ghost" data-a="ask" data-v="kdel">' + icon('trash', 16) + 'Aufgabe löschen</button>' : '') + '</div>' + (k.id ? confirmBox('kdel', 'Diese Aufgabe löschen?', 'kdel', k.id) : '') +
+      ((k.log || []).length ? '<section class="card flat"><h4 style="margin-bottom:8px">Erledigt am</h4><p class="xs num">' + k.log.slice().reverse().map(x => esc(dayTxt(x))).join(' · ') + '</p></section>' : '') + '</form>';
+  }
+  function readTaskForm() {
+    const v = id => (document.getElementById(id) || {}).value ?? '';
+    return { title: v('k-title').trim(), kind: v('k-kind'), tid: v('k-tid'), every: v('k-every').trim(), last: v('k-last'), note: v('k-note').trim() };
+  }
+  function viewAnimalForm() {
+    const a = S.edit;
+    return '<form id="animal-form" class="form" novalidate style="max-width:640px"><fieldset><legend>Tier</legend><label class="f' + ec('name') + '">Name<input id="a-name" value="' + esc(a.name) + '">' + err('name') + '</label>' +
+      '<div class="f-grid"><label class="f">Terrarium<select id="a-tid">' + terrs().map(t => '<option value="' + t.id + '"' + (a.tid === t.id ? ' selected' : '') + '>' + esc(t.name) + '</option>').join('') + '</select></label>' +
+      '<label class="f">Geschlecht<select id="a-sex"><option value="">unbekannt</option><option value="w"' + (a.sex === 'w' ? ' selected' : '') + '>weiblich</option><option value="m"' + (a.sex === 'm' ? ' selected' : '') + '>männlich</option></select></label></div>' +
+      '<label class="f">Schlupf<input type="date" id="a-hatch" value="' + esc(a.hatch) + '"></label></fieldset>' +
+      '<div class="row wrap"><button type="submit" class="btn pri">Speichern</button><button type="button" class="btn" data-a="back">Abbrechen</button><span class="grow"></span>' +
+      (a.id && S.confirm !== 'adel' ? '<button type="button" class="btn danger ghost" data-a="ask" data-v="adel">' + icon('trash', 16) + 'Tier löschen</button>' : '') + '</div>' + (a.id ? confirmBox('adel', 'Dieses Tier löschen? Tagebucheinträge bleiben im Backup.', 'adel', a.id) : '') + '</form>';
+  }
+
+  /* ================= Rahmen und Navigation ================= */
+  const NAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['animals', 'Tiere', 'paw'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
+  const TABNAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['settings', 'Mehr', 'more']];
+  const NAVOF = { terr: 'terrs', entry: 'dash', lampform: 'lamps', taskform: 'tasks', animalform: 'animals' };
+  const FORMS = ['entry', 'lampform', 'taskform', 'animalform'];
+
+  function titleFor() {
+    const v = S.view;
+    if (v === 'dash') return ['Übersicht', new Date(now()).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }), '<button class="btn pri" data-a="entry">' + icon('plus', 16) + 'Messwert</button>'];
+    if (v === 'terrs') return ['Terrarien', terrs().length + ' Terrarien', ''];
+    if (v === 'terr') { const t = terr(S.tid); return [t.name, (TL.SPECIES[t.species] || TL.SPECIES.other).name, '<button class="btn pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button>']; }
+    if (v === 'tasks') return ['Aufgaben', 'Pflege nach Intervall', '<button class="btn pri" data-a="knew">' + icon('plus', 16) + 'Aufgabe</button>'];
+    if (v === 'lamps') return ['Lampen', 'Alter und Tauschtermin', '<button class="btn pri" data-a="lnewform">' + icon('plus', 16) + 'Lampe</button>'];
+    if (v === 'animals') return ['Tiere', 'Tagebuch', ''];
+    if (v === 'warn') return ['Warnungen', 'Was braucht Aufmerksamkeit?', ''];
+    if (v === 'settings') return ['Daten & Technik', '', ''];
+    if (v === 'entry') return ['Messwert eintragen', 'Von Hand, bis die Sensoren verbunden sind', ''];
+    if (v === 'lampform') return [S.edit.id ? 'Lampe bearbeiten' : 'Neue Lampe', '', ''];
+    if (v === 'taskform') return [S.edit.id ? 'Aufgabe bearbeiten' : 'Neue Aufgabe', '', ''];
+    if (v === 'animalform') return [S.edit.id ? 'Tier bearbeiten' : 'Neues Tier', '', ''];
+    return ['', '', ''];
+  }
+
+  function render() {
+    if (Store.mode === 'login') { $app.innerHTML = viewLogin(); return; }
+    if (!S.ready) return;
+    S.pendingRender = false;
+    const v = S.view;
+    const body = v === 'dash' ? viewDash() : v === 'terrs' ? viewTerrs() : v === 'terr' ? viewTerr() : v === 'tasks' ? viewTasks() : v === 'lamps' ? viewLamps()
+      : v === 'animals' ? viewAnimals() : v === 'warn' ? viewWarn() : v === 'entry' ? viewEntry() : v === 'lampform' ? viewLampForm() : v === 'taskform' ? viewTaskForm()
+      : v === 'animalform' ? viewAnimalForm() : viewSettings();
+    const active = NAVOF[v] || v;
+    const c = counts();
+    const badge = { tasks: c.tasksDue, lamps: c.lampsDue + c.lampWarn, warn: c.climate + c.lampWarn };
+    const [title, sub, actions] = titleFor();
+    const back = FORMS.includes(v) || v === 'terr';
+    const tAc = v === 'terr' ? sp(terr(S.tid)) : '';
+    $app.innerHTML = '<div class="shell"><aside class="side" aria-label="Navigation"><div class="brand"><div class="mark">' + icon('terr', 19) + '</div><div><b>Terrarium</b><span>Leitstand</span></div></div>' +
+      '<nav class="snav">' + NAV.map(([k, l, ic]) => '<button class="' + (active === k ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (active === k ? ' aria-current="page"' : '') + '>' + icon(ic, 19) + l + (badge[k] ? '<span class="badge-n">' + badge[k] + '</span>' : '') + '</button>').join('') + '</nav>' +
+      '<h4>Terrarien</h4><div class="sterr">' + terrs().map(t => { const a = assessOf(t), r = lastReading(t.id); return '<button class="' + lvl(a.level) + (v === 'terr' && S.tid === t.id ? ' on' : '') + '" data-a="open" data-v="' + t.id + '"><span class="dot"></span><span class="nm">' + esc(t.name) + '</span><span class="vals">' + (r ? fmt(r.t) + ' °C · ' + fmt(r.h, 0) + ' %' : 'kein Wert') + '</span></button>'; }).join('') + '</div>' +
+      '<div class="foot">' + storeBadge().replace('class="store', 'style="color:var(--sidemuted)" class="store') + '<span>Sensoren: noch manuell</span></div></aside>' +
+      '<div class="main ' + tAc + '"><header class="topbar">' + (back ? '<button class="btn sm ghost" data-a="back" aria-label="Zurück">' + icon('back', 18) + '</button>' : '') + '<div class="title"><h1>' + esc(title) + '</h1>' + (sub ? '<span class="xs">' + esc(sub) + '</span>' : '') + '</div>' + actions + '</header>' +
+      '<div class="content">' + (S.demo ? '<div class="banner lv-yellow"><span class="grow">Du siehst Beispieldaten. Nichts davon wird gespeichert.</span><button class="btn sm" data-a="demo-off">Zu meinen Daten</button></div>' : '') + body + '</div></div>' +
+      '<nav class="tabbar" aria-label="Hauptnavigation">' + TABNAV.map(([k, l, ic]) => { const on = active === k || (k === 'settings' && ['animals', 'warn'].includes(active)); return '<button class="' + (on ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (on ? ' aria-current="page"' : '') + '>' + icon(ic, 22) + l + (badge[k] ? '<span class="cnt">' + badge[k] + '</span>' : '') + '</button>'; }).join('') + '</nav></div>';
+    if (v === 'terr' && S.tab === 'verlauf') bindChart();
+    if (v === 'entry') entryPreview();
+  }
+  function softRender() {
+    const ae = document.activeElement;
+    if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) { S.pendingRender = true; return; }
+    if (FORMS.includes(S.view) || (S.view === 'terr' && S.tab === 'setup') || (S.edit && S.edit._journal)) { S.pendingRender = true; return; }
+    render();
+  }
+  function go(view, keepBack) {
+    if (!keepBack && !FORMS.includes(view)) S.back = null;
+    S.view = view; S.errors = {}; S.confirm = null; S.exportText = null;
+    render(); window.scrollTo(0, 0);
+  }
+  function openForm(view) { S.back = { view: S.view, tab: S.tab, tid: S.tid }; go(view, true); }
+  function goBack() {
+    const b = S.back; S.edit = null; S.entry = null;
+    if (b) { S.tab = b.tab; S.tid = b.tid; S.back = null; go(b.view); }
+    else go(S.view === 'terr' ? 'terrs' : 'dash');
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 3200);
+  }
+  function getTheme() { try { return localStorage.getItem('tcc.theme') || 'auto'; } catch (e) { return 'auto'; } }
+  function applyTheme(v) {
+    if (v === 'light' || v === 'dark') document.documentElement.setAttribute('data-theme', v);
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  async function offerFile(filename, text) {
+    let dl = null;
+    try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { dl = null; }
+    if (dl) {
+      try { await dl.save({ filename, data: text }); toast('Gespeichert'); return; }
+      catch (e) { if (e && (e.code === 'declined' || e.code === 'rate_limited')) { toast('Abgebrochen'); return; } }
+    }
+    S.exportText = text; render();
+  }
+
+  /* ================= Ereignisse ================= */
+  $app.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-a]'); if (!b || b.disabled) return;
+    const a = b.dataset.a, v = b.dataset.v;
+    const c = () => clone(cfg());
+    switch (a) {
+      case 'go': S.edit = null; if (v === 'animals') S.aid = S.aid || (animals()[0] || {}).id || null; go(v); break;
+      case 'back': goBack(); break;
+      case 'open': if (S.tid !== v) S.pf = null; S.tid = v; S.edit = null; if (S.view !== 'terr') S.tab = 'klima'; go('terr'); break;
+      case 'opentab': { const [tid, tab] = v.split(':'); S.tid = tid; S.tab = tab; S.pf = null; go('terr'); break; }
+      case 'tab': S.tab = v; S.confirm = null; S.errors = {}; if (v === 'setup') S.pf = null; render(); break;
+      case 'entry': {
+        const tid = v || (S.view === 'terr' ? S.tid : terrs()[0].id);
+        S.entry = { tid, t: '', h: '', ts: nowLocalInput(now()), n: '' };
+        openForm('entry'); setTimeout(() => { const el = document.getElementById('e-t'); if (el) el.focus(); }, 30); break;
+      }
+      case 'etid': S.entry.tid = v; render(); break;
+      case 'stp': {
+        const [k, d] = v.split(':'); const cur = TL.parseNum(S.entry[k]);
+        const t = terr(S.entry.tid), rg = TL.rangesAt(t, now())[k === 't' ? 'temp' : 'hum'];
+        const base = cur ?? (TL.rangeSet(rg) ? (rg.min + rg.max) / 2 : (k === 't' ? 25 : 60));
+        S.entry[k] = fmt(TL.round1(base + (cur === null ? 0 : +d)), k === 't' ? 1 : 0).replace(/\./g, '');
+        const el = document.getElementById('e-' + k); if (el) el.value = S.entry[k];
+        entryPreview(); break;
+      }
+      case 'preset': {
+        const p = readPf(); const pr = TL.PRESETS[p.species]; if (!pr) break;
+        for (const ph of ['day', 'night']) for (const k of ['temp', 'hum']) p[ph][k] = { min: String(pr[ph][k].min), max: String(pr[ph][k].max) };
+        S.pf = p; S.errors = {}; render(); toast('Vorschlag eingetragen. Zum Übernehmen speichern.'); break;
+      }
+      case 'pfreset': S.pf = null; S.errors = {}; render(); toast('Änderungen verworfen'); break;
+      case 'tnew': {
+        const cc = c(); const nt = TL.applyPreset(TL.newTerrarium('kn', 'Neues Terrarium'));
+        cc.terrariums.push(nt); cc.tasks.push(...TL.defaultTasksFor(nt)); cc.lamps = (cc.lamps || []).concat(TL.defaultLampsFor(nt));
+        saveConfig(cc); S.tid = nt.id; S.tab = 'setup'; S.pf = null; go('terr');
+        toast('Terrarium angelegt. Wähle die Tierart, die Werte passen sich an.'); break;
+      }
+      case 'tdel': {
+        const cc = c(); const id = v;
+        cc.terrariums = cc.terrariums.filter(t => t.id !== id);
+        cc.tasks = cc.tasks.filter(k => k.tid !== id); cc.lamps = (cc.lamps || []).filter(l => l.tid !== id);
+        cc.animals.forEach(an => { if (an.tid === id) an.tid = cc.terrariums[0].id; });
+        saveConfig(cc); S.tid = cc.terrariums[0].id; S.pf = null; toast('Terrarium entfernt'); go('terrs'); break;
+      }
+      case 'imptog': {
+        const cc = c(); const t = cc.terrariums.find(x => x.id === S.tid); const it = t && (t.improve || []).find(x => x.id === v); if (!it) break;
+        it.done = !it.done; saveConfig(cc); toast(it.done ? 'Abgehakt' : 'Wieder offen'); render(); break;
+      }
+      case 'sdev': S.sensorMsg = { level: 'none', text: 'Lade Geräte …' }; render();
+        sensorCall('devices').then(b => { S.devices = b.devices; S.sensorMsg = { level: 'green', text: b.devices.length + ' Geräte gefunden.' }; render(); }, e => { S.sensorMsg = { level: 'red', text: e.message }; render(); }); break;
+      case 'stest': S.sensorMsg = { level: 'none', text: 'Rufe Sensoren ab …' }; render();
+        sensorCall('test').then(b => { const ok = b.results.filter(x => x.ok).length; S.sensorMsg = { level: ok === b.results.length && ok ? 'green' : 'orange', text: b.results.length ? ok + ' von ' + b.results.length + ' Sensoren geliefert.' + b.results.filter(x => !x.ok).map(x => ' ' + x.error).join('') : 'Noch kein Sensor zugeordnet.' }; render(); }, e => { S.sensorMsg = { level: 'red', text: e.message }; render(); }); break;
+      case 'signup': {
+        const mail = document.getElementById('lg-mail').value.trim(), pw = document.getElementById('lg-pw').value;
+        if (!mail || pw.length < 8) { S.errors = { login: 'E-Mail und ein Passwort mit mindestens 8 Zeichen eingeben.' }; render(); break; }
+        sb.auth.signUp({ email: mail, password: pw }).then(({ data, error }) => {
+          if (error) { S.errors = { login: error.message }; render(); return; }
+          if (!data.session) { S.errors = { login: 'Bestätige die E-Mail, die Supabase dir geschickt hat, und melde dich dann an.' }; render(); return; }
+          startSupa(data.session.user.id);
+        }); break;
+      }
+      case 'logout': sb.auth.signOut().then(() => location.reload()); break;
+      case 'ckind': S.chartKind = v; render(); break;
+      case 'crange': S.chartRange = v; render(); break;
+      case 'ask': S.confirm = v; render(); break;
+      case 'cancel': S.confirm = null; render(); break;
+      case 'rdel': { const r = allReadings().find(x => x.id === v); if (r) deleteReading(r); S.confirm = null; toast('Messwert gelöscht'); render(); break; }
+      case 'kfilter': S.taskFilter = v; render(); break;
+      case 'lfilter': S.lampFilter = v; render(); break;
+      case 'tdone': {
+        const cc = c(); const k = cc.tasks.find(x => x.id === v); if (!k) break;
+        k.last = TL.isoDay(now()); k.log = (k.log || []).concat(k.last).slice(-30);
+        saveConfig(cc); toast('„' + k.title + '“ erledigt. Nächstes Mal in ' + k.every + ' Tagen.'); render(); break;
+      }
+      case 'tlast': {
+        const inp = document.getElementById('qd-' + v); const val = inp ? inp.value : '';
+        const ts = Date.parse(val);
+        if (!Number.isFinite(ts) || ts > now() + TL.DAY) { toast('Bitte ein Datum wählen, das nicht in der Zukunft liegt.'); break; }
+        const cc = c(); const k = cc.tasks.find(x => x.id === v); if (!k) break;
+        k.last = val; k.log = (k.log || []).concat(val).slice(-30);
+        saveConfig(cc); toast('Gespeichert'); render(); break;
+      }
+      case 'knew': S.edit = { id: '', title: '', kind: 'other', tid: v || (S.taskFilter !== 'all' ? S.taskFilter : (terrs()[0] || {}).id), every: '', last: '', note: '', log: [] }; S.errors = {}; openForm('taskform'); break;
+      case 'kedit': { const k = tasks().find(x => x.id === v); if (k) { S.edit = clone(k); S.errors = {}; openForm('taskform'); } break; }
+      case 'ktpl': { const tp = TL.TASK_TEMPLATES[+v]; Object.assign(S.edit, readTaskForm(), { title: tp.title, kind: tp.kind }); render(); break; }
+      case 'kdel': { const cc = c(); cc.tasks = cc.tasks.filter(x => x.id !== v); saveConfig(cc); toast('Aufgabe gelöscht'); goBack(); break; }
+      case 'lage': {
+        const inp = document.getElementById('qa-' + v);
+        const inst = TL.installedFromAge(inp ? inp.value : '', now());
+        if (!inst) { toast('Bitte das Alter in Monaten eingeben, zum Beispiel 7.'); if (inp) inp.focus(); break; }
+        const cc = c(); const l = cc.lamps.find(x => x.id === v); if (!l) break;
+        l.installed = inst; saveConfig(cc);
+        const info = TL.lampInfo(l, now());
+        toast(info.dueAt ? 'Gespeichert. Tauschen am ' + dateLong(info.dueAt) + '.' : 'Gespeichert. Trag noch die Lebensdauer ein.'); render(); break;
+      }
+      case 'lnew': {
+        const cc = c(); const l = cc.lamps.find(x => x.id === v); if (!l) break;
+        if (l.installed) l.log = (l.log || []).concat({ installed: l.installed, replaced: TL.isoDay(now()) }).slice(-20);
+        l.installed = TL.isoDay(now()); saveConfig(cc);
+        const info = TL.lampInfo(l, now());
+        toast(info.dueAt ? 'Neue Lampe ab heute. Tauschen am ' + dateLong(info.dueAt) + '.' : 'Neue Lampe ab heute gespeichert.'); render(); break;
+      }
+      case 'lnewform': S.edit = { id: '', tid: v || (S.lampFilter !== 'all' ? S.lampFilter : (terrs()[0] || {}).id), type: 'uvbT5', name: 'UV-B-Lampe', model: '', watt: '', installed: '', lifeMonths: TL.LAMP_TYPES.uvbT5.months, lifeHours: '', hoursPerDay: 12, log: [], pos: '', guard: null, uvbPct: '', night: false, fixture: '' }; S.errors = {}; openForm('lampform'); break;
+      case 'ledit': { const l = lamps().find(x => x.id === v); if (l) { S.edit = clone(l); S.errors = {}; openForm('lampform'); } break; }
+      case 'ldel': { const cc = c(); cc.lamps = cc.lamps.filter(x => x.id !== v); saveConfig(cc); toast('Lampe gelöscht'); goBack(); break; }
+      case 'anew': S.edit = { id: '', name: '', tid: v || terrs()[0].id, sex: '', hatch: '' }; S.errors = {}; openForm('animalform'); break;
+      case 'aedit': { const an = animals().find(x => x.id === v); if (an) { S.edit = clone(an); S.errors = {}; openForm('animalform'); } break; }
+      case 'adel': { const cc = c(); cc.animals = cc.animals.filter(x => x.id !== v); saveConfig(cc); S.aid = null; S.edit = null; toast('Tier gelöscht'); go('animals'); break; }
+      case 'aopen': S.aid = v; S.edit = null; S.confirm = null; if (S.view !== 'animals') go('animals'); else render(); break;
+      case 'jnew': S.edit = { _journal: true, type: v, ts: TL.isoDay(now()), value: '', note: '' }; S.errors = {}; render(); setTimeout(() => { const el = document.getElementById(v === 'weight' ? 'j-value' : 'j-note'); if (el) el.focus(); }, 30); break;
+      case 'jcancel': S.edit = null; S.errors = {}; render(); break;
+      case 'jdel': { const e = allJournal().find(x => x.id === v); if (e) deleteJournal(e); S.confirm = null; toast('Eintrag gelöscht'); render(); break; }
+      case 'demo-on': S.demoDocs = TL.demoData(now()); S.demo = true; bump(); S.tid = cfg().terrariums[0].id; S.pf = null; S.aid = null; go('dash'); break;
+      case 'demo-off': S.demo = false; S.demoDocs = null; bump(); S.tid = terrs()[0].id; S.aid = null; S.edit = null; S.pf = null; go('dash'); break;
+      case 'theme': try { localStorage.setItem('tcc.theme', v); } catch (e) { /* nur Komfort */ } applyTheme(v); render(); break;
+      case 'exp-json': offerFile('terrarium-backup-' + TL.isoDay(now()) + '.json', JSON.stringify(TL.buildBackup(S.docs, now()), null, 1)); break;
+      case 'exp-csv': offerFile('terrarium-messwerte-' + TL.isoDay(now()) + '.csv', TL.readingsCsv(terrs(), allReadings())); break;
+      case 'exp-copy': {
+        const ta = document.getElementById('exp-text');
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(S.exportText).then(() => toast('Kopiert'), () => { ta.select(); toast('Markiert. Jetzt kopieren.'); });
+        else { ta.select(); toast('Markiert. Jetzt kopieren.'); }
+        break;
+      }
+      case 'imp-cancel': S.importDocs = null; render(); break;
+      case 'imp-go': {
+        const nd = S.importDocs; S.importDocs = null;
+        const keys = Object.keys(S.docs);
+        (async () => {
+          for (const k of keys) if (!(k in nd)) await Store.remove(k);
+          for (const [k, v2] of Object.entries(nd)) await Store.put(k, v2);
+          prepareConfig(); S.tid = terrs()[0].id; S.pf = null; toast('Backup eingespielt'); render();
+        })();
+        break;
+      }
+      case 'wipe': {
+        const keys = Object.keys(S.docs);
+        (async () => {
+          for (const k of keys) await Store.remove(k);
+          S.docs.config = TL.defaultConfig(); await Store.put('config', S.docs.config);
+          S.confirm = null; S.tid = terrs()[0].id; S.pf = null; toast('Alle Daten gelöscht'); go('dash');
+        })();
+        break;
+      }
+    }
+  });
+
+  $app.addEventListener('input', ev => {
+    const id = ev.target.id;
+    if (S.view === 'entry' && S.entry) {
+      if (id === 'e-t') S.entry.t = ev.target.value;
+      else if (id === 'e-h') S.entry.h = ev.target.value;
+      else if (id === 'e-ts') S.entry.ts = ev.target.value;
+      else if (id === 'e-n') S.entry.n = ev.target.value;
+      entryPreview();
+    }
+    if (S.view === 'lampform' && /^l-/.test(id)) { const box = document.getElementById('lamp-adv'); if (box) box.innerHTML = lampFormAdvice(readLampForm()); }
+    if (S.view === 'terr' && S.tab === 'setup' && /^p-(l|b|h|len|count)$/.test(id)) {
+      const box = document.getElementById('size-check');
+      if (box) box.innerHTML = sizeHtml(readPf());
+    }
+  });
+
+  $app.addEventListener('change', ev => {
+    const id = ev.target.id;
+    if (ev.target.dataset && ev.target.dataset.sensor) {
+      const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === ev.target.dataset.sensor); if (!t) return;
+      const d = (S.devices || []).find(x => x.id === ev.target.value);
+      t.sensor = d ? { type: 'switchbot', deviceId: d.id, name: d.name } : { type: 'manual', deviceId: '' };
+      saveConfig(cc); toast(d ? 'Sensor „' + d.name + '“ zugeordnet' : 'Sensor entfernt'); render(); return;
+    }
+    if (id === 'p-species' && S.pf) {
+      const p = readPf(); const pr = TL.PRESETS[p.species];
+      if (pr) for (const ph of ['day', 'night']) for (const k of ['temp', 'hum']) p[ph][k] = { min: String(pr[ph][k].min), max: String(pr[ph][k].max) };
+      S.pf = p; S.errors = {}; render();
+      toast(pr ? 'Zielwerte für ' + TL.SPECIES[p.species].name + ' eingetragen. Zum Übernehmen speichern.' : 'Für diese Art gibt es keine Vorschläge. Trag die Werte selbst ein.');
+      return;
+    }
+    if (id === 'l-type' && S.view === 'lampform') {
+      const l = readLampForm(); const ty = TL.LAMP_TYPES[l.type];
+      l.lifeMonths = ty && ty.months ? ty.months : '';
+      S.edit = l; render(); return;
+    }
+    if (S.view === 'lampform' && /^l-/.test(id)) { const box = document.getElementById('lamp-adv'); if (box) box.innerHTML = lampFormAdvice(readLampForm()); }
+    if (id === 'imp-file' && ev.target.files && ev.target.files[0]) {
+      const rd = new FileReader();
+      rd.onload = () => {
+        let obj = null;
+        try { obj = JSON.parse(rd.result); } catch (e) { toast('Die Datei ist kein gültiges Backup.'); return; }
+        const chk = TL.checkBackup(obj);
+        if (!chk.ok) { toast(chk.error); return; }
+        S.importDocs = obj.docs; S.importInfo = new Date(obj.exportedAt).toLocaleString('de-DE'); render();
+      };
+      rd.onerror = () => toast('Die Datei konnte nicht gelesen werden.');
+      rd.readAsText(ev.target.files[0]);
+    }
+  });
+
+  $app.addEventListener('submit', ev => {
+    ev.preventDefault();
+    const id = ev.target.id;
+    if (id === 'login-form') {
+      const mail = document.getElementById('lg-mail').value.trim(), pw = document.getElementById('lg-pw').value;
+      sb.auth.signInWithPassword({ email: mail, password: pw }).then(({ data, error }) => {
+        if (error) { S.errors = { login: 'Anmeldung fehlgeschlagen: ' + error.message }; render(); return; }
+        startSupa(data.session.user.id);
+      });
+      return;
+    }
+    if (id === 'entry-form') {
+      const e = S.entry, ts = Date.parse(e.ts);
+      const res = TL.validateReading({ t: e.t, h: e.h, ts: Number.isFinite(ts) ? ts : NaN }, now());
+      S.errors = res.errors;
+      if (!res.ok) { render(); return; }
+      addReading(e.tid, res.value, e.n.trim());
+      const a = TL.assessTerrarium(terr(e.tid), res.value, now());
+      toast('Gespeichert · ' + TL.LEVEL_INFO[a.level].label);
+      S.entry = null; goBack();
+    } else if (id === 'profile-form') {
+      const p = readPf();
+      const res = TL.validateProfile(p);
+      const tolT = TL.parseNum(p.tolT), tolH = TL.parseNum(p.tolH);
+      if (tolT === null || tolT <= 0 || tolT > 20) res.errors.tempOrange = 'Bitte 0,1 bis 20 °C.';
+      if (tolH === null || tolH <= 0 || tolH > 50) res.errors.humOrange = 'Bitte 1 bis 50 %.';
+      S.errors = res.errors; S.pf = p;
+      if (Object.keys(res.errors).length) { render(); const f = document.querySelector('.ferr'); if (f) f.scrollIntoView({ block: 'center' }); return; }
+      const cc = clone(cfg());
+      const i = cc.terrariums.findIndex(t => t.id === p.id);
+      const old = cc.terrariums[i];
+      const out = clone(p);
+      delete out.tolT; delete out.tolH;
+      for (const ph of ['day', 'night']) for (const k of ['temp', 'hum']) { const r = p[ph][k]; out[ph][k] = { min: TL.parseNum(r.min), max: TL.parseNum(r.max) }; }
+      out.tol = Object.assign({}, TL.DEFAULT_TOL, old?.tol, { tempOrange: tolT, humOrange: tolH });
+      out.staleHours = TL.parseNum(p.staleHours);
+      out.size = { l: TL.parseNum(p.size.l), b: TL.parseNum(p.size.b), h: TL.parseNum(p.size.h) };
+      out.animalLen = TL.parseNum(p.animalLen); out.count = TL.parseNum(p.count) || 1;
+      const pr = TL.PRESETS[out.species];
+      if (pr) out.source = 'Vorschlag: ' + pr.sources.map(k => TL.SOURCES[k].label).join('; ');
+      let note = '';
+      if (old && old.species !== out.species) {
+        // Neue Art: unberührte Vorgaben (ohne Datum) durch die der neuen Art ersetzen
+        cc.tasks = cc.tasks.filter(k => !(k.tid === out.id && k.preset && !k.last)).concat(TL.defaultTasksFor(out).filter(nk => !cc.tasks.some(k => k.tid === out.id && k.title === nk.title)));
+        cc.lamps = (cc.lamps || []).filter(l => l.tid !== out.id || l.installed).concat((cc.lamps || []).some(l => l.tid === out.id && l.installed) ? [] : TL.defaultLampsFor(out));
+        note = ' Aufgaben und Lampen an die Art angepasst.';
+      }
+      if (i >= 0) cc.terrariums[i] = out; else cc.terrariums.push(out);
+      saveConfig(cc); S.pf = null; S.errors = {}; render(); toast('Einrichtung gespeichert.' + note);
+    } else if (id === 'equip-form') {
+      const v = x => (document.getElementById(x) || {}).value ?? '';
+      const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === S.tid); if (!t) return;
+      const b = v('q-ballast');
+      t.equip = { covers: v('q-covers').trim(), ballast: b === '1' ? true : b === '0' ? false : null, notes: v('q-notes').trim() };
+      saveConfig(cc); toast('Technik gespeichert'); render();
+    } else if (id === 'task-form') {
+      const k = Object.assign({}, S.edit, readTaskForm());
+      const res = TL.validateTask(k);
+      S.errors = res.errors; S.edit = k;
+      if (!res.ok) { render(); return; }
+      const cc = clone(cfg());
+      k.every = TL.parseNum(k.every);
+      const prev = cc.tasks.find(x => x.id === k.id);
+      if (prev && (prev.every !== k.every || prev.title !== k.title)) k.preset = false;
+      if (k.id) cc.tasks = cc.tasks.map(x => x.id === k.id ? k : x);
+      else { k.id = TL.uid('k'); k.log = k.last ? [k.last] : []; k.preset = false; cc.tasks.push(k); }
+      saveConfig(cc); toast('Aufgabe gespeichert'); goBack();
+    } else if (id === 'lamp-form') {
+      const l = readLampForm();
+      const res = TL.validateLamp(l, now());
+      if (l._age) { const inst = TL.installedFromAge(l._age, now()); if (!inst) res.errors.age = 'Bitte Monate als Zahl, zum Beispiel 7.'; else l.installed = inst; }
+      if (l.uvbPct !== '' && l.uvbPct !== null) { const pc = TL.parseNum(l.uvbPct); if (pc === null || pc <= 0 || pc > 30) res.errors.uvbPct = 'Bitte Prozent als Zahl, zum Beispiel 12.'; }
+      S.errors = res.errors; S.edit = l;
+      if (Object.keys(res.errors).length) { render(); return; }
+      const out = Object.assign({}, l, { watt: TL.parseNum(l.watt), uvbPct: TL.parseNum(l.uvbPct), lifeMonths: TL.parseNum(l.lifeMonths), lifeHours: TL.parseNum(l.lifeHours), hoursPerDay: TL.parseNum(l.hoursPerDay) });
+      delete out._age;
+      const cc = clone(cfg()); cc.lamps = cc.lamps || [];
+      if (out.id) cc.lamps = cc.lamps.map(x => x.id === out.id ? out : x);
+      else { out.id = TL.uid('l'); out.log = []; cc.lamps.push(out); }
+      saveConfig(cc);
+      const info = TL.lampInfo(out, now());
+      const warnN = adviceOf(terr(out.tid)).filter(a => a.lid === out.id && TL.LEVELS.indexOf(a.level) >= TL.LEVELS.indexOf('yellow')).length;
+      toast(warnN ? 'Gespeichert. Achtung: nicht optimal, schau dir die Hinweise an.' : info.dueAt ? 'Gespeichert. Tauschen am ' + dateLong(info.dueAt) + '.' : 'Gespeichert'); goBack();
+    } else if (id === 'animal-form') {
+      const v = x => (document.getElementById(x) || {}).value ?? '';
+      const an = Object.assign({}, S.edit, { name: v('a-name').trim(), tid: v('a-tid'), sex: v('a-sex'), hatch: v('a-hatch') });
+      S.edit = an;
+      if (!an.name) { S.errors = { name: 'Bitte einen Namen eingeben.' }; render(); return; }
+      const cc = clone(cfg());
+      if (an.id) cc.animals = cc.animals.map(x => x.id === an.id ? an : x);
+      else { an.id = TL.uid('a'); cc.animals.push(an); }
+      saveConfig(cc); toast('Gespeichert'); S.aid = an.id; S.edit = null; S.back = null; go('animals');
+    } else if (id === 'journal-form') {
+      const v = x => (document.getElementById(x) || {}).value ?? '';
+      const e = Object.assign({}, S.edit, { ts: v('j-ts'), value: v('j-value'), note: v('j-note').trim() });
+      const res = TL.validateJournal(e, now());
+      S.errors = res.errors; S.edit = e;
+      if (!res.ok) { render(); return; }
+      const d = new Date(e.ts + 'T12:00:00');
+      addJournal({ id: TL.uid('j'), aid: S.aid, type: e.type, ts: d.getTime(), value: e.type === 'weight' ? TL.parseNum(e.value) : '', note: e.note });
+      S.edit = null; S.errors = {}; toast('Eingetragen'); render();
+    }
+  });
+
+  document.addEventListener('focusout', () => { setTimeout(() => { if (S.pendingRender) softRender(); }, 150); });
+
+  /* ================= Start ================= */
+  applyTheme(getTheme());
+  function startSupa(uid) { S.errors = {}; Store.loadSupa(uid).then(boot); }
+  function boot() {
+    const added = prepareConfig();
+    S.tid = terrs()[0].id;
+    S.ready = true; bump();
+    render();
+    if (S.movedLocal) toast('Deine bisherigen Daten wurden in dein Konto übernommen.');
+    else if (added) toast('Zielwerte, Aufgaben und Lampen wurden ergänzt.');
+  }
+  Store.init().then(() => { if (Store.mode === 'login') render(); else boot(); });
+})();
+</script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});</script>
+</body></html>
