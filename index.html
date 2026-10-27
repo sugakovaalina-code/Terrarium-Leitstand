@@ -247,7 +247,8 @@ textarea { min-height: 76px; resize: vertical; }
 .photo-in .sb-av { width: 88px; height: 88px; font-size: 30px; }
 @media (max-width: 720px) { .sb { grid-template-columns: 1fr; } }
 
-.wsub { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.sk{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px;display:flex;flex-direction:column;gap:10px}
+  .wsub { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .wsec h4 { margin: 0 0 6px; font-size: 14px; }
 .wsec ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
 .wsec li { font-size: 14px; line-height: 1.45; }
@@ -829,7 +830,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     const slotLine = [slotTxt('Exo-Terra-Abdeckung', 'exo'), slotTxt('Fassung mit Schirm', 'shade')].filter(Boolean).join(' · ');
     const exoOk = exo && su.exo.free !== 0, shadeOk = su.shade.free !== 0;
     const btn = (q, label) => '<a class="btn sm" href="' + esc(TL.shopLink(q)) + '" target="_blank" rel="noopener">' + label + '</a>';
-    return '<section class="card"><div class="card-h"><h3>Passende Leuchtmittel suchen</h3></div>' +
+    return '<section class="card"><div class="card-h"><h3>Passende Leuchtmittel suchen</h3><button class="btn sm pri" data-a="gempf" data-v="' + t.id + '">Genaue Empfehlungen je Fassung</button></div>' +
       (exo ? '<div class="banner lv-yellow" style="margin-bottom:10px"><span class="grow">Deine Abdeckungen sind von Exo Terra. Dort passen nur Exo-Terra-Leuchtmittel. In Fassungen mit Lampenschirm geht jede Marke, wenn Fassung und Leistung passen.</span></div>' : '') +
       '<div class="list">' +
       list.map(x => '<div class="li"><div class="ic">' + icon('lamp', 17) + '</div><div class="grow col" style="gap:3px"><span class="main-t sm">' + esc(x.title) + '</span><span class="sm">' + esc(x.why) + '</span>' + (x.brand && exo ? '<span class="sm">Diese Marke passt nicht in die Exo-Terra-Abdeckung, nur in einen Lampenschirm oder eine andere Armatur.</span>' : '') + '<span class="src">' + srcLinks(x.sources) + '</span></div><div class="col" style="gap:6px">' +
@@ -1010,6 +1011,93 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     }
     return h + '<section class="card ' + sp(t) + '" style="border-top:4px solid var(--sp)"><div class="card-h"><div class="grow col" style="gap:2px"><h3>' + esc(spc.name) + '</h3>' + (spc.latin ? '<span class="sb-lat">' + esc(spc.latin) + '</span>' : '') + '</div></div><p class="xs" style="margin:0 0 12px">' + esc(kb.note) + '</p><div class="wgrid">' +
       kb.sections.map(sec => { const key = x => x.src.join(','); const same = sec.items.every(i => key(i) === key(sec.items[0])); return '<div class="wsec"><h4>' + esc(sec.title) + '</h4><ul>' + sec.items.map(i => '<li>' + esc(i.text) + (same ? '' : '<span class="src">' + srcLinks(i.src) + '</span>') + '</li>').join('') + '</ul>' + (same ? '<span class="src" style="margin-top:6px">' + srcLinks(sec.items[0].src) + '</span>' : '') + '</div>'; }).join('') + '</div></section>';
+  }
+  /* ===== Empfehlungen: welche Lampe passt in welche Fassung ===== */
+  const SK_ROLE = { any: 'UV-B oder Wärme', uvb: 'nur UV-B', heat: 'nur Wärme' };
+  function fitPill(n) { return n >= 2 ? pill('green', 'Passt') : pill('yellow', 'Bedingt'); }
+  function socketForm(t) {
+    const ss = TL.socketsOf(t), sz = t.size || {};
+    const sel = (id, opts, cur) => '<select id="' + id + '">' + opts.map(([v, l]) => '<option value="' + v + '"' + (String(cur) === v ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select>';
+    return '<form id="sock-form" class="card" novalidate><div class="card-h"><h3>Deine Fassungen in ' + esc(t.name) + '</h3><button type="button" class="btn sm" data-a="skadd">' + icon('plus', 16) + 'Fassung</button></div>' +
+      '<p class="sm">Trag jeden Platz ein, an dem eine Lampe sitzen kann. Fest eingebaute LEDs zählen nicht. Danach schlägt die App nur Lampen vor, die in diesen Platz passen.</p>' +
+      (ss.length ? ss.map((s, i) => '<div class="sk"><div class="row between"><b>Fassung ' + (i + 1) + '</b><button type="button" class="btn sm danger ghost" data-a="skdel" data-v="' + i + '">' + icon('trash', 16) + 'Entfernen</button></div><div class="f-grid">' +
+        '<label class="f">Name<input id="sk' + i + '-name" value="' + esc(s.name || '') + '" placeholder="z. B. Abdeckung links"></label>' +
+        '<label class="f">Art<select id="sk' + i + '-kind"><option value="free"' + (s.kind !== 'exo' ? ' selected' : '') + '>Fassung mit Schirm oder Halterung (jede Marke)</option><option value="exo"' + (s.kind === 'exo' ? ' selected' : '') + '>Exo-Terra-Abdeckung (nur Exo Terra)</option></select></label>' +
+        '<label class="f">Sockel<select id="sk' + i + '-base"><option value=""' + (!s.base ? ' selected' : '') + '>weiß nicht</option><option value="E27"' + (s.base === 'E27' ? ' selected' : '') + '>E27</option><option value="E14"' + (s.base === 'E14' ? ' selected' : '') + '>E14</option></select></label>' +
+        '<label class="f">Was soll dort sitzen?' + sel('sk' + i + '-role', Object.entries(SK_ROLE), s.role || 'any') + '</label></div><div class="f-grid">' +
+        '<label class="f">Vorschaltgerät' + sel('sk' + i + '-ballast', [['', 'weiß nicht'], ['1', 'ja, vorhanden'], ['0', 'nein']], s.ballast === true ? '1' : s.ballast === false ? '0' : '') + '</label>' +
+        '<label class="f">Vorschaltgerät: Typ<input id="sk' + i + '-bmodel" value="' + esc(s.ballastModel || '') + '" placeholder="z. B. Lucky Reptile Bright Control"></label>' +
+        '<label class="f">Vorschaltgerät: Watt<input class="num-in" inputmode="decimal" id="sk' + i + '-bw" value="' + (Number.isFinite(s.ballastW) ? esc(s.ballastW) : '') + '"></label>' +
+        '<label class="f">Höchstens Watt in dieser Fassung<input class="num-in" inputmode="decimal" id="sk' + i + '-maxw" value="' + (Number.isFinite(s.maxW) ? esc(s.maxW) : '') + '" placeholder="leer = keine Grenze"></label>' +
+        '<label class="f">Lampe sitzt<select id="sk' + i + '-cage"><option value="0"' + (!s.cage ? ' selected' : '') + '>außen oder über dem Gitter</option><option value="1"' + (s.cage ? ' selected' : '') + '>im Terrarium (Schutzkorb)</option></select></label></div></div>').join('') : '<div class="empty">Noch keine Fassung eingetragen.</div>') +
+      '<h4 style="margin:14px 0 6px">Maße des Terrariums (freiwillig)</h4><div class="f-grid"><label class="f">Länge in cm<input class="num-in" inputmode="decimal" id="sz-l" value="' + (sz.l ? esc(sz.l) : '') + '"></label><label class="f">Breite in cm<input class="num-in" inputmode="decimal" id="sz-b" value="' + (sz.b ? esc(sz.b) : '') + '"></label><label class="f">Höhe in cm<input class="num-in" inputmode="decimal" id="sz-h" value="' + (sz.h ? esc(sz.h) : '') + '"></label></div>' +
+      '<div class="row" style="margin-top:12px"><button type="submit" class="btn pri">Speichern</button></div></form>';
+  }
+  function recCard(t, r, top) {
+    const it = r.item, sz = t.size || {};
+    const extra = r.notes.slice();
+    if (it.id === 'exoUvb100' && sz.h > 40) extra.push('Dein Terrarium ist ' + sz.h + ' cm hoch. Der Hersteller nennt 40 cm Wirkung. Der Sonnenplatz sollte nicht weiter entfernt sein.');
+    const short = it.model.replace(/\s*\(.*\)/, '');
+    return '<div class="li' + (top ? ' lv-green' : '') + '" style="align-items:flex-start"><div class="ic">' + icon(it.kind === 'uvb' ? 'uvb' : 'lamp', 17) + '</div><div class="grow col" style="gap:5px">' +
+      '<div class="row wrap" style="gap:8px"><span class="main-t">' + esc(it.brand) + ' ' + esc(it.model) + '</span>' + fitPill(r.fit) + (top ? pill('green', 'Mein Vorschlag') : '') + '</div>' +
+      '<div class="row wrap" style="gap:6px"><span class="xs">Watt:</span>' + r.watts.map(w => '<span class="tag"' + (r.pickW.includes(w) ? ' style="font-weight:700;border-color:var(--ok,#2e7d32)"' : '') + '>' + esc(w) + ' W' + (r.pickW.includes(w) ? ' · empfohlen' : '') + '</span>').join('') + '<span class="tag">' + (it.base ? 'Sockel ' + esc(it.base) : 'Sockel prüfen') + '</span></div>' +
+      '<span class="sm">' + esc(r.why) + '</span><span class="xs">' + esc(it.facts) + '</span>' + extra.map(n => '<span class="sm">' + icon('bell', 14) + ' ' + esc(n) + '</span>').join('') +
+      '<span class="src">' + srcLinks(it.sources) + '</span><div class="row wrap" style="gap:8px">' + r.pickW.map(w => '<a class="btn sm" href="' + esc(TL.shopLink(it.brand + ' ' + short + ' ' + w + 'W')) + '" target="_blank" rel="noopener">Bei Amazon: ' + esc(w) + ' W</a>').join('') + '</div></div></div>';
+  }
+  function viewEmpf() {
+    const ts = terrs(); if (!ts.length) return '<div class="empty">Leg zuerst ein Terrarium an.</div>';
+    const e = S.empf = S.empf || { tid: ts[0].id };
+    if (!ts.some(x => x.id === e.tid)) e.tid = ts[0].id;
+    const t = ts.find(x => x.id === e.tid), spc = TL.SPECIES[t.species] || TL.SPECIES.other;
+    let h = '<div class="chips">' + ts.map(x => '<button class="chip ' + (e.tid === x.id ? 'on' : '') + '" data-a="emtid" data-v="' + x.id + '">' + esc(x.name) + '</button>').join('') + '</div>';
+    h += '<section class="card ' + sp(t) + '"><div class="card-h"><h3>Lampen für ' + esc(t.name) + '</h3><span class="sptag">' + esc(spc.name) + '</span></div><p class="sm">Die App prüft jede Lampe gegen deine Fassung (Sockel, Vorschaltgerät, Höchstwatt, Exo-Terra-Pflicht) und gegen den Bedarf der Art. Die Amazon-Links öffnen eine Suche mit der genauen Firma, dem Modell und der Wattzahl. Preise und Bewertungen siehst du dort.</p></section>';
+    if (!TL.LIGHTING[t.species]) return h + '<div class="empty">Für diese Art hat die App keine Lichtempfehlung.</div>' + socketForm(t);
+    const plan = TL.lampPlan(t);
+    if (!plan.length) h += '<div class="banner lv-yellow"><span class="grow">Trag unten zuerst deine Fassungen ein. Ohne sie kann die App nicht wissen, was bei dir hineinpasst.</span></div>';
+    plan.forEach(({ s, recs, top }, i) => {
+      const tags = [s.kind === 'exo' ? 'Exo-Terra-Abdeckung' : 'Fassung frei', s.base || 'Sockel ?', s.ballast === true ? 'mit Vorschaltgerät' : s.ballast === false ? 'ohne Vorschaltgerät' : 'Vorschaltgerät ?', Number.isFinite(s.maxW) ? 'höchstens ' + s.maxW + ' W' : 'keine Wattgrenze', s.cage ? 'im Terrarium' : 'außen'];
+      h += '<section class="card"><div class="card-h"><h3>' + esc(s.name || 'Fassung ' + (i + 1)) + '</h3>' + pill(recs.length ? 'green' : 'orange', recs.length ? recs.length + (recs.length === 1 ? ' Lampe passt' : ' Lampen passen') : 'Nichts gefunden') + '</div><div class="meta" style="margin-bottom:10px">' + tags.map(x => '<span class="tag">' + esc(x) + '</span>').join('') + '<span class="tag">' + esc(SK_ROLE[s.role] || SK_ROLE.any) + '</span></div>' +
+        (recs.length ? '<div class="list">' + recs.map(r => recCard(t, r, top === r)).join('') + '</div>' : '<p class="sm">Für diese Kombination hat die App keine belegte Lampe. Prüfe Sockel, Vorschaltgerät und Wattgrenze. Oder prüfe eine eigene Lampe im Reiter Lampen-Check.</p>') + '</section>';
+    });
+    h += '<p class="xs">Alle Angaben stammen von den verlinkten Seiten. Die Wattzahlen für die Tierarten sind dort genannt oder als abgeleitet markiert. Ob Terrariumgröße und Wattzahl zusammenpassen, kann nur ein Thermometer am Sonnenplatz zeigen, und bei UV-B nur ein UV-Index-Messgerät.</p>' + socketForm(t);
+    return h;
+  }
+  function readSockets(t) {
+    const g = id => (document.getElementById(id) || {}).value ?? '';
+    const old = TL.socketsOf(t), out = [];
+    for (let i = 0; i < old.length; i++) {
+      if (!document.getElementById('sk' + i + '-name')) { out.push(old[i]); continue; }
+      const b = g('sk' + i + '-ballast');
+      out.push({ id: old[i].id, name: g('sk' + i + '-name').trim(), kind: g('sk' + i + '-kind') === 'exo' ? 'exo' : 'free', base: g('sk' + i + '-base'), role: g('sk' + i + '-role') || 'any', ballast: b === '1' ? true : b === '0' ? false : null, ballastModel: g('sk' + i + '-bmodel').trim(), ballastW: TL.parseNum(g('sk' + i + '-bw')), maxW: TL.parseNum(g('sk' + i + '-maxw')), cage: g('sk' + i + '-cage') === '1' });
+    }
+    return out;
+  }
+
+  /* ===== Substrat ===== */
+  function viewSubs() {
+    const ts = terrs(); if (!ts.length) return '<div class="empty">Leg zuerst ein Terrarium an.</div>';
+    const e = S.subs = S.subs || { tid: ts[0].id };
+    if (!ts.some(x => x.id === e.tid)) e.tid = ts[0].id;
+    const lit = n => n === null ? '' : fmt(n, 1).replace(/,0$/, '');
+    const range = n => n.litersMin === n.litersMax ? lit(n.litersMin) + ' Liter' : lit(n.litersMin) + ' bis ' + lit(n.litersMax) + ' Liter';
+    let h = '<div class="grid g-3">' + ts.map(x => {
+      const n = TL.substrateNeed(x, TL.parseNum(x.subDepth)), spc = TL.SPECIES[x.species] || TL.SPECIES.other;
+      return '<button class="card tpanel ' + sp(x) + '" data-a="stid" data-v="' + x.id + '" style="text-align:left;cursor:pointer;font:inherit;color:inherit' + (e.tid === x.id ? ';outline:2px solid var(--sp)' : '') + '"><div class="hd"><div class="grow col" style="gap:2px"><h2>' + esc(x.name) + '</h2><span class="sptag">' + esc(spc.name) + '</span></div></div><div class="meta"><span class="tag">' + (!n ? 'keine Angabe' : n.missing.length ? (n.missing.includes('size') ? 'Maße fehlen' : 'Höhe wählen') : esc(range(n))) + '</span></div></button>';
+    }).join('') + '</div>';
+    const t = ts.find(x => x.id === e.tid), sb = TL.SUBSTRATE[t.species], spc = TL.SPECIES[t.species] || TL.SPECIES.other, sz = t.size || {};
+    if (!sb) return h + '<div class="empty">Für diese Art hat die App keine Substratangaben.</div>';
+    const n = TL.substrateNeed(t, TL.parseNum(t.subDepth));
+    h += '<form id="sub-form" class="card ' + sp(t) + '" novalidate style="border-top:4px solid var(--sp)"><div class="card-h"><div class="grow col" style="gap:2px"><h3>Substrat für ' + esc(t.name) + '</h3><span class="sptag">' + esc(spc.name) + '</span></div></div>' +
+      '<p class="sm"><b>Schichthöhe laut Quelle:</b> ' + esc(sb.depth.text) + (sb.depth.src.length ? '<span class="src">' + srcLinks(sb.depth.src) + '</span>' : '') + '</p>' +
+      '<div class="f-grid"><label class="f">Länge in cm<input class="num-in" inputmode="decimal" id="sb-l" value="' + (sz.l ? esc(sz.l) : '') + '"></label><label class="f">Breite in cm<input class="num-in" inputmode="decimal" id="sb-b" value="' + (sz.b ? esc(sz.b) : '') + '"></label><label class="f">Eigene Schichthöhe in cm<input class="num-in" inputmode="decimal" id="sb-d" value="' + (t.subDepth ? esc(t.subDepth) : '') + '" placeholder="' + (sb.depth.min ? 'leer = Wert der Quelle' : 'z. B. 10') + '"></label></div>' +
+      '<div class="row" style="margin-top:12px"><button type="submit" class="btn pri">Berechnen und speichern</button></div>' +
+      (n && !n.missing.length ? '<div class="banner lv-green" style="margin-top:14px"><span class="grow"><b>' + esc(range(n)) + '</b> bei ' + esc(sz.l) + ' × ' + esc(sz.b) + ' cm Grundfläche und ' + (n.depth.own ? 'deiner Höhe von ' + lit(n.depth.min) + ' cm' : (n.depth.min === n.depth.max ? 'mindestens ' : '') + lit(n.depth.min) + (n.depth.min === n.depth.max ? '' : ' bis ' + lit(n.depth.max)) + ' cm laut Quelle') + '.</span></div>' +
+        (n.parts.length ? '<h4 style="margin:14px 0 6px">So viel von jedem Bestandteil</h4><div class="list">' + n.parts.map(p => '<div class="li"><div class="grow col" style="gap:2px"><span class="main-t sm">' + esc(p.name) + '</span><span class="xs">' + esc(p.pct) + ' % der Mischung</span></div><span class="num">' + (p.min === p.max ? lit(p.min) : lit(p.min) + ' bis ' + lit(p.max)) + ' Liter</span></div>').join('') + '</div><p class="xs"><span class="src">' + srcLinks(sb.mixSrc) + '</span></p>' : '') +
+        '<p class="xs" style="margin-top:8px">Rechnung: Länge × Breite × Höhe, durch 1000. Das ist die Menge, die in die Schicht kommt. Einrichtung, Wasserschale und Wurzeln nehmen Platz weg, und Substrat setzt sich. Kauf lieber etwas mehr.</p>'
+        : '<div class="banner lv-yellow" style="margin-top:14px"><span class="grow">' + (n && n.missing.includes('size') ? 'Trag Länge und Breite ein, dann rechnet die App die Menge.' : 'Die Quelle nennt für diese Art keine Höhe. Trag oben deine eigene Schichthöhe ein.') + '</span></div>') + '</form>';
+    h += '<section class="card"><div class="card-h"><h3>Was ins Terrarium gehört</h3></div><div class="list">' + sb.points.map(([ti, tx, src]) => '<div class="li"><div class="grow col" style="gap:3px"><span class="main-t sm">' + esc(ti) + '</span><span class="sm">' + esc(tx) + '</span><span class="src">' + srcLinks(src) + '</span></div></div>').join('') + '</div></section>';
+    h += '<section class="card"><div class="card-h"><h3>Zum Suchen bei Amazon</h3></div><div class="row wrap" style="gap:8px">' + sb.shop.map(([l, q]) => '<a class="btn sm" href="' + esc(TL.shopLink(q)) + '" target="_blank" rel="noopener">' + esc(l) + '</a>').join('') + '</div><p class="xs" style="margin-top:10px">Die Links öffnen eine Amazon-Suche, sortiert nach Kundenbewertung. Lies dort die Zutatenliste: Erde ohne Dünger und ohne Zusätze ist die Voraussetzung, das steht in den Quellen aber nicht ausdrücklich, prüfe es daher selbst.</p></section>';
+    return h;
   }
   /* ===== Lampen-Check: eine Lampe prüfen, bevor man sie kauft ===== */
   function viewCheck() {
@@ -1248,7 +1336,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
   }
 
   /* ================= Rahmen und Navigation ================= */
-  const NAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['check', 'Lampen-Check', 'lamp'], ['wissen', 'Wissen', 'other'], ['animals', 'Tiere', 'paw'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
+  const NAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['empf', 'Empfehlungen', 'lamp'], ['check', 'Lampen-Check', 'lamp'], ['subs', 'Substrat', 'soil'], ['wissen', 'Wissen', 'other'], ['animals', 'Tiere', 'paw'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
   const TABNAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['settings', 'Mehr', 'more']];
   const NAVOF = { terr: 'terrs', entry: 'dash', lampform: 'lamps', taskform: 'tasks', animalform: 'animals' };
   const FORMS = ['entry', 'lampform', 'taskform', 'animalform'];
@@ -1261,6 +1349,8 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     if (v === 'tasks') return ['Aufgaben', 'Pflege nach Intervall', '<button class="btn pri" data-a="knew">' + icon('plus', 16) + 'Aufgabe</button>'];
     if (v === 'lamps') return ['Lampen', 'Alter und Tauschtermin', '<button class="btn pri" data-a="lnewform">' + icon('plus', 16) + 'Lampe</button>'];
     if (v === 'wissen') return ['Wissen', 'Artenprofile, Checkliste und Lexikon, mit Quellen', ''];
+    if (v === 'empf') return ['Lampen-Empfehlungen', 'Was passt in deine Fassungen?', ''];
+    if (v === 'subs') return ['Substrat', 'Welches, wie viel, für wen', ''];
     if (v === 'check') return ['Lampen-Check', 'Passt eine Lampe zum Tier?', ''];
     if (v === 'animals') return ['Tiere', 'Tagebuch', ''];
     if (v === 'warn') return ['Warnungen', 'Was braucht Aufmerksamkeit?', ''];
@@ -1277,7 +1367,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     if (!S.ready) return;
     S.pendingRender = false;
     const v = S.view;
-    const body = v === 'dash' ? viewDash() : v === 'terrs' ? viewTerrs() : v === 'terr' ? viewTerr() : v === 'tasks' ? viewTasks() : v === 'lamps' ? viewLamps() : v === 'check' ? viewCheck() : v === 'wissen' ? viewWissen()
+    const body = v === 'dash' ? viewDash() : v === 'terrs' ? viewTerrs() : v === 'terr' ? viewTerr() : v === 'tasks' ? viewTasks() : v === 'lamps' ? viewLamps() : v === 'check' ? viewCheck() : v === 'empf' ? viewEmpf() : v === 'subs' ? viewSubs() : v === 'wissen' ? viewWissen()
       : v === 'animals' ? viewAnimals() : v === 'warn' ? viewWarn() : v === 'entry' ? viewEntry() : v === 'lampform' ? viewLampForm() : v === 'taskform' ? viewTaskForm()
       : v === 'animalform' ? viewAnimalForm() : viewSettings();
     const active = NAVOF[v] || v;
@@ -1351,6 +1441,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
         S.entry = { tid, t: '', h: '', ts: nowLocalInput(now()), n: '' };
         openForm('entry'); setTimeout(() => { const el = document.getElementById('e-t'); if (el) el.focus(); }, 30); break;
       }
+      case 'gempf': S.empf = { tid: v }; go('empf'); break;
       case 'etid': S.entry.tid = v; render(); break;
       case 'stp': {
         const [k, d] = v.split(':'); const cur = TL.parseNum(S.entry[k]);
@@ -1441,6 +1532,10 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       case 'ledit': { const l = lamps().find(x => x.id === v); if (l) { S.edit = clone(l); S.errors = {}; openForm('lampform'); } break; }
       case 'ldel': { const cc = c(); cc.lamps = cc.lamps.filter(x => x.id !== v); saveConfig(cc); toast('Lampe gelöscht'); goBack(); break; }
       case 'gotier': S.aid = v; S.edit = null; go('animals'); break;
+      case 'emtid': S.empf = { tid: v }; render(); break;
+      case 'stid': S.subs = { tid: v }; render(); break;
+      case 'skadd': { const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.empf || {}).tid); if (!t) break; t.equip = Object.assign({}, t.equip); t.equip.sockets = readSockets(t).concat({ id: TL.uid('s'), name: '', kind: 'free', base: 'E27', role: 'any', ballast: null, ballastModel: '', ballastW: null, maxW: null, cage: false }); saveConfig(cc); render(); break; }
+      case 'skdel': { const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.empf || {}).tid); if (!t) break; const l = readSockets(t); l.splice(Number(v), 1); t.equip = Object.assign({}, t.equip, { sockets: l }); saveConfig(cc); render(); break; }
       case 'wtab': S.wissen = Object.assign(S.wissen || {}, { tab: v }); render(); break;
       case 'wtid': S.wissen = Object.assign(S.wissen || {}, { tid: v }); render(); break;
       case 'wsetup': { const w = S.wissen || {}; const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === w.tid); if (!t) break; t.setup = Object.assign({}, t.setup); if (t.setup[v]) delete t.setup[v]; else t.setup[v] = true; saveConfig(cc); render(); break; }
@@ -1603,12 +1698,24 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       }
       if (i >= 0) cc.terrariums[i] = out; else cc.terrariums.push(out);
       saveConfig(cc); S.pf = null; S.errors = {}; render(); toast('Einrichtung gespeichert.' + note);
+    } else if (id === 'sock-form') {
+      const g = x => (document.getElementById(x) || {}).value ?? '';
+      const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.empf || {}).tid); if (!t) return;
+      t.equip = Object.assign({}, t.equip, { sockets: readSockets(t) });
+      t.size = { l: TL.parseNum(g('sz-l')), b: TL.parseNum(g('sz-b')), h: TL.parseNum(g('sz-h')) };
+      saveConfig(cc); toast('Fassungen gespeichert'); render();
+    } else if (id === 'sub-form') {
+      const g = x => (document.getElementById(x) || {}).value ?? '';
+      const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.subs || {}).tid); if (!t) return;
+      t.size = Object.assign({ h: null }, t.size, { l: TL.parseNum(g('sb-l')), b: TL.parseNum(g('sb-b')) });
+      const d = TL.parseNum(g('sb-d')); t.subDepth = d && d > 0 && d <= 100 ? d : null;
+      saveConfig(cc); toast('Gespeichert'); render();
     } else if (id === 'equip-form') {
       const v = x => (document.getElementById(x) || {}).value ?? '';
       const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === S.tid); if (!t) return;
       const b = v('q-ballast');
       const n = x => { const m = parseInt(v(x), 10); return Number.isFinite(m) && m >= 0 && m <= 20 ? m : null; };
-      t.equip = { covers: v('q-covers').trim(), ballast: b === '1' ? true : b === '0' ? false : null, notes: v('q-notes').trim() };
+      t.equip = { sockets: t.equip && t.equip.sockets, covers: v('q-covers').trim(), ballast: b === '1' ? true : b === '0' ? false : null, notes: v('q-notes').trim() };
       const sl = { exo: n('q-slexo'), shade: n('q-slshade') };
       if (sl.exo !== null || sl.shade !== null) t.equip.slots = sl;
       saveConfig(cc); toast('Technik gespeichert'); render();

@@ -140,6 +140,131 @@
   const AMAZON = 'https://www.amazon.de/s?s=review-rank&k=';
   function shopLink(q) { return AMAZON + encodeURIComponent(q); }
 
+  /* ---------- Fassungen und Lampenkatalog ----------
+     Nur Angaben, die auf den verlinkten Seiten stehen. base null heißt: Die Produktseite nennt die Sockelgröße nicht, bitte vor dem Kauf prüfen.
+     fit je Art: [Stufe, Begründung]. Stufe 2 = passt, 1 = bedingt, 0 = eher nicht. Begründungen, die aus Quellen abgeleitet sind, sind so markiert. */
+  Object.assign(SOURCES, {
+    exoUvb: { label: 'Exo Terra, Datenblatt Reptile UVB100 und UVB200', url: 'https://legacy.exo-terra.com/download/sales_sheets/Sales_Sheet_Reptile_UVB_NA-EU.pdf' },
+    exoUvb100E27: { label: 'Olibetta, Exo Terra Reptile UVB 100, 25 W/E27', url: 'https://www.olibetta.ch/en-CH/exo-terra/reptile-uvb-100' },
+    hpIntense: { label: 'Hugglepets, Exo Terra Intense Basking Spot (25–150 W)', url: 'https://www.hugglepets.co.uk/product/exo-terra-intense-basking-spot/' },
+    hpDaytime: { label: 'Hugglepets, Exo Terra Daytime Heat Lamp (15–150 W)', url: 'https://hugglepets.co.uk/product/exo-terra-daytime-heat-lamp' },
+    luckyDesert: { label: 'Reptile Centre, Lucky Reptile Bright Sun UV Desert (E27, mit Vorschaltgerät)', url: 'https://reptilecentre.com/products/lucky-reptile-bright-sun-uv-desert' },
+    luckyJungle: { label: 'Testsieger.de, Lucky Reptile Bright Sun UV Jungle 35 W (E27, Thermo Socket und Bright Control nötig)', url: 'https://www.testsieger.de/moebel-und-accessoires/70AMA9GHGWXBK-lucky-reptile-bright-sun-uv-jungle-wattstaerke35-watt.html' },
+    rfVeiled: { label: 'ReptiFiles, Veiled Chameleon Care Sheet (Jemenchamäleon)', url: 'https://reptifiles.com/wp-content/uploads/2021/09/Veiled-Chameleon-Care-Sheet-ReptiFiles.pdf' },
+    rfLeachie: { label: 'ReptiFiles, Leachie Gecko Care Sheet (Neukaledonischer Riesengecko)', url: 'https://reptifiles.com/wp-content/uploads/2022/06/Leachie-Gecko-Care-Sheet-ReptiFiles-PDF.pdf' },
+    zenCorn: { label: 'Zen Habitats, Corn Snake Care Guide (Madeline Smith)', url: 'https://zenhabitats.com/blogs/reptile-care-sheets-resources/corn-snake-essential-care-information' }
+  });
+  const CATALOG = [
+    { id: 'exoUvb100', brand: 'Exo Terra', model: 'Reptile UVB100 (tropisch)', kind: 'uvb', watts: [13, 25], base: 'E27', ballast: 'none', q: 'Exo Terra Reptile UVB100 25W',
+      facts: 'Kompakte Spirallampe mit Schraubsockel, „ideal für tropische und subtropische Reptilien“. Wirkt laut Hersteller bis 40 cm. UV-B in 10 cm Abstand: 105 µW/cm² (13 W), 170 µW/cm² (25 W).',
+      fit: { kn: [2, 'Die schwächere Lampenreihe passt zu Ferguson-Zone 1–2 (abgeleitet). Nur über einem Teil des Terrariums, damit es Schatten gibt.'], jc: [1, 'Das Jemenchamäleon steht in Ferguson-Zone 3. Die „tropische“ Reihe ist schwächer als die Wüstenreihe, daher nur mit UV-Index-Messgerät (abgeleitet).'], rg: [2, 'Zone 1–2 laut Ableitung aus den Verwandten. Eine schwache Stufe, mit Abstand und Schatten.'] },
+      pick: { kn: [13, 25], jc: [25], rg: [13, 25] }, sources: ['exoUvb', 'exoUvb100E27', 'baines'] },
+    { id: 'exoUvb200', brand: 'Exo Terra', model: 'Reptile UVB200 (Wüste, hohe Leistung)', kind: 'uvb', watts: [13, 25], base: null, ballast: 'none', q: 'Exo Terra Reptile UVB200 25W',
+      facts: 'Kompakte Spirallampe mit Schraubsockel für „Reptilien mit sehr hohem UV-Bedarf“, für Wüsten und höhere Terrarien. UV-B in 10 cm Abstand: 130 µW/cm² (13 W), 225 µW/cm² (25 W).',
+      fit: { kn: [1, 'Für Zone 1–2 eher zu stark (abgeleitet). Nur mit viel Abstand und großem Schattenbereich, am besten mit UV-Index-Messgerät.'], jc: [2, 'Zone 3 braucht mehr UV-B (Baines). Die Hochleistungsreihe passt dazu. Abstand per UV-Index-Messgerät einstellen.'], rg: [0, 'Zu stark für eine Art mit Zone 1–2 (abgeleitet).'] },
+      pick: { kn: [13], jc: [25], rg: [] }, sources: ['exoUvb', 'baines'] },
+    { id: 'exoIntense', brand: 'Exo Terra', model: 'Intense Basking Spot', kind: 'heat', watts: [25, 50, 75, 100, 150], base: null, ballast: 'none', q: 'Exo Terra Intense Basking Spot',
+      facts: 'Wärmespot für den Sonnenplatz. Händlerangabe: „Creates a basking area for thermoregulation“.',
+      fit: { kn: [2, 'Wärme für den Sonnenplatz. Für Kornnattern nennt keine gesammelte Quelle eine Wattzahl. Starte mit der kleinsten Stufe und miss die Temperatur am Platz.'], jc: [2, 'ReptiFiles nennt für das Jemenchamäleon „ein paar weiße 50-W-Wärmelampen“, darunter diesen Spot.'], rg: [2, 'The Bio Dude: 50 W am Dimmer, Sundown Reptiles: 25 W gedimmt.'] },
+      pick: { kn: [25], jc: [50], rg: [25, 50] }, sources: ['hpIntense', 'rfVeiled', 'biodude', 'sundown'] },
+    { id: 'exoDaytime', brand: 'Exo Terra', model: 'Daytime Heat Lamp', kind: 'heat', watts: [15, 25, 40, 60, 100, 150], base: null, ballast: 'none', q: 'Exo Terra Daytime Heat Lamp',
+      facts: 'Tageslicht-Wärmelampe mit Neodymglas, „schafft Wärmegefälle“. Händlerangabe: kombinierbar mit Nacht-Wärmelampe.',
+      fit: { kn: [2, 'Sanfte Wärme für den Sonnenplatz. Keine Wattangabe aus Quellen für Kornnattern, daher klein anfangen.'], jc: [1, 'Gut als Zusatzwärme. Für den Sonnenplatz nennt ReptiFiles 50 W.'], rg: [2, 'Niedrige Stufen passen zu 25 W gedimmt (Sundown Reptiles).'] },
+      pick: { kn: [15, 25], jc: [25], rg: [25] }, sources: ['hpDaytime', 'sundown'] },
+    { id: 'zmPower', brand: 'Zoo Med', model: 'PowerSun UV (selbstvorschaltend)', kind: 'both', watts: [80, 100, 160], base: null, ballast: 'none', q: 'Zoo Med PowerSun UV',
+      facts: 'Quecksilberdampflampe mit eingebautem Vorschaltgerät: UV-A, UV-B und Wärme in einer Lampe, „passt in eine normale Keramikfassung“. Nicht dimmbar. Nicht bewegen oder erschüttern. Nach 12 Monaten tauschen.',
+      fit: { kn: [1, 'Viel Leistung für wenig UV-B-Bedarf. Nur in größeren Terrarien mit viel Abstand.'], jc: [1, 'Liefert Wärme und UV in einem. Keine UV-B-Zahl angegeben, daher nur mit UV-Index-Messgerät.'], rg: [0, 'Zu stark und nicht dimmbar. Die Quellen nennen für diese Art 25–50 W gedimmt.'] },
+      pick: { kn: [80], jc: [80], rg: [] }, sources: ['zoomedPS'] },
+    { id: 'lrDesert', brand: 'Lucky Reptile', model: 'Bright Sun UV Desert', kind: 'both', watts: [35, 50, 70, 100], base: 'E27', ballast: 'needs', q: 'Lucky Reptile Bright Sun UV Desert 35W',
+      facts: 'Metalldampflampe mit Tageslichtspektrum (6000 K) für Wüstenarten. Passt in eine E27-Porzellanfassung, braucht ein Vorschaltgerät „wie das Lucky Reptile Bright Control“. Hersteller empfiehlt jährlichen Tausch.',
+      fit: { kn: [1, 'Der Tierschutzbund nennt Metalldampf für Sonnenplätze besser als Halogen. Die Wüstenvariante ist für Zone 1–2 aber stark, mit Abstand einsetzen.'], jc: [2, 'Tageslicht, UV und Wärme für Zone 3. Hohe Leistung, Abstand per UV-Index-Messgerät einstellen.'], rg: [0, 'Zu stark für diese Art (abgeleitet).'] },
+      pick: { kn: [35], jc: [35, 50], rg: [] }, sources: ['luckyDesert', 'dtschbKn'] },
+    { id: 'lrJungle', brand: 'Lucky Reptile', model: 'Bright Sun UV Jungle', kind: 'both', watts: [35], base: 'E27', ballast: 'own', q: 'Lucky Reptile Bright Sun UV Jungle 35W',
+      facts: 'Metalldampflampe für tropische Arten mit E27-Gewinde. Händlerangabe: „Lucky Reptile Thermo Socket und Bright Control Vorschaltgerät erforderlich“. Keine UV-Zahlen angegeben.',
+      fit: { kn: [2, 'Der Tierschutzbund nennt Metalldampf für Sonnenplätze besser als Halogen. Tropische Variante passt zu Zone 1–2 (abgeleitet).'], jc: [1, 'Tropische Variante, für Zone 3 eher schwächer (abgeleitet). Nur mit UV-Index-Messgerät.'], rg: [1, 'Für diese Art nennen die Quellen Halogen am Dimmer. Metalldampf ist dort nicht belegt, nur mit UV-Index-Messgerät.'] },
+      pick: { kn: [35], jc: [35], rg: [35] }, sources: ['luckyJungle', 'dtschbKn'] }
+  ];
+  function socketsOf(t) { return t && t.equip && Array.isArray(t.equip.sockets) ? t.equip.sockets : []; }
+  /** Welche Lampen passen in eine Fassung? Sortiert nach Eignung für die Art. */
+  function socketRecs(t, s) {
+    const out = [];
+    CATALOG.forEach(it => {
+      const f = it.fit[t.species]; if (!f || f[0] === 0) return;
+      const notes = [];
+      if (s.role === 'uvb' && it.kind === 'heat') return;
+      if (s.role === 'heat' && it.kind === 'uvb') return;
+      if (s.kind === 'exo' && it.brand !== 'Exo Terra') return;
+      if (s.ballast === true && it.ballast === 'none') return;
+      if (s.ballast === false && it.ballast !== 'none') return;
+      if (s.base && it.base && s.base !== it.base) return;
+      let watts = it.watts.slice();
+      if (Number.isFinite(s.maxW)) watts = watts.filter(w => w <= s.maxW);
+      if (s.ballast === true && Number.isFinite(s.ballastW)) watts = watts.filter(w => w === s.ballastW);
+      if (!watts.length) return;
+      if (s.ballast === true && it.ballast === 'own' && s.ballastModel && !/lucky|bright\s*control/i.test(s.ballastModel)) return;
+      if (s.ballast === true && it.ballast === 'own') notes.push('Braucht das Lucky-Reptile-System (Thermo Socket und Bright Control). Das passt nur, wenn dein Vorschaltgerät genau das ist.');
+      else if (s.ballast === true) notes.push(Number.isFinite(s.ballastW) ? 'Nur die ' + s.ballastW + '-W-Stufe passt zu deinem Vorschaltgerät.' : 'Das Vorschaltgerät muss zur Lampe und zur Wattzahl passen. Trag Watt und Typ deines Geräts ein, dann filtert die App genau.');
+      if (!it.base) notes.push('Die Produktseite nennt die Sockelgröße nicht. Prüfe vor dem Kauf, dass es E27 ist.');
+      if (it.id === 'zmPower') notes.push('Die Produktseite nennt „Keramikfassung“, aber nicht E26 oder E27. Prüfe das vor dem Kauf.');
+      if (s.cage && it.kind !== 'uvb') notes.push('Lampe im Käfig, dann bleibt sie außer Reichweite des Tieres.');
+      let pw = ((it.pick && it.pick[t.species]) || []).filter(w => watts.includes(w));
+      if (!pw.length) {
+        const want = (it.pick && it.pick[t.species]) || [];
+        const lo = watts.filter(w => w <= Math.max.apply(null, want.length ? want : [watts[watts.length - 1]]));
+        pw = lo.length ? [lo[lo.length - 1]] : [watts[0]];
+        if (want.length) notes.push('Die Quelle nennt ' + want.join(' oder ') + ' W. In diese Fassung passen höchstens ' + watts[watts.length - 1] + ' W, daher ist diese Lampe schwächer.');
+      }
+      out.push({ item: it, watts, pickW: pw, fit: f[0], why: f[1], notes });
+    });
+    return out.sort((a, b) => b.fit - a.fit || (a.item.kind === 'both') - (b.item.kind === 'both'));
+  }
+  /** Bester Vorschlag je Fassung: erst UV-B, dann Wärme abdecken, dann das nächstbeste. */
+  function lampPlan(t) {
+    const socks = socketsOf(t).map(s => ({ s, recs: socketRecs(t, s) }));
+    const need = LIGHTING[t.species] ? ['uvb', 'heat'] : [];
+    socks.slice().sort((a, b) => a.recs.length - b.recs.length).forEach(x => {
+      let top = x.recs.find(r => r.fit >= 1 && (r.item.kind === 'both' ? need.length : need.includes(r.item.kind)) && need.length);
+      if (top) { const k = top.item.kind; if (k === 'both') need.length = 0; else need.splice(need.indexOf(k), 1); }
+      x.top = top || x.recs[0] || null;
+    });
+    return socks;
+  }
+
+  /* ---------- Substrat ----------
+     Nur Werte aus den Quellen. min/max in cm Schichthöhe, null = die Quelle nennt keine Zahl. */
+  const SUBSTRATE = {
+    kn: { depth: { min: 7.5, max: 10, src: ['zenCorn'], text: '3–4 Zoll (7,5–10 cm)' },
+      mix: [['Oberboden (Erde)', 40], ['Torf', 20], ['Sand', 30], ['Ton', 10]],
+      mixSrc: ['zenCorn', 'dtschbKn'],
+      points: [['Mischung', 'Erde, Sand, Ton und Torf. Der Tierschutzbund nennt dazu optional dünn Rindenmulch. Zen Habitats: 40 % Oberboden, 20 % Torf, 30 % Sand, 10 % Ton.', ['dtschbKn', 'zenCorn']], ['Feuchte', 'Ein Bereich feucht, nicht alles nass. Zu nasses Substrat kann Schuppenfäule auslösen. Zusätzlich eine Feuchtbox mit feuchtem Moos.', ['dtschbKn', 'zenCorn']], ['Graben', 'Teile des Substrats erhöhen, Kornnattern graben gern. Laub obenauf hält die Feuchte.', ['dtschbKn', 'zenCorn']], ['Wechsel', 'Der Tierschutzbund: etwa zweimal im Jahr. Zen Habitats: alle 3–4 Monate, Kot sofort entfernen.', ['dtschbKn', 'zenCorn']]],
+      shop: [['Terrarium-Erde, ohne Zusätze', 'Terrarium Bodengrund Erde Schlange'], ['Spielsand', 'Spielsand ungefärbt'], ['Torf', 'Torf Gartentorf'], ['Tonerde', 'Tonerde Pulver Terrarium'], ['Laub und Rindenmulch', 'Terrarium Laub Rindenmulch Reptilien']] },
+    jc: { depth: { min: null, max: null, src: [], text: 'Die gesammelten Quellen nennen keine Schichthöhe.' },
+      mix: [],
+      mixSrc: ['dtschbJc', 'rfVeiled'],
+      points: [['Mischung', 'Der Tierschutzbund nennt Sand und Erde, die Wasser aufnimmt. Verhältnis steht nicht dabei.', ['dtschbJc']], ['Drainage', 'ReptiFiles: Eine normale Substratschicht wird schnell nass. Empfohlen ist ein Bodenablauf, zum Beispiel selbst gebaut mit Eimer. Dann bleibt unten kein Wasser stehen.', ['rfVeiled']], ['Pflanzen', 'Dichte Bepflanzung mit Ficus, Farnen, Sukkulenten und Bromelien. Die brauchen Erde mit Wasserabzug.', ['dtschbJc']]],
+      shop: [['Terrarium-Erde', 'Terrarium Bodengrund Erde Chamäleon'], ['Spielsand', 'Spielsand ungefärbt'], ['Blähton für die Drainage', 'Blähton Drainage Terrarium']] },
+    rg: { depth: { min: 7.5, max: null, src: ['rfLeachie'], text: 'mindestens 3 Zoll (7,5 cm)' },
+      mix: [['Oberboden (Erde)', 60], ['Kokosfaser', 40]],
+      mixSrc: ['rfLeachie'],
+      points: [['Mischung', 'ReptiFiles: 60 % Oberboden und 40 % Kokosfaser, oder Zoo Med Reptisoil, Zoo Med Eco Earth, Exo Terra Plantation Soil oder The Bio Dude Terra Fauna.', ['rfLeachie']], ['Bioaktiv', 'The Bio Dude: tiefes, gut drainiertes Substrat mit Drainageschicht und Bodentieren. Riesengeckos erzeugen viel Abfall. Die Quelle nennt keine Dicke der Drainageschicht.', ['biodude']], ['Laub', 'Eine großzügige Schicht Laub obenauf.', ['rfLeachie']], ['Wechsel', 'Kot und Urate täglich entfernen. Substrat alle 3–4 Monate komplett tauschen.', ['rfLeachie']]],
+      shop: [['The Bio Dude Terra Fauna', 'The Bio Dude Terra Fauna bioaktiv'], ['Zoo Med Eco Earth', 'Zoo Med Eco Earth Kokos'], ['Zoo Med Reptisoil', 'Zoo Med Reptisoil'], ['Exo Terra Plantation Soil', 'Exo Terra Plantation Soil'], ['Laub für Terrarien', 'Terrarium Laub Buchenlaub']] }
+  };
+  /** Menge Substrat in Litern aus Grundfläche und Schichthöhe. depthOverride in cm ersetzt die Quellenwerte. */
+  function substrateNeed(t, depthOverride) {
+    const sb = SUBSTRATE[t && t.species]; if (!sb) return null;
+    const sz = t.size || {}, l = Number(sz.l), b = Number(sz.b);
+    const dep = Number.isFinite(depthOverride) && depthOverride > 0 ? { min: depthOverride, max: depthOverride, own: true } : { min: sb.depth.min, max: sb.depth.max === null ? sb.depth.min : sb.depth.max, own: false };
+    const res = { sb, depth: dep, area: null, litersMin: null, litersMax: null, parts: [], missing: [] };
+    if (!(l > 0 && b > 0)) res.missing.push('size');
+    if (dep.min === null) res.missing.push('depth');
+    if (res.missing.length) return res;
+    res.area = l * b;
+    const r = x => Math.round(x * 10) / 10;
+    res.litersMin = r(l * b * dep.min / 1000); res.litersMax = r(l * b * dep.max / 1000);
+    res.parts = sb.mix.map(([name, pct]) => ({ name, pct, min: r(res.litersMin * pct / 100), max: r(res.litersMax * pct / 100) }));
+    return res;
+  }
+
   /** Prüft die Lampen eines Terrariums gegen den Bedarf der Art. Gibt Hinweise mit Stufe zurück, schlimmste zuerst. */
   function lampAdvice(t, lampList) {
     const out = [];
@@ -940,7 +1065,7 @@
   }
 
   return {
-    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, KNOWLEDGE, LEXICON, SETUP_CHECK, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
+    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, CATALOG, socketsOf, socketRecs, lampPlan, SUBSTRATE, substrateNeed, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, KNOWLEDGE, LEXICON, SETUP_CHECK, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,

@@ -399,3 +399,60 @@ test('Wissen: alle Quellen existieren, jeder Eintrag hat Text', () => {
   }
   TL.LEXICON.forEach(e => { assert.ok(e.term && e.text); check(e.src); });
 });
+
+test('Fassungen: Exo-Abdeckung nur Exo Terra und höchstens 26 W', () => {
+  const t = TL.newTerrarium('jc', 'C');
+  const exo = { id: 's1', kind: 'exo', base: 'E27', ballast: false, maxW: 26, role: 'any' };
+  const r = TL.socketRecs(t, exo);
+  assert.ok(r.length >= 2);
+  r.forEach(x => { assert.equal(x.item.brand, 'Exo Terra'); assert.ok(x.watts.every(w => w <= 26)); });
+  assert.ok(r.every(x => x.fit >= 1));
+  const heat = r.find(x => x.item.id === 'exoIntense');
+  assert.deepEqual(heat.pickW, [25]);
+  assert.ok(heat.notes.some(n => /höchstens 25 W/.test(n)));
+});
+
+test('Fassungen: mit Vorschaltgerät nur Metalldampf, ohne nur selbstvorschaltend oder Halogen', () => {
+  const t = TL.newTerrarium('kn', 'K');
+  const mit = TL.socketRecs(t, { id: 'a', kind: 'free', base: 'E27', ballast: true, role: 'any' });
+  assert.ok(mit.length >= 1); mit.forEach(x => assert.ok(x.item.ballast !== 'none'));
+  const ohne = TL.socketRecs(t, { id: 'b', kind: 'free', base: 'E27', ballast: false, role: 'heat', cage: true });
+  assert.ok(ohne.length >= 1); ohne.forEach(x => { assert.equal(x.item.ballast, 'none'); assert.notEqual(x.item.kind, 'uvb'); });
+  const fremd = TL.socketRecs(t, { id: 'c', kind: 'free', base: 'E27', ballast: true, ballastModel: 'Osram Tischgerät', role: 'any' });
+  assert.ok(fremd.every(x => x.item.ballast !== 'own'));
+  const w = TL.socketRecs(t, { id: 'd', kind: 'free', base: 'E27', ballast: true, ballastW: 70, role: 'any' });
+  w.forEach(x => assert.deepEqual(x.watts, [70]));
+});
+
+test('Fassungen: Riesengecko bekommt keine starke UV-B-Lampe', () => {
+  const t = TL.newTerrarium('rg', 'G');
+  const r = TL.socketRecs(t, { id: 'g', kind: 'free', base: 'E27', ballast: false, role: 'any' });
+  assert.ok(!r.some(x => x.item.id === 'exoUvb200' || x.item.id === 'zmPower'));
+});
+
+test('Lampenplan deckt UV-B und Wärme ab, wenn Fassungen da sind', () => {
+  const t = TL.newTerrarium('jc', 'C');
+  t.equip = { sockets: [{ id: 'e1', kind: 'exo', base: 'E27', ballast: false, maxW: 26, role: 'any' }, { id: 'e2', kind: 'exo', base: 'E27', ballast: false, maxW: 26, role: 'any' }, { id: 'f', kind: 'free', base: 'E27', ballast: false, role: 'any' }] };
+  const p = TL.lampPlan(t);
+  assert.equal(p.length, 3);
+  const kinds = p.map(x => x.top && x.top.item.kind);
+  assert.ok(kinds.some(k => k === 'uvb' || k === 'both')); assert.ok(kinds.some(k => k === 'heat' || k === 'both'));
+});
+
+test('Substrat: Liter aus Grundfläche und Schichthöhe', () => {
+  const t = TL.newTerrarium('kn', 'K'); t.size = { l: 120, b: 60, h: 60 };
+  const n = TL.substrateNeed(t);
+  assert.equal(n.litersMin, 54); assert.equal(n.litersMax, 72);
+  assert.equal(n.parts.find(p => p.name === 'Sand').min, 16.2);
+  assert.equal(TL.substrateNeed(t, 5).litersMin, 36);
+  const jc = TL.newTerrarium('jc', 'C'); jc.size = { l: 60, b: 60, h: 120 };
+  assert.deepEqual(TL.substrateNeed(jc).missing, ['depth']);
+  assert.equal(TL.substrateNeed(jc, 10).litersMin, 36);
+  const no = TL.newTerrarium('rg', 'G'); no.size = {};
+  assert.deepEqual(TL.substrateNeed(no).missing, ['size']);
+});
+
+test('Katalog und Substrat: alle Quellen existieren', () => {
+  TL.CATALOG.forEach(it => { it.sources.forEach(k => assert.ok(TL.SOURCES[k], k)); for (const sp of ['kn', 'jc', 'rg']) assert.ok(it.fit[sp], it.id + sp); });
+  for (const sp of ['kn', 'jc', 'rg']) { const s = TL.SUBSTRATE[sp]; s.points.forEach(p => p[2].forEach(k => assert.ok(TL.SOURCES[k], k))); s.mixSrc.forEach(k => assert.ok(TL.SOURCES[k], k)); }
+});
