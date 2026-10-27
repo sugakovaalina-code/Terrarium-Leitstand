@@ -930,6 +930,32 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       groups.filter(g => g[1].length).map(g => '<section class="card"><div class="card-h"><h3>' + g[0] + '</h3><span class="xs">' + g[1].length + '</span></div><div class="list">' + g[1].map(x => taskRow(x, f === 'all')).join('') + '</div></section>').join('') +
       (tl.length ? '' : '<div class="empty">Keine Aufgaben.</div>') + '<p class="xs">Die vorgegebenen Intervalle sind Startwerte der App, keine Haltungsvorschrift. Mit dem Stift änderst du Intervall, Name und Terrarium.</p>';
   }
+  /* ===== Lampen-Check: eine Lampe prüfen, bevor man sie kauft ===== */
+  function viewCheck() {
+    const ts = terrs(); if (!ts.length) return '<div class="empty">Leg zuerst ein Terrarium an.</div>';
+    const c = S.chk = S.chk || { tid: ts[0].id, type: 'uvbT5', brand: '', model: '', watt: '', pct: '', fix: '', pos: '', guard: '', rep: '' };
+    if (!ts.some(x => x.id === c.tid)) c.tid = ts[0].id;
+    const own = lamps().filter(l => l.tid === c.tid);
+    return '<section class="card"><div class="card-h"><h3>Passt diese Lampe zum Tier?</h3></div><p class="sm">Trag die Lampe ein, die du gefunden hast, und wähle das Terrarium. Die App prüft sie nach dem Bedarf der Tierart, bevor du sie kaufst oder einsetzt.</p>' +
+      '<div class="f-grid" style="margin-top:12px"><label class="f">Für welches Terrarium?<select id="c-tid">' + ts.map(x => '<option value="' + x.id + '"' + (c.tid === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>').join('') + '</select></label>' +
+      '<label class="f">Art der Lampe<select id="c-type">' + Object.entries(TL.LAMP_TYPES).filter(([k]) => k !== 'unknown').map(([k, v]) => '<option value="' + k + '"' + (c.type === k ? ' selected' : '') + '>' + esc(v.label) + '</option>').join('') + '</select></label></div>' +
+      '<div class="f-grid"><label class="f">Hersteller<input id="c-brand" value="' + esc(c.brand) + '" placeholder="z. B. Exo Terra, Arcadia"></label><label class="f">Modell und Nummer<input id="c-model" value="' + esc(c.model) + '" placeholder="z. B. T5 12 % oder 5.0"></label></div>' +
+      '<div class="f-grid"><label class="f">Watt<input class="num-in" inputmode="decimal" id="c-watt" value="' + esc(c.watt) + '"></label><label class="f">UV-B-Stärke in %<input class="num-in" inputmode="decimal" id="c-pct" value="' + esc(c.pct) + '" placeholder="nur UV-B, z. B. 12"></label>' +
+      '<label class="f">Soll sitzen in<input id="c-fix" value="' + esc(c.fix) + '" placeholder="z. B. Exo Terra Abdeckung klein oder Lampenschirm"></label></div>' +
+      '<div class="f-grid"><label class="f">Position<select id="c-pos"><option value=""' + (!c.pos ? ' selected' : '') + '>weiß nicht</option><option value="above"' + (c.pos === 'above' ? ' selected' : '') + '>über dem Gitter / in der Abdeckung</option><option value="inside"' + (c.pos === 'inside' ? ' selected' : '') + '>im Terrarium</option></select></label>' +
+      '<label class="f">Schutzkorb<select id="c-guard"><option value=""' + (!c.guard ? ' selected' : '') + '>weiß nicht</option><option value="1"' + (c.guard === '1' ? ' selected' : '') + '>ja</option><option value="0"' + (c.guard === '0' ? ' selected' : '') + '>nein</option></select></label>' +
+      '<label class="f">Ersetzt diese Lampe<select id="c-rep"><option value="">keine, kommt dazu</option>' + own.map(l => '<option value="' + l.id + '"' + (c.rep === l.id ? ' selected' : '') + '>' + esc(l.name) + '</option>').join('') + '</select></label></div></section>' +
+      '<div id="chk-res">' + checkResult() + '</div>';
+  }
+  function checkResult() {
+    const c = S.chk; const t = c && terrs().find(x => x.id === c.tid); if (!t) return '';
+    const cand = { type: c.type, brand: c.brand.trim(), model: c.model.trim(), watt: TL.parseNum(c.watt), uvbPct: TL.parseNum(c.pct), fixture: c.fix.trim(), pos: c.pos, guard: c.guard === '1' ? true : c.guard === '0' ? false : null, name: (c.brand + ' ' + c.model).trim() || (TL.LAMP_TYPES[c.type] || {}).label || 'Lampe' };
+    const r = TL.candidateCheck(t, cand, lamps(), c.rep || null);
+    const bad = r.items.filter(a => a.level !== 'none'), info = r.items.filter(a => a.level === 'none');
+    const head = r.level === 'green' ? '<div class="banner lv-green"><span class="grow"><b>Passt nach deinen Angaben</b> zu ' + esc((TL.SPECIES[t.species] || TL.SPECIES.other).name) + '. Sicher weißt du es erst mit einem UV-Index-Messgerät am Sonnenplatz.</span></div>'
+      : '<div class="banner lv-' + (r.level === 'yellow' ? 'yellow' : r.level === 'orange' ? 'orange' : 'red') + '"><span class="grow"><b>' + (r.level === 'yellow' ? 'Nicht optimal' : r.level === 'orange' ? 'Achtung' : 'Passt nicht') + '</b> bei ' + esc(t.name) + '. Die Gründe stehen unten.</span></div>';
+    return '<section class="card">' + head + (bad.length ? '<div class="list" style="margin-top:10px">' + bad.map(x => adviceLine(x, true)).join('') + '</div>' : '') + (info.length ? '<h4 style="margin:14px 0 6px">Noch offen</h4><div class="list">' + info.map(x => adviceLine(x, false)).join('') + '</div>' : '') + '</section>';
+  }
   function viewLamps() {
     const f = S.lampFilter, ll = lampList(f);
     const cards = f === 'all' ? '<div class="grid g-3">' + terrs().map(t => lightingCard(t, true)).join('') + '</div><p class="xs">Quellen und Details im Reiter Lampen des jeweiligen Terrariums.</p>' : lightingCard(terr(f), false);
@@ -1103,7 +1129,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
   }
 
   /* ================= Rahmen und Navigation ================= */
-  const NAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['animals', 'Tiere', 'paw'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
+  const NAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['check', 'Lampen-Check', 'lamp'], ['animals', 'Tiere', 'paw'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
   const TABNAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['settings', 'Mehr', 'more']];
   const NAVOF = { terr: 'terrs', entry: 'dash', lampform: 'lamps', taskform: 'tasks', animalform: 'animals' };
   const FORMS = ['entry', 'lampform', 'taskform', 'animalform'];
@@ -1115,6 +1141,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     if (v === 'terr') { const t = terr(S.tid); return [t.name, (TL.SPECIES[t.species] || TL.SPECIES.other).name, '<button class="btn pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button>']; }
     if (v === 'tasks') return ['Aufgaben', 'Pflege nach Intervall', '<button class="btn pri" data-a="knew">' + icon('plus', 16) + 'Aufgabe</button>'];
     if (v === 'lamps') return ['Lampen', 'Alter und Tauschtermin', '<button class="btn pri" data-a="lnewform">' + icon('plus', 16) + 'Lampe</button>'];
+    if (v === 'check') return ['Lampen-Check', 'Passt eine Lampe zum Tier?', ''];
     if (v === 'animals') return ['Tiere', 'Tagebuch', ''];
     if (v === 'warn') return ['Warnungen', 'Was braucht Aufmerksamkeit?', ''];
     if (v === 'settings') return ['Daten & Technik', '', ''];
@@ -1130,7 +1157,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     if (!S.ready) return;
     S.pendingRender = false;
     const v = S.view;
-    const body = v === 'dash' ? viewDash() : v === 'terrs' ? viewTerrs() : v === 'terr' ? viewTerr() : v === 'tasks' ? viewTasks() : v === 'lamps' ? viewLamps()
+    const body = v === 'dash' ? viewDash() : v === 'terrs' ? viewTerrs() : v === 'terr' ? viewTerr() : v === 'tasks' ? viewTasks() : v === 'lamps' ? viewLamps() : v === 'check' ? viewCheck()
       : v === 'animals' ? viewAnimals() : v === 'warn' ? viewWarn() : v === 'entry' ? viewEntry() : v === 'lampform' ? viewLampForm() : v === 'taskform' ? viewTaskForm()
       : v === 'animalform' ? viewAnimalForm() : viewSettings();
     const active = NAVOF[v] || v;
@@ -1343,6 +1370,12 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       else if (id === 'e-n') S.entry.n = ev.target.value;
       entryPreview();
     }
+    if (S.view === 'check' && /^c-/.test(id)) {
+      const m = { 'c-tid': 'tid', 'c-type': 'type', 'c-brand': 'brand', 'c-model': 'model', 'c-watt': 'watt', 'c-pct': 'pct', 'c-fix': 'fix', 'c-pos': 'pos', 'c-guard': 'guard', 'c-rep': 'rep' };
+      if (m[id]) { S.chk[m[id]] = ev.target.value; if (id === 'c-tid') S.chk.rep = ''; }
+      if (id === 'c-tid') { render(); return; }
+      const box = document.getElementById('chk-res'); if (box) box.innerHTML = checkResult();
+    }
     if (S.view === 'lampform' && /^l-/.test(id)) { const box = document.getElementById('lamp-adv'); if (box) box.innerHTML = lampFormAdvice(readLampForm()); }
     if (S.view === 'terr' && S.tab === 'setup' && /^p-(l|b|h|len|count)$/.test(id)) {
       const box = document.getElementById('size-check');
@@ -1369,6 +1402,12 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       const l = readLampForm(); const ty = TL.LAMP_TYPES[l.type];
       l.lifeMonths = ty && ty.months ? ty.months : '';
       S.edit = l; render(); return;
+    }
+    if (S.view === 'check' && /^c-/.test(id)) {
+      const m = { 'c-tid': 'tid', 'c-type': 'type', 'c-brand': 'brand', 'c-model': 'model', 'c-watt': 'watt', 'c-pct': 'pct', 'c-fix': 'fix', 'c-pos': 'pos', 'c-guard': 'guard', 'c-rep': 'rep' };
+      if (m[id]) { S.chk[m[id]] = ev.target.value; if (id === 'c-tid') S.chk.rep = ''; }
+      if (id === 'c-tid') { render(); return; }
+      const box = document.getElementById('chk-res'); if (box) box.innerHTML = checkResult();
     }
     if (S.view === 'lampform' && /^l-/.test(id)) { const box = document.getElementById('lamp-adv'); if (box) box.innerHTML = lampFormAdvice(readLampForm()); }
     if (id === 'imp-file' && ev.target.files && ev.target.files[0]) {

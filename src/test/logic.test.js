@@ -363,3 +363,15 @@ test('Lampenprüfung: Hersteller und Modell', () => {
   const voll = TL.lampAdvice(t, [1, 2].map(i => ({ id: 'z' + i, tid: 'a', type: 'incand', name: 'W' + i, hoursPerDay: 12, fixture: 'Lampenschirm' })));
   assert.ok(voll.some(a => /nur 1 Plätze/.test(a.text)));
 });
+
+test('Lampen-Check: Kandidat gegen Tier prüfen', () => {
+  const t = TL.newTerrarium('jc', 'Cham'); t.id = 'a'; t.equip = { covers: 'Exo Terra', ballast: true, notes: '' };
+  const schwach = TL.candidateCheck(t, { type: 'uvbT5', brand: 'Arcadia', model: 'ShadeDweller T5 2,4 %', name: 'x' }, [{ id: 'h', tid: 'a', type: 'heat', name: 'Spot', hoursPerDay: 12 }], null);
+  assert.equal(schwach.level, 'yellow');
+  const gut = TL.candidateCheck(t, { type: 'uvbT5', brand: 'Exo Terra', model: 'T5 12 %', name: 'y', fixture: 'Exo Terra Abdeckung' }, [{ id: 'h', tid: 'a', type: 'heat', name: 'Spot', hoursPerDay: 12 }], null);
+  assert.equal(gut.level, 'green');
+  const led = TL.candidateCheck(t, { type: 'led', name: 'led' }, [], null);
+  assert.equal(led.level, 'red');
+  const rep = TL.candidateCheck(t, { type: 'led', name: 'led' }, [{ id: 'u', tid: 'a', type: 'uvbT5', uvbPct: 12, name: 'UV', hoursPerDay: 12 }, { id: 'h', tid: 'a', type: 'heat', name: 'Spot', hoursPerDay: 12 }], 'u');
+  assert.equal(rep.level, 'red');
+});

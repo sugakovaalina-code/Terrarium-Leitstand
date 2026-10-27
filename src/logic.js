@@ -189,6 +189,16 @@
     return out.sort((a, b) => order[a.level] - order[b.level]);
   }
 
+  /** Prüft eine Lampe, die noch nicht eingebaut ist (zum Beispiel im Internet gefunden), für ein Terrarium.
+   *  replaceId: eine vorhandene Lampe, die sie ersetzen soll. */
+  function candidateCheck(t, cand, lampList, replaceId) {
+    const tmp = Object.assign({ hoursPerDay: 12 }, cand, { id: '_check', tid: t.id });
+    const list = (lampList || []).filter(l => l.id !== replaceId).concat(tmp);
+    const items = lampAdvice(t, list).filter(a => a.lid === '_check' || !a.lid);
+    const bad = items.filter(a => a.level !== 'none');
+    return { level: bad.length ? bad[0].level : 'green', items };
+  }
+
   /** Vergleicht eingetragene Lampen mit dem Bedarf der Art. */
   function lightCheck(t, lampList) {
     const li = LIGHTING[t.species];
@@ -833,7 +843,7 @@
   }
 
   return {
-    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, hasExoCover, slotUse, lightCheck, lampAdvice, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
+    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,
