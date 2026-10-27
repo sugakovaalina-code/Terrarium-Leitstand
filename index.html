@@ -260,6 +260,24 @@ textarea { min-height: 76px; resize: vertical; }
 .prog { height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; margin: 6px 0 12px; }
 .prog i { display: block; height: 100%; background: var(--g); }
 
+.hero { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; padding: 18px 20px; border-radius: 16px; background: linear-gradient(135deg, var(--side) 0%, #1B3A2F 100%); color: #fff; box-shadow: var(--shadow); }
+.hero h2 { margin: 0; font-size: 22px; color: #fff; }
+.hero p { margin: 4px 0 0; color: #BFD3CA; font-size: 14px; }
+.hero .chips { margin: 0; }
+.hero .hchip { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.22); border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 13.5px; cursor: pointer; }
+.hero .hchip.r { background: #D23B3B; border-color: #D23B3B; }
+.hero .hchip.o { background: #E0701C; border-color: #E0701C; }
+.hero .hchip.y { background: #C08F00; border-color: #C08F00; }
+.quick-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.qbtn { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer; font: inherit; color: inherit; text-align: left; box-shadow: var(--shadow); }
+.qbtn:hover { border-color: var(--ac); }
+.qbtn .ic { width: 34px; height: 34px; border-radius: 10px; background: var(--acsoft); color: var(--ac); display: grid; place-items: center; flex: none; }
+.pets { display: flex; gap: 14px; flex-wrap: wrap; }
+.pet { display: flex; align-items: center; gap: 10px; background: none; border: 1px solid var(--line); border-radius: 14px; padding: 8px 14px 8px 8px; cursor: pointer; font: inherit; color: inherit; }
+.pet:hover { border-color: var(--ac); }
+.pet .sb-av { width: 44px; height: 44px; border-radius: 12px; font-size: 18px; }
+.tpanel .hd { flex-wrap: wrap; }
+
 .selbtn { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 10px; padding: 10px; cursor: pointer; }
 .selbtn.on { background: var(--acsoft); border-color: var(--line); }
 ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
@@ -719,7 +737,19 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     const inTarget = list.filter(t => assessOf(t).level === 'green').length;
     const latest = allReadings().length ? allReadings()[allReadings().length - 1].ts : null;
     const climLv = c.climate ? 'red' : climateIssues().length ? 'yellow' : inTarget ? 'green' : 'none';
-    let h = '<div class="grid g-kpi">' +
+    const hr = new Date(now()).getHours(), greet = hr < 11 ? 'Guten Morgen' : hr < 18 ? 'Guten Tag' : 'Guten Abend';
+    const openImp = list.reduce((n, t) => n + (t.improve || []).filter(x => !x.done && (x.level === 'orange' || x.level === 'red')).length, 0);
+    const todo = [];
+    if (c.climate) todo.push(['warn', c.climate + (c.climate === 1 ? ' Terrarium' : ' Terrarien') + ' mit Klima außerhalb', 'r']);
+    if (c.tasksDue) todo.push(['tasks', c.tasksDue + (c.tasksDue === 1 ? ' Aufgabe fällig' : ' Aufgaben fällig'), 'o']);
+    if (c.lampsDue) todo.push(['lamps', c.lampsDue + (c.lampsDue === 1 ? ' Lampe tauschen' : ' Lampen tauschen'), 'o']);
+    if (c.lampWarn) todo.push(['lamps', c.lampWarn + (c.lampWarn === 1 ? ' Lampen-Hinweis' : ' Lampen-Hinweise'), 'y']);
+    if (openImp) todo.push(['warn', openImp + ' wichtige Verbesserung' + (openImp === 1 ? '' : 'en'), 'y']);
+    let h = '<section class="hero"><div class="grow"><h2>' + greet + '</h2><p>' + (todo.length ? 'Das braucht heute deine Aufmerksamkeit:' : latest ? 'Alles ruhig, kein Terrarium braucht dich gerade.' : 'Noch keine Messwerte. Trag den ersten ein oder verbinde die Sensoren.') + '</p></div>' +
+      (todo.length ? '<div class="chips">' + todo.map(x => '<button class="hchip ' + x[2] + '" data-a="go" data-v="' + x[0] + '">' + esc(x[1]) + '</button>').join('') + '</div>' : '') + '</section>' +
+      '<div class="quick-row"><button class="qbtn" data-a="entry"><span class="ic">' + icon('temp', 18) + '</span><span class="sm"><b>Messwert</b></span></button><button class="qbtn" data-a="go" data-v="animals"><span class="ic">' + icon('paw', 18) + '</span><span class="sm"><b>Tier-Eintrag</b></span></button><button class="qbtn" data-a="go" data-v="check"><span class="ic">' + icon('lamp', 18) + '</span><span class="sm"><b>Lampen-Check</b></span></button><button class="qbtn" data-a="go" data-v="wissen"><span class="ic">' + icon('other', 18) + '</span><span class="sm"><b>Wissen</b></span></button></div>' +
+      (animals().length ? '<section class="card"><div class="card-h"><h3>Meine Tiere</h3></div><div class="pets">' + animals().map(a => '<button class="pet ' + sp(terrs().find(x => x.id === a.tid) || { species: 'other' }) + '" data-a="gotier" data-v="' + a.id + '"><span class="sb-av">' + (a.photo ? '<img src="' + esc(a.photo) + '" alt="">' : esc((a.name || '?').slice(0, 1).toUpperCase())) + '</span><span class="col" style="gap:0;text-align:left"><b class="sm">' + esc(a.name) + '</b><span class="xs">' + esc(terrName(a.tid)) + '</span></span></button>').join('') + '</div></section>' : '') +
+      '<div class="grid g-kpi">' +
       '<button class="card kpi ' + lvl(climLv) + '" data-a="go" data-v="warn"><span class="lab">Klima im Zielbereich</span><span class="val">' + inTarget + '<small> / ' + list.length + '</small></span><span class="sub">' + (c.climate ? c.climate + ' Terrarium braucht dich' : climateIssues().length ? 'Beobachten' : latest ? 'Alles ruhig' : 'Noch keine Messwerte') + '</span></button>' +
       '<button class="card kpi ' + lvl(c.tasksDue ? 'orange' : c.tasksSoon ? 'yellow' : 'green') + '" data-a="go" data-v="tasks"><span class="lab">Aufgaben fällig</span><span class="val">' + c.tasksDue + '</span><span class="sub">' + (c.tasksSoon ? c.tasksSoon + ' bald' : 'keine bald fällig') + (c.tasksNoDate ? ' · ' + c.tasksNoDate + ' ohne Datum' : '') + '</span></button>' +
       '<button class="card kpi ' + lvl(c.lampsDue || c.lampWarn ? 'orange' : c.lampsSoon ? 'yellow' : c.lampsNoDate ? 'none' : 'green') + '" data-a="go" data-v="lamps"><span class="lab">Lampen tauschen / prüfen</span><span class="val">' + c.lampsDue + '</span><span class="sub">' + (c.lampWarn ? c.lampWarn + ' Hinweise · ' : '') + (c.lampsSoon ? c.lampsSoon + ' bald' : 'keine bald') + (c.lampsNoDate ? ' · ' + c.lampsNoDate + ' ohne Alter' : '') + '</span></button>' +
@@ -744,7 +774,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       (tl.length ? '<div class="list">' + tl.map(x => taskRow(x, true)).join('') + '</div>' : '') +
       (noDate ? '<div class="banner lv-yellow" style="margin-top:10px"><span class="grow">' + noDate + ' Aufgaben ohne Datum. Trag ein, wann du sie zuletzt gemacht hast, dann rechnet die App mit.</span><button class="btn sm" data-a="go" data-v="tasks">Eintragen</button></div>' : '') + '</section>' +
       '<section class="card"><div class="card-h"><h3>Lampen</h3><button class="btn sm ghost" data-a="go" data-v="lamps">Alle</button></div><div class="list">' +
-      (ll.length ? ll.slice(0, 6).map(x => lampMini(x)).join('') : '<p class="xs">Keine Lampen eingetragen.</p>') + '</div></section>' +
+      (ll.length ? ll.slice().sort((a, b) => (a.i.level === 'green') - (b.i.level === 'green')).slice(0, 4).map(x => lampMini(x)).join('') + (ll.length > 4 ? '<p class="xs">und ' + (ll.length - 4) + ' weitere Lampen</p>' : '') : '<p class="xs">Keine Lampen eingetragen.</p>') + '</div></section>' +
       '<section class="card"><div class="card-h"><h3>Auffällig</h3><button class="btn sm ghost" data-a="go" data-v="warn">Warnungen</button></div>' +
       (iss.length || pats.length || impr.length ? '<div class="list">' + impr.map(x => '<div class="li lv-yellow"><div class="ic">' + icon('care', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t">' + esc(x.t.name) + '</span><span class="xs">' + x.n + ' Verbesserungen offen</span></div><button class="btn sm" data-a="open" data-v="' + x.t.id + '">Ansehen</button></div>').join('') + iss.map(x => '<div class="li ' + lvl(x.a.level) + '"><div class="ic">' + icon('bell', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t">' + esc(x.t.name) + '</span><span class="xs">' + esc(describe(x.a)) + '</span></div></div>').join('') +
         pats.map(x => '<div class="li ' + lvl(x.p.level) + '"><div class="ic">' + icon(x.p.kind === 'temp' ? 'temp' : 'drop', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t">' + esc(x.t.name) + '</span><span class="xs">' + esc(x.p.text) + '</span></div></div>').join('') + '</div>'
@@ -1410,6 +1440,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       case 'lnewform': S.edit = { id: '', tid: v || (S.lampFilter !== 'all' ? S.lampFilter : (terrs()[0] || {}).id), type: 'uvbT5', name: 'UV-B-Lampe', model: '', watt: '', installed: '', lifeMonths: TL.LAMP_TYPES.uvbT5.months, lifeHours: '', hoursPerDay: 12, log: [], pos: '', guard: null, uvbPct: '', night: false, fixture: '' }; S.errors = {}; openForm('lampform'); break;
       case 'ledit': { const l = lamps().find(x => x.id === v); if (l) { S.edit = clone(l); S.errors = {}; openForm('lampform'); } break; }
       case 'ldel': { const cc = c(); cc.lamps = cc.lamps.filter(x => x.id !== v); saveConfig(cc); toast('Lampe gelöscht'); goBack(); break; }
+      case 'gotier': S.aid = v; S.edit = null; go('animals'); break;
       case 'wtab': S.wissen = Object.assign(S.wissen || {}, { tab: v }); render(); break;
       case 'wtid': S.wissen = Object.assign(S.wissen || {}, { tid: v }); render(); break;
       case 'wsetup': { const w = S.wissen || {}; const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === w.tid); if (!t) break; t.setup = Object.assign({}, t.setup); if (t.setup[v]) delete t.setup[v]; else t.setup[v] = true; saveConfig(cc); render(); break; }
