@@ -294,12 +294,51 @@
     if (species === 'rg') return { min: 12, max: 12, text: '12 Stunden', src: ['biodude'], tol: 1 };
     return null;
   }
+  /** Brenndauer in Stunden: aus Ein- und Ausschaltzeit (auch über Mitternacht), sonst aus „Stunden pro Tag“. */
+  function lampSpan(l) {
+    const a = hhmmToMin(l.onTime), b = hhmmToMin(l.offTime);
+    if (a !== null && b !== null && a !== b) return { on: a, off: b, hours: ((b - a + 1440) % 1440) / 60 };
+    return { on: null, off: null, hours: parseNum(l.hoursPerDay) };
+  }
+  function spanParts(on, off) { return off > on ? [[on, off]] : [[on, 1440], [0, off]]; }
+  /** Lichtplan: Zeiten je Lampe, Gesamt-Lichtdauer (alle Lampen zusammen) und Kontrolle gegen Quelle und Tag/Nacht-Zeiten. */
+  function lightPlan(t, lampList, nowMs) {
+    const r = lightHours(t.species, nowMs); if (!r) return null;
+    const li = LIGHTING[t.species] || {}, tol = r.tol || 0;
+    const dS = hhmmToMin(t.dayStart), dE = hhmmToMin(t.dayEnd);
+    const dayParts = dS !== null && dE !== null && dS !== dE ? spanParts(dS, dE) : null;
+    const rows = (lampList || []).filter(l => l.tid === t.id).map(l => {
+      const sp = lampSpan(l), g = (LAMP_TYPES[l.type] || {}).group;
+      const rated = g === 'uvb' || g === 'light' || l.type === 'uvbMV' || l.type === 'uvbMH';
+      const issues = [];
+      if (l.night) issues.push({ level: 'orange', text: 'Als Nachtlampe eingetragen. Nachts sollen Licht und Wärmestrahler aus sein.' });
+      if (sp.on !== null && dayParts) {
+        let out = 0;
+        spanParts(sp.on, sp.off).forEach(([a, b]) => { let inside = 0; dayParts.forEach(([c, d]) => { inside += Math.max(0, Math.min(b, d) - Math.max(a, c)); }); out += (b - a) - inside; });
+        if (out > 0) issues.push({ level: 'orange', text: 'Läuft ' + Math.round(out) + ' Minuten außerhalb der Tagzeit (' + t.dayStart + '–' + t.dayEnd + ').' });
+      }
+      if (rated && sp.hours !== null) {
+        if (sp.hours < r.min - tol) issues.push({ level: 'yellow', text: 'Kürzer als die Quelle nennt (' + r.text + ').' });
+        else if (sp.hours > r.max + tol) issues.push({ level: 'yellow', text: 'Länger als die Quelle nennt (' + r.text + ').' });
+      }
+      const order = { orange: 2, yellow: 1 };
+      const level = issues.length ? issues.sort((x, y) => order[y.level] - order[x.level])[0].level : (sp.hours === null ? 'none' : rated ? 'green' : 'none');
+      return { l, on: sp.on, off: sp.off, hours: sp.hours, rated, issues, level };
+    });
+    // Gesamt-Lichtdauer: Vereinigung der Zeiten aller Lampen, die Licht geben und eine Zeit haben
+    let mins = 0; const cover = new Array(1440).fill(false); let any = false;
+    rows.filter(x => x.on !== null && !x.l.night && x.l.type !== 'ir' && x.l.type !== 'chc').forEach(x => { any = true; spanParts(x.on, x.off).forEach(([a, b]) => { for (let m = a; m < b; m++) cover[m] = true; }); });
+    if (any) mins = cover.filter(Boolean).length;
+    const day = any ? mins / 60 : null;
+    const dayLevel = day === null ? 'none' : day < r.min - tol || day > r.max + tol ? 'yellow' : 'green';
+    return { range: r, rows, day, dayLevel, night: li.night || '', src: li.sources || [] };
+  }
   /** Bewertung der Brenndauer je Lampe (ohne Nachtlampen und ohne Wärmestrahler, die sich nach der Temperatur richten). */
   function hoursCheck(t, lampList, nowMs) {
     const r = lightHours(t.species, nowMs); if (!r) return null;
     const tol = r.tol || 0;
     const rows = (lampList || []).filter(l => l.tid === t.id && !l.night).map(l => {
-      const h = parseNum(l.hoursPerDay), g = (LAMP_TYPES[l.type] || {}).group;
+      const h = lampSpan(l).hours, g = (LAMP_TYPES[l.type] || {}).group;
       const rated = g === 'uvb' || g === 'light' || l.type === 'uvbMV' || l.type === 'uvbMH';
       let level = 'none', text = 'Wärmelampe: richtet sich nach der Temperatur am Sonnenplatz.';
       if (rated && h !== null) {
@@ -1115,7 +1154,7 @@
   }
 
   return {
-    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, lightHours, hoursCheck, CATALOG, socketsOf, socketRecs, lampPlan, SUBSTRATE, substrateNeed, substrateStatus, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, KNOWLEDGE, LEXICON, SETUP_CHECK, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
+    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, lightHours, hoursCheck, lampSpan, lightPlan, CATALOG, socketsOf, socketRecs, lampPlan, SUBSTRATE, substrateNeed, substrateStatus, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, KNOWLEDGE, LEXICON, SETUP_CHECK, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,

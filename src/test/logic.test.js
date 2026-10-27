@@ -479,3 +479,15 @@ test('Substratwechsel bewerten', () => {
   t.subLog = [{ date: '2026-02-01', depth: 8 }]; assert.equal(TL.substrateStatus(t, now).level, 'orange');
   assert.equal(TL.substrateStatus(TL.newTerrarium('kn', 'K'), now), null);
 });
+
+test('Lichtplan: Zeiten, Gesamtdauer und Nachtkontrolle', () => {
+  const kn = TL.newTerrarium('kn', 'K'); kn.dayStart = '08:00'; kn.dayEnd = '20:00';
+  const L = [{ id: 'a', tid: kn.id, type: 'uvbT5', name: 'UV', onTime: '08:00', offTime: '20:00' }, { id: 'b', tid: kn.id, type: 'led', name: 'LED', onTime: '07:00', offTime: '21:00' }, { id: 'c', tid: kn.id, type: 'heat', name: 'Spot', onTime: '10:00', offTime: '23:00' }];
+  const p = TL.lightPlan(kn, L, Date.parse('2026-10-27'));
+  assert.equal(p.rows[0].level, 'green'); assert.equal(p.rows[0].hours, 12);
+  assert.equal(p.rows[1].level, 'orange'); assert.ok(/120 Minuten/.test(p.rows[1].issues[0].text));
+  assert.equal(p.rows[2].level, 'orange');
+  assert.equal(p.day, 16); assert.equal(p.dayLevel, 'yellow');
+  assert.equal(TL.lampSpan({ onTime: '22:00', offTime: '06:00' }).hours, 8);
+  assert.equal(TL.lampSpan({ hoursPerDay: 10 }).hours, 10);
+});

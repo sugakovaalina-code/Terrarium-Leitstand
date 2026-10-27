@@ -123,6 +123,12 @@ button.kpi { text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .seg button { background: none; border: 0; padding: 6px 12px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
 .seg button.on { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
 a.btn { text-decoration: none; }
+.lp-row { padding: 12px 0; border-top: 1px solid var(--line2); } .lp-row:first-of-type { border-top: 0; }
+.lp-track { position: relative; height: 14px; border-radius: 8px; background: var(--track); margin-top: 8px; overflow: hidden; }
+.lp-track i, .lp-legend i { position: absolute; top: 0; bottom: 0; display: block; border-radius: 8px; }
+.lp-track i.win { background: rgba(217, 142, 155, .22); } .lp-track i.on { background: linear-gradient(90deg, var(--gold1), var(--gold2)); top: 3px; bottom: 3px; box-shadow: 0 0 8px rgba(212, 169, 79, .5); }
+.lp-axis { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--faint); margin-bottom: 2px; }
+.lp-legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-bottom: 8px; } .lp-legend span { display: inline-flex; align-items: center; gap: 6px; } .lp-legend i { position: static; width: 18px; height: 10px; } .lp-legend i.win { background: rgba(217, 142, 155, .35); } .lp-legend i.on { background: var(--gold2); }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; margin: -4px 0 0; }
 .tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 11px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
 .tabs button.on { color: var(--fg); border-bottom-color: var(--sp, var(--ac)); }
@@ -886,6 +892,30 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       '</div><p class="xs" style="margin-top:10px">Die Links öffnen eine Amazon-Suche, sortiert nach Kundenbewertung. Welche Marke gerade beliebt ist, wie teuer sie ist und ob sie lieferbar ist, siehst du dort. Das kann die App nicht abrufen. Prüfe vor dem Kauf, ob Fassung, Länge und Leistung zu deiner Abdeckung passen. Ein Metalldampfstrahler braucht ein eigenes Vorschaltgerät.</p></section>';
   }
 
+
+  function minTxt(m) { return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+  function lichtplanTab(t) {
+    const pl = TL.lightPlan(t, lamps(), now());
+    if (!pl) return '<div class="empty">Für diese Art hat die App keinen Lichtplan.</div>';
+    const seg = (on, off, cls) => on === null ? '' : (off > on ? [[on, off]] : [[on, 1440], [0, off]]).map(([a, b]) => '<i class="' + cls + '" style="left:' + (a / 14.4) + '%;width:' + ((b - a) / 14.4) + '%"></i>').join('');
+    const toMin = x => { const m = /^(\d{1,2}):(\d{2})$/.exec(x || ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+    const w0 = toMin(t.dayStart), w1 = toMin(t.dayEnd);
+    const win = w0 !== null && w1 !== null && w0 !== w1 ? seg(w0, w1, 'win') : '';
+    const axis = '<div class="lp-axis"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>';
+    const rows = pl.rows.map(x => {
+      const l = x.l;
+      return '<div class="lp-row"><div class="row between wrap" style="gap:8px"><span class="main-t sm">' + esc(l.name) + ' <span class="xs">' + esc((TL.LAMP_TYPES[l.type] || {}).label || '') + '</span></span>' + (x.level === 'green' ? pill('green', 'Passt') : x.level === 'none' ? pill('none', x.hours === null ? 'Zeit fehlt' : 'Ohne Bewertung') : pill(x.level, x.level === 'yellow' ? 'Nicht optimal' : 'Achtung')) + '</div>' +
+        '<div class="lp-track" aria-hidden="true">' + win + seg(x.on, x.off, 'on') + '</div>' +
+        '<div class="f-grid" style="margin-top:8px"><label class="f">Geht an<input type="time" id="lp-on-' + l.id + '" value="' + esc(l.onTime || '') + '"></label><label class="f">Geht aus<input type="time" id="lp-off-' + l.id + '" value="' + esc(l.offTime || '') + '"></label><div class="f"><span>Brennt</span><b class="num" style="padding:9px 0">' + (x.hours !== null ? fmt(x.hours, 1) + ' Std.' : '–') + '</b></div></div>' +
+        x.issues.map(i => '<span class="sm" style="color:var(--' + (i.level === 'orange' ? 'otx' : 'yt') + ')">' + icon('bell', 14) + ' ' + esc(i.text) + '</span>').join('<br>') + '</div>';
+    }).join('');
+    return '<section class="card"><div class="card-h"><h3>Lichtplan für ' + esc(t.name) + '</h3>' + (pl.day !== null ? pill(pl.dayLevel === 'green' ? 'green' : 'yellow', 'Licht ' + fmt(pl.day, 1) + ' Std. am Tag') : pill('none', 'Noch keine Zeiten')) + '</div>' +
+      '<p class="sm">Trag ein, wann jede Lampe an- und ausgeht. Die App prüft die Gesamt-Lichtdauer (Quelle: <b>' + esc(pl.range.text) + '</b>) und ob Lampen außerhalb der Tagzeit <b>' + esc(t.dayStart || '') + '–' + esc(t.dayEnd || '') + '</b> laufen (Tagzeit änderst du unter Einrichtung).<span class="src">' + srcLinks(pl.range.src) + '</span></p>' +
+      '<p class="xs" style="margin-top:6px">Nacht laut Quelle: ' + esc(pl.night) + '</p></section>' +
+      (pl.rows.length ? '<form id="lichtplan-form" class="card" novalidate><div class="lp-legend"><span><i class="win"></i>Tagzeit</span><span><i class="on"></i>Lampe an</span></div>' + axis + rows + '<div class="row" style="margin-top:12px"><button type="submit" class="btn pri">Lichtplan speichern</button></div>' +
+        (pl.day !== null ? '<div class="banner lv-' + (pl.dayLevel === 'green' ? 'green' : 'yellow') + '" style="margin-top:12px"><span class="grow"><b>Alle Lampen zusammen:</b> ' + fmt(pl.day, 1) + ' Std. Licht am Tag. ' + (pl.dayLevel === 'green' ? 'Das passt zur Quelle (' + esc(pl.range.text) + ').' : 'Die Quelle nennt ' + esc(pl.range.text) + '.') + '</span></div>' : '') + '</form>'
+        : '<div class="empty">Noch keine Lampen eingetragen.<button class="btn pri" data-a="lnewform" data-v="' + t.id + '">Lampe eintragen</button></div>');
+  }
   function hoursCard(t) {
     const hc = TL.hoursCheck(t, lamps());
     if (!hc) return '';
@@ -935,7 +965,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     }).join('') + '</div><div><button class="btn" data-a="tnew">' + icon('plus', 16) + 'Terrarium hinzufügen</button></div>';
   }
 
-  const TABS = [['klima', 'Klima'], ['verlauf', 'Verlauf'], ['lampen', 'Lampen'], ['empf', 'Empfehlungen'], ['subs', 'Substrat'], ['wissen', 'Wissen'], ['aufgaben', 'Aufgaben'], ['tiere', 'Tiere'], ['setup', 'Einrichtung']];
+  const TABS = [['klima', 'Klima'], ['verlauf', 'Verlauf'], ['lampen', 'Lampen'], ['lichtplan', 'Lichtplan'], ['empf', 'Empfehlungen'], ['subs', 'Substrat'], ['wissen', 'Wissen'], ['aufgaben', 'Aufgaben'], ['tiere', 'Tiere'], ['setup', 'Einrichtung']];
   function viewTerr() {
     const t = terr(S.tid);
     const tl = taskList(t.id), ll = lampList(t.id);
@@ -944,10 +974,11 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     if (S.tab === 'klima') h += tabKlima(t) + improveCard(t);
     else if (S.tab === 'verlauf') h += tabVerlauf(t);
     else if (S.tab === 'setup') h += tabSetup(t);
+    else if (S.tab === 'lichtplan') h += lichtplanTab(t);
     else if (S.tab === 'empf') h += viewEmpf();
     else if (S.tab === 'subs') h += viewSubs();
     else if (S.tab === 'wissen') h += viewWissen();
-    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + hoursCard(t) + '<div class="banner lv-yellow"><span class="grow">Welche Lampe in welche Fassung passt, steht im Reiter Empfehlungen.</span><button class="btn sm pri" data-a="tab" data-v="empf">Empfehlungen öffnen</button></div>' + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + socketForm(t, false) + lightingCard(t, false) + lampSourceNote();
+    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + '<div class="banner lv-yellow"><span class="grow">Welche Lampe in welche Fassung passt, steht im Reiter Empfehlungen.</span><button class="btn sm pri" data-a="tab" data-v="empf">Empfehlungen öffnen</button></div>' + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + socketForm(t, false) + lightingCard(t, false) + lampSourceNote();
     else if (S.tab === 'aufgaben') h += quickTasks(t) + '<section class="card"><div class="card-h"><h3>Aufgaben für dieses Terrarium</h3><button class="btn sm" data-a="knew" data-v="' + t.id + '">' + icon('plus', 16) + 'Aufgabe</button></div>' + (tl.length ? '<div class="list">' + tl.map(x => taskRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Aufgaben.</div>') + '</section><p class="xs">Die Intervalle sind Startwerte der App, keine Haltungsvorschrift. Pass sie über den Stift an deinen Rhythmus an.</p>';
     else h += tabAnimals(t);
     return h;
@@ -1789,6 +1820,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       t.equip = Object.assign({}, t.equip, { sockets: readSockets(t) });
       if (document.getElementById('sz-l')) t.size = { l: TL.parseNum(g('sz-l')), b: TL.parseNum(g('sz-b')), h: TL.parseNum(g('sz-h')) };
       saveConfig(cc); toast('Plätze gespeichert'); render();
+    } else if (id === 'lichtplan-form') {
+      const cc = clone(cfg()); const bad = [];
+      (cc.lamps || []).filter(l => l.tid === S.tid).forEach(l => {
+        const on = (document.getElementById('lp-on-' + l.id) || {}).value, off = (document.getElementById('lp-off-' + l.id) || {}).value;
+        if (on === undefined) return;
+        l.onTime = on || ''; l.offTime = off || '';
+        const sp = TL.lampSpan(l); if (sp.on !== null) l.hoursPerDay = Math.round(sp.hours * 10) / 10;
+        if ((on && !off) || (!on && off)) bad.push(l.name);
+      });
+      saveConfig(cc); toast(bad.length ? 'Gespeichert. Bei ' + bad.join(', ') + ' fehlt eine Zeit.' : 'Lichtplan gespeichert'); render();
     } else if (id === 'sublog-form') {
       const g = x => (document.getElementById(x) || {}).value ?? '';
       const date = g('sl-date'), ts = Date.parse(date);
