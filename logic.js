@@ -164,17 +164,27 @@
       if (l.night && l.type !== 'chc' && l.type !== 'ir') add('orange', nm(l) + ' ist auch nachts an. ' + (li ? li.night : 'Nachts sollte es dunkel sein.'), l.id, li ? li.sources.slice(0, 1) : []);
       if (hot && l.pos === 'inside' && l.guard !== true) add(l.guard === false ? 'red' : 'orange', nm(l) + ' hängt im Terrarium' + (l.guard === false ? ' ohne Schutzkorb' : '; ist ein Schutzkorb drum?') + ' Wärmelampen müssen außer Reichweite oder gesichert sein, sonst drohen Verbrennungen.', l.id, t.species === 'jc' ? ['dtschbJc'] : ['dtschbKn']);
       if ((l.type === 'uvbT5' || l.type === 'uvbT8') && ballast === false) add('red', nm(l) + ' ist eine Röhre. Röhren leuchten nur mit Vorschaltgerät, und hier ist keins eingetragen. Ohne Vorschaltgerät gehen ein Röhren-Komplettset mit eingebautem Vorschaltgerät oder eine selbstvorschaltende UV-B-Mischlichtlampe für eine Keramikfassung.', l.id, ['zoomedPS']);
-      const pct = parseNum(l.uvbPct);
+      const txt = ((l.brand || '') + ' ' + (l.model || '')).toLowerCase();
+      const fromTxt = re => { const m = re.exec(txt); return m ? parseNum(m[1]) : null; };
+      const pct = parseNum(l.uvbPct) !== null ? parseNum(l.uvbPct) : fromTxt(/(\d+(?:[.,]\d+)?)\s*%/);
+      if (l.brand && /exo\s*-?\s*terra/i.test(l.fixture || '') && !/exo\s*-?\s*terra/i.test(txt)) add('orange', nm(l) + ' sitzt in einer Exo-Terra-Abdeckung, ist aber von „' + l.brand + '“. Du hast geschrieben, dass dort nur Exo-Terra-Leuchtmittel passen. Prüf, ob die Lampe wirklich hineinpasst.', l.id);
+      if (t.species === 'jc' && grp(l) === 'uvb' && /shade\s*-?\s*dweller/.test(txt)) add('yellow', nm(l) + ': Die ShadeDweller ist laut The Bio Dude eine schwache Röhre. Für das Jemenchamäleon (Ferguson-Zone 3) nennt Reptile Systems 12 %.', l.id, ['biodude', 'rsZ3']);
+      if (grp(l) === 'uvb' && !l.brand && !l.model) add('none', nm(l) + ': Hersteller und Modell fehlen noch. Mit Angabe prüft die App genauer.', l.id);
+      if (grp(l) === 'uvb' && parseNum(l.uvbPct) === null && pct !== null) add('none', nm(l) + ': Die App liest ' + fmt(pct, pct % 1 ? 1 : 0) + ' % aus Hersteller und Modell. Trag die Stärke zur Sicherheit auch im Feld UV-B-Stärke ein.', l.id);
       if (grp(l) === 'uvb' && pct !== null) {
         if (t.species === 'jc' && pct < 10) add('yellow', nm(l) + ' hat ' + fmt(pct, pct % 1 ? 1 : 0) + ' %. Für das Jemenchamäleon (Ferguson-Zone 3) nennt Reptile Systems eine 12-%-Röhre.', l.id, ['baines', 'rsZ3']);
         if ((t.species === 'kn' || t.species === 'rg') && pct > 6) add('yellow', nm(l) + ' hat ' + fmt(pct, pct % 1 ? 1 : 0) + ' %. Für Zone 1–2 werden 2,4–6 % angeboten. Stärker geht nur mit viel Abstand und einem Schattenbereich, am besten nachmessen.', l.id, ['baines', 'rsZ1', 'rsZ2']);
       }
       if (l.type === 'uvbMH' && (t.species === 'kn' || t.species === 'rg')) add('yellow', nm(l) + ': Metalldampflampen sind starke UV-B-Strahler. Für Zone 1–2 liegt der UV-Index am Liegeplatz laut Baines höchstens bei 1,1–3,0. Mit viel Abstand, Schattenbereichen und einer Messung am Liegeplatz sicherstellen.', l.id, ['baines']);
       if (grp(l) === 'uvb' && (l.type === 'uvbT5' || l.type === 'uvbT8') && pct === null) add('none', nm(l) + ': Stärke in Prozent fehlt (steht auf der Röhre, z. B. 6 % oder 12 %).', l.id);
-      const w = parseNum(l.watt);
+      const w = parseNum(l.watt) !== null ? parseNum(l.watt) : fromTxt(/(\d+(?:[.,]\d+)?)\s*w(?:att)?\b/);
       if (t.species === 'rg' && grp(l) === 'heat' && w !== null && w > 50) add('yellow', nm(l) + ' hat ' + w + ' W. Die Leitfäden für Riesengeckos nennen 25–50 W, gedimmt. Mit Thermostat oder Dimmer arbeiten.', l.id, ['biodude', 'sundown']);
       if (w === null && l.type !== 'unknown') add('none', nm(l) + ': Watt fehlt noch.', l.id);
     }
+    const su = slotUse(t, lampList);
+    [['exo', 'Exo-Terra-Abdeckungen'], ['shade', 'Fassungen mit Schirm']].forEach(([k, n]) => {
+      if (su[k].total !== null && su[k].used > su[k].total) add('yellow', 'Es sind ' + su[k].used + ' Lampen für ' + n + ' eingetragen, aber nur ' + su[k].total + ' Plätze. Stimmt die Platzzahl unter „Abdeckung und Technik“?');
+    });
     const order = { red: 0, orange: 1, yellow: 2, none: 3, green: 4 };
     return out.sort((a, b) => order[a.level] - order[b.level]);
   }

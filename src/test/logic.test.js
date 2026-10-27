@@ -348,3 +348,18 @@ test('Plätze: belegte und freie Fassungen', () => {
   assert.deepEqual([u.exo.used, u.exo.free, u.shade.used, u.shade.free], [2, 0, 1, 1]);
   assert.equal(TL.slotUse({ id: 'a' }, ls).exo.free, null);
 });
+
+test('Lampenprüfung: Hersteller und Modell', () => {
+  const t = TL.newTerrarium('jc', 'Test'); t.id = 'a'; t.equip = { covers: '', ballast: true, notes: '', slots: { exo: 1, shade: 1 } };
+  const base = { tid: 'a', type: 'uvbT5', hoursPerDay: 12, uvbPct: '', watt: null };
+  const fremd = TL.lampAdvice(t, [Object.assign({ id: 'x', name: 'UV', brand: 'Arcadia', model: 'ShadeDweller T5 2,4 %', fixture: 'Exo Terra Abdeckung' }, base)]);
+  const txt = fremd.map(a => a.text).join(' | ');
+  assert.match(txt, /nur Exo-Terra-Leuchtmittel/);
+  assert.match(txt, /ShadeDweller ist laut The Bio Dude/);
+  assert.match(txt, /2,4 %/);
+  const ok = TL.lampAdvice(t, [Object.assign({ id: 'y', name: 'UV', brand: 'Exo Terra', model: 'T5 12 %', fixture: 'Exo Terra Abdeckung' }, base)]);
+  assert.ok(!ok.some(a => /nur Exo-Terra-Leuchtmittel/.test(a.text)));
+  assert.ok(!ok.some(a => a.level === 'yellow' && /12-%-Röhre/.test(a.text)));
+  const voll = TL.lampAdvice(t, [1, 2].map(i => ({ id: 'z' + i, tid: 'a', type: 'incand', name: 'W' + i, hoursPerDay: 12, fixture: 'Lampenschirm' })));
+  assert.ok(voll.some(a => /nur 1 Plätze/.test(a.text)));
+});
