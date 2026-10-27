@@ -124,8 +124,9 @@ button.kpi { text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .seg { display: inline-flex; background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; }
 .seg button { background: none; border: 0; padding: 6px 12px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
 .seg button.on { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
+a.btn { text-decoration: none; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; margin: -4px 0 0; }
-.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 11px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
 .tabs button.on { color: var(--fg); border-bottom-color: var(--sp, var(--ac)); }
 .tabs .cnt2 { font: 600 11px/17px var(--mono); padding: 0 6px; border-radius: 9px; background: var(--os); color: var(--otx); }
 .empty { padding: 22px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
@@ -858,7 +859,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     }).join('') + '</div><div><button class="btn" data-a="tnew">' + icon('plus', 16) + 'Terrarium hinzufügen</button></div>';
   }
 
-  const TABS = [['klima', 'Klima'], ['verlauf', 'Verlauf'], ['setup', 'Einrichtung'], ['lampen', 'Lampen'], ['aufgaben', 'Aufgaben'], ['tiere', 'Tiere']];
+  const TABS = [['klima', 'Klima'], ['verlauf', 'Verlauf'], ['lampen', 'Lampen'], ['empf', 'Empfehlungen'], ['subs', 'Substrat'], ['wissen', 'Wissen'], ['aufgaben', 'Aufgaben'], ['tiere', 'Tiere'], ['setup', 'Einrichtung']];
   function viewTerr() {
     const t = terr(S.tid);
     const tl = taskList(t.id), ll = lampList(t.id);
@@ -867,7 +868,10 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     if (S.tab === 'klima') h += tabKlima(t) + improveCard(t);
     else if (S.tab === 'verlauf') h += tabVerlauf(t);
     else if (S.tab === 'setup') h += tabSetup(t);
-    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + shopCard(t) + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + equipCard(t) + lightingCard(t, false) + lampSourceNote();
+    else if (S.tab === 'empf') h += viewEmpf();
+    else if (S.tab === 'subs') h += viewSubs();
+    else if (S.tab === 'wissen') h += viewWissen();
+    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + '<div class="banner lv-yellow"><span class="grow">Welche Lampe in welche Fassung passt, steht im Reiter Empfehlungen.</span><button class="btn sm pri" data-a="tab" data-v="empf">Empfehlungen öffnen</button></div>' + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + equipCard(t) + lightingCard(t, false) + lampSourceNote();
     else if (S.tab === 'aufgaben') h += '<section class="card"><div class="card-h"><h3>Aufgaben für dieses Terrarium</h3><button class="btn sm" data-a="knew" data-v="' + t.id + '">' + icon('plus', 16) + 'Aufgabe</button></div>' + (tl.length ? '<div class="list">' + tl.map(x => taskRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Aufgaben.</div>') + '</section><p class="xs">Die Intervalle sind Startwerte der App, keine Haltungsvorschrift. Pass sie über den Stift an deinen Rhythmus an.</p>';
     else h += tabAnimals(t);
     return h;
@@ -985,6 +989,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
   function viewWissen() {
     const ts = terrs(); const w = S.wissen = S.wissen || { tab: 'profil', tid: null };
     if (!ts.length) return '<div class="empty">Leg zuerst ein Terrarium an.</div>';
+    if (S.view === 'terr') w.tid = S.tid;
     if (!ts.some(x => x.id === w.tid)) w.tid = ts[0].id;
     const t = ts.find(x => x.id === w.tid);
     const sub = [['profil', 'Artenprofil'], ['check', 'Einrichtungs-Checkliste'], ['lex', 'Lexikon']];
@@ -992,7 +997,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     if (w.tab === 'lex') {
       return h + '<section class="card"><div class="card-h"><h3>Lexikon</h3></div><div class="list">' + TL.LEXICON.map(e => '<div class="li"><div class="grow col" style="gap:3px"><span class="main-t sm">' + esc(e.term) + '</span><span class="sm">' + esc(e.text) + '</span><span class="src">' + srcLinks(e.src) + '</span></div></div>').join('') + '</div></section>';
     }
-    h += '<div class="chips">' + ts.map(x => '<button class="chip ' + (w.tid === x.id ? 'on' : '') + '" data-a="wtid" data-v="' + x.id + '">' + esc(x.name) + '</button>').join('') + '</div>';
+    h += S.view === 'terr' ? '' : '<div class="chips">' + ts.map(x => '<button class="chip ' + (w.tid === x.id ? 'on' : '') + '" data-a="wtid" data-v="' + x.id + '">' + esc(x.name) + '</button>').join('') + '</div>';
     const kb = TL.KNOWLEDGE[t.species], spc = TL.SPECIES[t.species] || TL.SPECIES.other;
     if (!kb) return h + '<div class="empty">Für diese Art gibt es noch kein Profil.</div>';
     if (w.tab === 'check') {
@@ -1038,10 +1043,11 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
   }
   function viewEmpf() {
     const ts = terrs(); if (!ts.length) return '<div class="empty">Leg zuerst ein Terrarium an.</div>';
-    const e = S.empf = S.empf || { tid: ts[0].id };
+    const inT = S.view === 'terr';
+    const e = S.empf = inT ? { tid: S.tid } : (S.empf || { tid: ts[0].id });
     if (!ts.some(x => x.id === e.tid)) e.tid = ts[0].id;
     const t = ts.find(x => x.id === e.tid), spc = TL.SPECIES[t.species] || TL.SPECIES.other;
-    let h = '<div class="chips">' + ts.map(x => '<button class="chip ' + (e.tid === x.id ? 'on' : '') + '" data-a="emtid" data-v="' + x.id + '">' + esc(x.name) + '</button>').join('') + '</div>';
+    let h = inT ? '' : '<div class="chips">' + ts.map(x => '<button class="chip ' + (e.tid === x.id ? 'on' : '') + '" data-a="emtid" data-v="' + x.id + '">' + esc(x.name) + '</button>').join('') + '</div>';
     h += '<section class="card ' + sp(t) + '"><div class="card-h"><h3>Lampen für ' + esc(t.name) + '</h3><span class="sptag">' + esc(spc.name) + '</span></div><p class="sm">Die App prüft jede Lampe gegen deine Fassung (Sockel, Vorschaltgerät, Höchstwatt, Exo-Terra-Pflicht) und gegen den Bedarf der Art. Die Amazon-Links öffnen eine Suche mit der genauen Firma, dem Modell und der Wattzahl. Preise und Bewertungen siehst du dort.</p></section>';
     if (!TL.LIGHTING[t.species]) return h + '<div class="empty">Für diese Art hat die App keine Lichtempfehlung.</div>' + socketForm(t);
     const plan = TL.lampPlan(t);
@@ -1068,11 +1074,12 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
   /* ===== Substrat ===== */
   function viewSubs() {
     const ts = terrs(); if (!ts.length) return '<div class="empty">Leg zuerst ein Terrarium an.</div>';
-    const e = S.subs = S.subs || { tid: ts[0].id };
+    const inT = S.view === 'terr';
+    const e = S.subs = inT ? { tid: S.tid } : (S.subs || { tid: ts[0].id });
     if (!ts.some(x => x.id === e.tid)) e.tid = ts[0].id;
     const lit = n => n === null ? '' : fmt(n, 1).replace(/,0$/, '');
     const range = n => n.litersMin === n.litersMax ? lit(n.litersMin) + ' Liter' : lit(n.litersMin) + ' bis ' + lit(n.litersMax) + ' Liter';
-    let h = '<div class="grid g-3">' + ts.map(x => {
+    let h = inT ? '' : '<div class="grid g-3">' + ts.map(x => {
       const n = TL.substrateNeed(x, TL.parseNum(x.subDepth)), spc = TL.SPECIES[x.species] || TL.SPECIES.other;
       return '<button class="card tpanel ' + sp(x) + '" data-a="stid" data-v="' + x.id + '" style="text-align:left;cursor:pointer;font:inherit;color:inherit' + (e.tid === x.id ? ';outline:2px solid var(--sp)' : '') + '"><div class="hd"><div class="grow col" style="gap:2px"><h2>' + esc(x.name) + '</h2><span class="sptag">' + esc(spc.name) + '</span></div></div><div class="meta"><span class="tag">' + (!n ? 'keine Angabe' : n.missing.length ? (n.missing.includes('size') ? 'Maße fehlen' : 'Höhe wählen') : esc(range(n))) + '</span></div></button>';
     }).join('') + '</div>';
@@ -1088,7 +1095,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
         '<p class="xs" style="margin-top:8px">Rechnung: Länge × Breite × Höhe, durch 1000. Das ist die Menge, die in die Schicht kommt. Einrichtung, Wasserschale und Wurzeln nehmen Platz weg, und Substrat setzt sich. Kauf lieber etwas mehr.</p>'
         : '<div class="banner lv-yellow" style="margin-top:14px"><span class="grow">' + (n && n.missing.includes('size') ? 'Trag Länge und Breite ein, dann rechnet die App die Menge.' : 'Die Quelle nennt für diese Art keine Höhe. Trag oben deine eigene Schichthöhe ein.') + '</span></div>') + '</form>';
     h += '<section class="card"><div class="card-h"><h3>Was ins Terrarium gehört</h3></div><div class="list">' + sb.points.map(([ti, tx, src]) => '<div class="li"><div class="grow col" style="gap:3px"><span class="main-t sm">' + esc(ti) + '</span><span class="sm">' + esc(tx) + '</span><span class="src">' + srcLinks(src) + '</span></div></div>').join('') + '</div></section>';
-    h += '<section class="card"><div class="card-h"><h3>Zum Suchen bei Amazon</h3></div><div class="row wrap" style="gap:8px">' + sb.shop.map(([l, q]) => '<a class="btn sm" href="' + esc(TL.shopLink(q)) + '" target="_blank" rel="noopener">' + esc(l) + '</a>').join('') + '</div><p class="xs" style="margin-top:10px">Die Links öffnen eine Amazon-Suche, sortiert nach Kundenbewertung. Lies dort die Zutatenliste: Erde ohne Dünger und ohne Zusätze ist die Voraussetzung, das steht in den Quellen aber nicht ausdrücklich, prüfe es daher selbst.</p></section>';
+    h += '<section class="card"><div class="card-h"><h3>Was kaufen: ' + esc(sb.buy.title) + '</h3></div><p class="sm">' + esc(sb.buy.text) + '<span class="src">' + srcLinks(sb.buy.src) + '</span></p><div class="row wrap" style="gap:8px;margin-top:8px">' + sb.shop.map(([l, q]) => '<a class="btn sm pri" href="' + esc(TL.shopLink(q)) + '" target="_blank" rel="noopener">' + esc(l) + ' bei Amazon</a>').join('') + '</div><p class="xs" style="margin-top:10px">Die Links öffnen eine Amazon-Suche, sortiert nach Kundenbewertung. Lies dort die Zutatenliste: Erde ohne Dünger und ohne Zusätze ist die Voraussetzung, das steht in den Quellen aber nicht ausdrücklich, prüfe es daher selbst.</p></section>';
     return h;
   }
   /* ===== Lampen-Check: eine Lampe prüfen, bevor man sie kauft ===== */
@@ -1328,7 +1335,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
   }
 
   /* ================= Rahmen und Navigation ================= */
-  const NAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['empf', 'Empfehlungen', 'lamp'], ['check', 'Lampen-Check', 'lamp'], ['subs', 'Substrat', 'soil'], ['wissen', 'Wissen', 'other'], ['animals', 'Tiere', 'paw'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
+  const NAV = [['dash', 'Übersicht', 'dash'], ['tasks', 'Aufgaben', 'care'], ['check', 'Lampen-Check', 'lamp'], ['lamps', 'Alle Lampen', 'lamp'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
   const TABNAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['settings', 'Mehr', 'more']];
   const NAVOF = { terr: 'terrs', entry: 'dash', lampform: 'lamps', taskform: 'tasks', animalform: 'animals' };
   const FORMS = ['entry', 'lampform', 'taskform', 'animalform'];
@@ -1369,8 +1376,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     const back = FORMS.includes(v) || v === 'terr';
     const tAc = v === 'terr' ? sp(terr(S.tid)) : '';
     $app.innerHTML = '<div class="shell"><aside class="side" aria-label="Navigation"><div class="brand"><div class="mark">' + icon('terr', 19) + '</div><div><b>Terrarium</b><span>Leitstand</span></div></div>' +
-      '<nav class="snav">' + NAV.map(([k, l, ic]) => '<button class="' + (active === k ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (active === k ? ' aria-current="page"' : '') + '>' + icon(ic, 19) + l + (badge[k] ? '<span class="badge-n">' + badge[k] + '</span>' : '') + '</button>').join('') + '</nav>' +
-      '<h4>Terrarien</h4><div class="sterr">' + terrs().map(t => { const a = assessOf(t), r = lastReading(t.id); return '<button class="' + lvl(a.level) + (v === 'terr' && S.tid === t.id ? ' on' : '') + '" data-a="open" data-v="' + t.id + '"><span class="dot"></span><span class="nm">' + esc(t.name) + '</span><span class="vals">' + (r ? fmt(r.t) + ' °C · ' + fmt(r.h, 0) + ' %' : 'kein Wert') + '</span></button>'; }).join('') + '</div>' +
+      '<nav class="snav">' + NAV.slice(0, 1).map(([k, l, ic]) => '<button class="' + (active === k ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (active === k ? ' aria-current="page"' : '') + '>' + icon(ic, 19) + l + (badge[k] ? '<span class="badge-n">' + badge[k] + '</span>' : '') + '</button>').join('') + '</nav><h4>Meine Tiere</h4><div class="sterr">' + terrs().map(t => { const a = assessOf(t), r = lastReading(t.id); return '<button class="' + lvl(a.level) + (v === 'terr' && S.tid === t.id ? ' on' : '') + '" data-a="open" data-v="' + t.id + '"><span class="dot"></span><span class="nm">' + esc(t.name) + '</span><span class="vals">' + (r ? fmt(r.t) + ' °C · ' + fmt(r.h, 0) + ' %' : 'kein Wert') + '</span></button>'; }).join('') + '</div><nav class="snav">' + NAV.slice(1).map(([k, l, ic]) => '<button class="' + (active === k ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (active === k ? ' aria-current="page"' : '') + '>' + icon(ic, 19) + l + (badge[k] ? '<span class="badge-n">' + badge[k] + '</span>' : '') + '</button>').join('') + '</nav>' +
       '<div class="foot">' + storeBadge().replace('class="store', 'style="color:var(--sidemuted)" class="store') + '<span>Sensoren: noch manuell</span></div></aside>' +
       '<div class="main ' + tAc + '"><header class="topbar">' + (back ? '<button class="btn sm ghost" data-a="back" aria-label="Zurück">' + icon('back', 18) + '</button>' : '') + '<div class="title"><h1>' + esc(title) + '</h1>' + (sub ? '<span class="xs">' + esc(sub) + '</span>' : '') + '</div>' + actions + '</header>' +
       '<div class="content">' + (S.demo ? '<div class="banner lv-yellow"><span class="grow">Du siehst Beispieldaten. Nichts davon wird gespeichert.</span><button class="btn sm" data-a="demo-off">Zu meinen Daten</button></div>' : '') + body + '</div></div>' +
@@ -1433,7 +1439,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
         S.entry = { tid, t: '', h: '', ts: nowLocalInput(now()), n: '' };
         openForm('entry'); setTimeout(() => { const el = document.getElementById('e-t'); if (el) el.focus(); }, 30); break;
       }
-      case 'gempf': S.empf = { tid: v }; go('empf'); break;
+      case 'gempf': S.tid = v; S.tab = 'empf'; go('terr'); break;
       case 'etid': S.entry.tid = v; render(); break;
       case 'stp': {
         const [k, d] = v.split(':'); const cur = TL.parseNum(S.entry[k]);
