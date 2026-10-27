@@ -456,3 +456,26 @@ test('Katalog und Substrat: alle Quellen existieren', () => {
   TL.CATALOG.forEach(it => { it.sources.forEach(k => assert.ok(TL.SOURCES[k], k)); for (const sp of ['kn', 'jc', 'rg']) assert.ok(it.fit[sp], it.id + sp); });
   for (const sp of ['kn', 'jc', 'rg']) { const s = TL.SUBSTRATE[sp]; s.points.forEach(p => p[2].forEach(k => assert.ok(TL.SOURCES[k], k))); s.mixSrc.forEach(k => assert.ok(TL.SOURCES[k], k)); }
 });
+
+test('Brenndauer und LED', () => {
+  const kn = TL.newTerrarium('kn', 'K');
+  const lamps = [{ id: 'a', tid: kn.id, type: 'uvbT5', hoursPerDay: 8, name: 'UV' }, { id: 'b', tid: kn.id, type: 'led', hoursPerDay: 13, name: 'LED' }, { id: 'c', tid: kn.id, type: 'heat', hoursPerDay: 5, name: 'Spot' }];
+  const h = TL.hoursCheck(kn, lamps, Date.parse('2026-10-27'));
+  assert.equal(h.rows.find(x => x.l.id === 'a').level, 'yellow');
+  assert.equal(h.rows.find(x => x.l.id === 'b').level, 'green');
+  assert.equal(h.rows.find(x => x.l.id === 'c').level, 'none');
+  assert.equal(h.day, 13); assert.equal(h.dayLevel, 'green');
+  assert.ok(TL.lampAdvice(kn, lamps).some(a => a.lid === 'a' && /8 Std/.test(a.text)));
+  assert.equal(TL.lampInfo({ type: 'led', installed: '', hoursPerDay: 12 }, Date.now()).level, 'none');
+  assert.equal(TL.lightHours('jc', Date.parse('2026-10-27')).min, 8);
+  assert.equal(TL.lightHours('jc', Date.parse('2026-06-27')).min, 12);
+});
+
+test('Substratwechsel bewerten', () => {
+  const t = TL.newTerrarium('kn', 'K'); const now = Date.parse('2026-11-01');
+  t.subLog = [{ date: '2026-10-25', product: 'Mix', depth: 8 }];
+  assert.equal(TL.substrateStatus(t, now).level, 'green');
+  t.subLog = [{ date: '2026-10-25', product: 'Mix', depth: 3 }]; assert.equal(TL.substrateStatus(t, now).level, 'yellow');
+  t.subLog = [{ date: '2026-02-01', depth: 8 }]; assert.equal(TL.substrateStatus(t, now).level, 'orange');
+  assert.equal(TL.substrateStatus(TL.newTerrarium('kn', 'K'), now), null);
+});

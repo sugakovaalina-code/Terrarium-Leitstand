@@ -718,7 +718,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
 
   function lampRow(x, showTerr) {
     const l = x.l, i = x.i, ty = TL.LAMP_TYPES[l.type] || TL.LAMP_TYPES.other;
-    const life = l.lifeMonths ? l.lifeMonths + ' Monate' : (l.lifeHours ? fmt(l.lifeHours, 0) + ' Std. bei ' + esc(l.hoursPerDay) + ' Std./Tag' : 'Lebensdauer offen');
+    const life = l.type === 'led' ? 'Keine Lebensdauer nötig' : l.lifeMonths ? l.lifeMonths + ' Monate' : (l.lifeHours ? fmt(l.lifeHours, 0) + ' Std. bei ' + esc(l.hoursPerDay) + ' Std./Tag' : 'Lebensdauer offen');
     let s = '<div class="li stackm ' + lvl(i.level) + '"><div class="ic">' + icon(lampIcon(l), 18) + '</div>' +
       '<div class="grow col" style="gap:4px"><div class="row between wrap" style="gap:6px"><span class="main-t">' + esc(l.name) + '</span>' + (i.daysLeft !== null ? pill(i.level, i.label) : '') + '</div>' +
       '<span class="xs">' + (showTerr ? esc(terrName(l.tid)) + ' · ' : '') + esc(ty.label) + (l.brand ? ' · ' + esc(l.brand) : '') + (l.model ? ' · ' + esc(l.model) : '') + (l.watt ? ' · ' + esc(l.watt) + ' W' : ' · Watt offen') + (l.uvbPct ? ' · ' + esc(l.uvbPct) + ' % UV-B' : '') + (ty.months || l.lifeHours ? ' · ' + life : '') + '</span>' +
@@ -838,6 +838,27 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
         (x.brand ? btn(x.q, 'Für Lampenschirm suchen') : (exo ? (exoOk ? btn('Exo Terra ' + x.q, 'Für Exo-Terra-Abdeckung') : '') + (shadeOk ? btn(x.q, 'Für Lampenschirm') : '') + (!exoOk && !shadeOk ? btn('Exo Terra ' + x.q, 'Zum Ersetzen suchen') : '') : btn(x.q, 'Bei Amazon suchen'))) + '</div></div>').join('') +
       '</div><p class="xs" style="margin-top:10px">Die Links öffnen eine Amazon-Suche, sortiert nach Kundenbewertung. Welche Marke gerade beliebt ist, wie teuer sie ist und ob sie lieferbar ist, siehst du dort. Das kann die App nicht abrufen. Prüfe vor dem Kauf, ob Fassung, Länge und Leistung zu deiner Abdeckung passen. Ein Metalldampfstrahler braucht ein eigenes Vorschaltgerät.</p></section>';
   }
+
+  function hoursCard(t) {
+    const hc = TL.hoursCheck(t, lamps());
+    if (!hc) return '';
+    const rows = hc.rows.filter(x => x.h !== null || x.level !== 'none');
+    return '<section class="card"><div class="card-h"><h3>Brenndauer und Bewertung</h3>' + (hc.day ? pill(hc.dayLevel === 'green' ? 'green' : 'yellow', 'Licht ' + fmt(hc.day, 0) + ' Std. am Tag') : pill('none', 'Noch keine Brenndauer')) + '</div>' +
+      '<p class="sm">Empfohlen: <b>' + esc(hc.range.text) + '</b> Licht am Tag. Trag bei jeder Lampe ein, wie lange sie brennt (Stift an der Lampe).<span class="src">' + srcLinks(hc.range.src) + '</span></p>' +
+      (rows.length ? '<div class="list">' + rows.map(x => '<div class="li ' + lvl(x.level) + '"><div class="ic">' + icon(lampIcon(x.l), 17) + '</div><div class="grow col" style="gap:2px"><span class="main-t sm">' + esc(x.l.name) + '</span><span class="xs">' + (x.h !== null ? fmt(x.h, 0) + ' Std. pro Tag. ' : '') + esc(x.text) + '</span></div>' + (x.level === 'green' ? pill('green', 'Passt') : x.level === 'yellow' ? pill('yellow', 'Nicht optimal') : '') + '<button class="btn sm ghost" data-a="ledit" data-v="' + x.l.id + '" aria-label="Bearbeiten">' + icon('edit', 16) + '</button></div>').join('') + '</div>' : '<div class="empty">Noch keine Lampen eingetragen.</div>') + '</section>';
+  }
+  function subLogCard(t) {
+    const st = TL.substrateStatus(t, now()), log = (t.subLog || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return '<form id="sublog-form" class="card" novalidate><div class="card-h"><h3>Substrat eintragen</h3>' + (st ? pill(st.level === 'green' ? 'green' : st.level, st.level === 'green' ? 'Frisch' : st.level === 'yellow' ? 'Bald wechseln' : st.level === 'orange' ? 'Überfällig' : 'Eingetragen') : pill('none', 'Noch nichts eingetragen')) + '</div>' +
+      (st ? '<p class="sm">Letzter Wechsel am ' + esc(dayTxt(st.last.date)) + '. ' + esc(st.text) + (st.depthNote ? ' ' + esc(st.depthNote) : '') + '<span class="src">' + srcLinks(st.src) + '</span></p>' : '<p class="sm">Trag ein, was du einfüllst und wann. Die App rechnet dann, wann der nächste Wechsel dran ist.</p>') +
+      '<div class="f-grid"><label class="f">Datum<input type="date" id="sl-date" value="' + TL.isoDay(now()) + '" max="' + TL.isoDay(now()) + '"></label><label class="f">Substrat und Firma<input id="sl-prod" placeholder="z. B. Selbst gemischt oder The Bio Dude Terra Fauna"></label><label class="f">Höhe in cm<input class="num-in" inputmode="decimal" id="sl-depth" placeholder="z. B. 8"></label></div>' +
+      '<label class="f">Notiz<input id="sl-note" placeholder="optional"></label><div class="row" style="margin-top:12px"><button type="submit" class="btn pri">Eintragen</button></div>' +
+      (log.length ? '<h4 style="margin:14px 0 6px">Bisher</h4><div class="list">' + log.map((x, i) => '<div class="li"><div class="ic">' + icon('soil', 17) + '</div><div class="grow col" style="gap:2px"><span class="main-t sm">' + esc(dayTxt(x.date)) + ' · ' + esc(x.product || 'Substrat') + '</span><span class="xs">' + (x.depth ? esc(x.depth) + ' cm' : 'Höhe offen') + (x.note ? ' · ' + esc(x.note) : '') + '</span></div><button type="button" class="btn sm danger ghost" data-a="sldel" data-v="' + esc(x.date + '|' + (x.product || '')) + '" aria-label="Eintrag löschen">' + icon('trash', 16) + '</button></div>').join('') + '</div>' : '') + '</form>';
+  }
+  function quickTasks(t) {
+    const list = taskList(t.id); if (!list.length) return '';
+    return '<section class="card"><div class="card-h"><h3>Schnell abhaken</h3></div><p class="sm">Tippe auf eine Pflege, die du heute gemacht hast.</p><div class="row wrap" style="gap:8px">' + list.map(x => '<button class="btn sm' + (x.k.last === TL.isoDay(now()) ? '' : ' pri') + '" data-a="tdone" data-v="' + x.k.id + '">' + icon(x.k.last === TL.isoDay(now()) ? 'check' : 'plus', 16) + esc(x.k.title) + (x.k.last === TL.isoDay(now()) ? ' (heute erledigt)' : '') + '</button>').join('') + '</div></section>';
+  }
   function equipCard(t) {
     const e = t.equip || { covers: '', ballast: null, notes: '' };
     return '<form id="equip-form" class="card" novalidate><div class="card-h"><h3>Abdeckung und Technik</h3></div><div class="grid g-2">' +
@@ -879,8 +900,8 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     else if (S.tab === 'empf') h += viewEmpf();
     else if (S.tab === 'subs') h += viewSubs();
     else if (S.tab === 'wissen') h += viewWissen();
-    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + '<div class="banner lv-yellow"><span class="grow">Welche Lampe in welche Fassung passt, steht im Reiter Empfehlungen.</span><button class="btn sm pri" data-a="tab" data-v="empf">Empfehlungen öffnen</button></div>' + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + equipCard(t) + lightingCard(t, false) + lampSourceNote();
-    else if (S.tab === 'aufgaben') h += '<section class="card"><div class="card-h"><h3>Aufgaben für dieses Terrarium</h3><button class="btn sm" data-a="knew" data-v="' + t.id + '">' + icon('plus', 16) + 'Aufgabe</button></div>' + (tl.length ? '<div class="list">' + tl.map(x => taskRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Aufgaben.</div>') + '</section><p class="xs">Die Intervalle sind Startwerte der App, keine Haltungsvorschrift. Pass sie über den Stift an deinen Rhythmus an.</p>';
+    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + hoursCard(t) + '<div class="banner lv-yellow"><span class="grow">Welche Lampe in welche Fassung passt, steht im Reiter Empfehlungen.</span><button class="btn sm pri" data-a="tab" data-v="empf">Empfehlungen öffnen</button></div>' + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + equipCard(t) + lightingCard(t, false) + lampSourceNote();
+    else if (S.tab === 'aufgaben') h += quickTasks(t) + '<section class="card"><div class="card-h"><h3>Aufgaben für dieses Terrarium</h3><button class="btn sm" data-a="knew" data-v="' + t.id + '">' + icon('plus', 16) + 'Aufgabe</button></div>' + (tl.length ? '<div class="list">' + tl.map(x => taskRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Aufgaben.</div>') + '</section><p class="xs">Die Intervalle sind Startwerte der App, keine Haltungsvorschrift. Pass sie über den Stift an deinen Rhythmus an.</p>';
     else h += tabAnimals(t);
     return h;
   }
@@ -1094,6 +1115,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     const t = ts.find(x => x.id === e.tid), sb = TL.SUBSTRATE[t.species], spc = TL.SPECIES[t.species] || TL.SPECIES.other, sz = t.size || {};
     if (!sb) return h + '<div class="empty">Für diese Art hat die App keine Substratangaben.</div>';
     const n = TL.substrateNeed(t, TL.parseNum(t.subDepth));
+    h += subLogCard(t);
     h += '<form id="sub-form" class="card ' + sp(t) + '" novalidate style="border-top:4px solid var(--sp)"><div class="card-h"><div class="grow col" style="gap:2px"><h3>Substrat für ' + esc(t.name) + '</h3><span class="sptag">' + esc(spc.name) + '</span></div></div>' +
       '<p class="sm"><b>Schichthöhe laut Quelle:</b> ' + esc(sb.depth.text) + (sb.depth.src.length ? '<span class="src">' + srcLinks(sb.depth.src) + '</span>' : '') + '</p>' +
       '<div class="f-grid"><label class="f">Länge in cm<input class="num-in" inputmode="decimal" id="sb-l" value="' + (sz.l ? esc(sz.l) : '') + '"></label><label class="f">Breite in cm<input class="num-in" inputmode="decimal" id="sb-b" value="' + (sz.b ? esc(sz.b) : '') + '"></label><label class="f">Eigene Schichthöhe in cm<input class="num-in" inputmode="decimal" id="sb-d" value="' + (t.subDepth ? esc(t.subDepth) : '') + '" placeholder="' + (sb.depth.min ? 'leer = Wert der Quelle' : 'z. B. 10') + '"></label></div>' +
@@ -1262,14 +1284,14 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       '<label class="f">Schutzkorb<select id="l-guard"><option value=""' + (l.guard == null ? ' selected' : '') + '>weiß nicht</option><option value="1"' + (l.guard === true ? ' selected' : '') + '>ja</option><option value="0"' + (l.guard === false ? ' selected' : '') + '>nein</option></select></label></div>' +
       '<label class="row sm" style="gap:8px"><input type="checkbox" id="l-night"' + (l.night ? ' checked' : '') + ' style="width:20px;height:20px"> Lampe ist auch nachts an</label>' +
       '<div id="lamp-adv">' + lampFormAdvice(l) + '</div></fieldset>' +
-      '<fieldset><legend>Alter und Lebensdauer</legend><div class="f-grid"><label class="f' + ec('installed') + '">Eingesetzt am<input type="date" id="l-inst" value="' + esc(l.installed) + '" max="' + TL.isoDay(now()) + '">' + err('installed') + '</label>' +
+      (l.type === 'led' ? '<fieldset><legend>Brenndauer</legend><label class="f' + ec('hoursPerDay') + '">Brennt Stunden pro Tag<input class="num-in" inputmode="numeric" id="l-hpd" value="' + esc(l.hoursPerDay ?? 12) + '">' + err('hoursPerDay') + '</label><span class="hint">Bei einer LED trägst du kein Alter und keine Lebensdauer ein.</span></fieldset>' : '<fieldset><legend>Alter und Lebensdauer</legend><div class="f-grid"><label class="f' + ec('installed') + '">Eingesetzt am<input type="date" id="l-inst" value="' + esc(l.installed) + '" max="' + TL.isoDay(now()) + '">' + err('installed') + '</label>' +
       '<label class="f' + ec('age') + '">oder Alter in Monaten<input class="num-in" inputmode="decimal" id="l-age" value="' + esc(l._age || '') + '" placeholder="z. B. 7">' + err('age') + '</label></div>' +
       '<span class="hint">Weißt du das Datum nicht genau, trag das ungefähre Alter ein. Die App rechnet das Einbaudatum aus.</span>' +
       '<div class="f-grid"><label class="f' + ec('lifeMonths') + '">Tauschen nach Monaten<input class="num-in" inputmode="numeric" id="l-months" value="' + esc(l.lifeMonths ?? '') + '">' + err('lifeMonths') + '</label>' +
       '<label class="f' + ec('lifeHours') + '">oder Lebensdauer in Std.<input class="num-in" inputmode="numeric" id="l-hours" value="' + esc(l.lifeHours ?? '') + '" placeholder="Packung">' + err('lifeHours') + '</label></div>' +
       '<label class="f' + ec('hoursPerDay') + '">Brennt Stunden pro Tag<input class="num-in" inputmode="numeric" id="l-hpd" value="' + esc(l.hoursPerDay ?? 12) + '">' + err('hoursPerDay') + '</label>' +
       '<span class="hint">Sind Monate eingetragen, gelten die Monate. Sonst rechnet die App mit Stunden geteilt durch Stunden pro Tag.</span>' +
-      (ty.sources.length ? '<div class="src">' + srcLinks(ty.sources) + '</div>' : '') + '</fieldset></div>' +
+      (ty.sources.length ? '<div class="src">' + srcLinks(ty.sources) + '</div>' : '') + '</fieldset>') + '</div>' +
       '<div class="row wrap"><button type="submit" class="btn pri">Speichern</button><button type="button" class="btn" data-a="back">Abbrechen</button><span class="grow"></span>' +
       (l.id && S.confirm !== 'ldel' ? '<button type="button" class="btn danger ghost" data-a="ask" data-v="ldel">' + icon('trash', 16) + 'Lampe löschen</button>' : '') + '</div>' + (l.id ? confirmBox('ldel', 'Diese Lampe löschen?', 'ldel', l.id) : '') +
       ((l.log || []).length ? '<section class="card flat"><h4 style="margin-bottom:8px">Frühere Lampen</h4>' + l.log.slice().reverse().map(x => '<div class="xs">' + esc(dayTxt(x.installed)) + ' bis ' + esc(dayTxt(x.replaced)) + '</div>').join('') + '</section>' : '') + '</form>';
@@ -1454,6 +1476,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
           .then(() => window.caches ? caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))) : null).then(done, done);
         break;
       }
+      case 'sldel': { const [d, pr] = v.split('|'); const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === S.tid); if (!t) break; const i = (t.subLog || []).findIndex(x => x.date === d && (x.product || '') === pr); if (i >= 0) t.subLog.splice(i, 1); saveConfig(cc); render(); break; }
       case 'gempf': S.tid = v; S.tab = 'empf'; go('terr'); break;
       case 'etid': S.entry.tid = v; render(); break;
       case 'stp': {
@@ -1717,6 +1740,16 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       t.equip = Object.assign({}, t.equip, { sockets: readSockets(t) });
       t.size = { l: TL.parseNum(g('sz-l')), b: TL.parseNum(g('sz-b')), h: TL.parseNum(g('sz-h')) };
       saveConfig(cc); toast('Fassungen gespeichert'); render();
+    } else if (id === 'sublog-form') {
+      const g = x => (document.getElementById(x) || {}).value ?? '';
+      const date = g('sl-date'), ts = Date.parse(date);
+      if (!Number.isFinite(ts) || ts > now() + TL.DAY) { toast('Bitte ein Datum wählen, das nicht in der Zukunft liegt.'); return; }
+      const dep = g('sl-depth').trim() === '' ? null : TL.parseNum(g('sl-depth'));
+      if (dep !== null && (dep <= 0 || dep > 100)) { toast('Bitte die Höhe in cm als Zahl eingeben.'); return; }
+      const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === S.tid); if (!t) return;
+      t.subLog = (t.subLog || []).concat({ date, product: g('sl-prod').trim(), depth: dep, note: g('sl-note').trim() });
+      (cc.tasks || []).filter(k => k.tid === t.id && k.kind === 'soil').forEach(k => { if (!k.last || k.last < date) k.last = date; k.log = (k.log || []).concat(date).slice(-30); });
+      saveConfig(cc); toast('Substrat eingetragen'); render();
     } else if (id === 'sub-form') {
       const g = x => (document.getElementById(x) || {}).value ?? '';
       const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.subs || {}).tid); if (!t) return;

@@ -234,6 +234,7 @@
      Nur Werte aus den Quellen. min/max in cm Schichthöhe, null = die Quelle nennt keine Zahl. */
   const SUBSTRATE = {
     kn: { depth: { min: 7.5, max: 10, src: ['zenCorn'], text: '3–4 Zoll (7,5–10 cm)' },
+      change: { ok: 120, max: 182, text: 'alle 3–4 Monate (Zen Habitats), etwa zweimal im Jahr (Tierschutzbund)', src: ['zenCorn', 'dtschbKn'] },
       mix: [['Oberboden (Erde)', 40], ['Torf', 20], ['Sand', 30], ['Ton', 10]],
       mixSrc: ['zenCorn', 'dtschbKn'],
       points: [['Mischung', 'Erde, Sand, Ton und Torf. Der Tierschutzbund nennt dazu optional dünn Rindenmulch. Zen Habitats: 40 % Oberboden, 20 % Torf, 30 % Sand, 10 % Ton.', ['dtschbKn', 'zenCorn']], ['Feuchte', 'Ein Bereich feucht, nicht alles nass. Zu nasses Substrat kann Schuppenfäule auslösen. Zusätzlich eine Feuchtbox mit feuchtem Moos.', ['dtschbKn', 'zenCorn']], ['Graben', 'Teile des Substrats erhöhen, Kornnattern graben gern. Laub obenauf hält die Feuchte.', ['dtschbKn', 'zenCorn']], ['Wechsel', 'Der Tierschutzbund: etwa zweimal im Jahr. Zen Habitats: alle 3–4 Monate, Kot sofort entfernen.', ['dtschbKn', 'zenCorn']]],
@@ -246,12 +247,29 @@
       buy: { title: 'Erde und Sand, mit Bodenablauf', text: 'Eine Marke für das Jemenchamäleon nennen die gesammelten Quellen nicht. Der Tierschutzbund nennt Sand und Erde, die Wasser aufnimmt, ReptiFiles einen Bodenablauf statt einer dicken Schicht. Die Einzelteile findest du hier.', src: ['dtschbJc', 'rfVeiled'] },
       shop: [['Terrarium-Erde', 'Terrarium Bodengrund Erde Chamäleon'], ['Spielsand', 'Spielsand ungefärbt'], ['Wasserablauf für Terrarien', 'Terrarium Bodenablauf Chamäleon']] },
     rg: { depth: { min: 7.5, max: null, src: ['rfLeachie'], text: 'mindestens 3 Zoll (7,5 cm)' },
+      change: { ok: 120, max: 150, text: 'alle 3–4 Monate komplett (ReptiFiles)', src: ['rfLeachie'] },
       mix: [['Oberboden (Erde)', 60], ['Kokosfaser', 40]],
       mixSrc: ['rfLeachie'],
       points: [['Mischung', 'ReptiFiles: 60 % Oberboden und 40 % Kokosfaser, oder Zoo Med Reptisoil, Zoo Med Eco Earth, Exo Terra Plantation Soil oder The Bio Dude Terra Fauna.', ['rfLeachie']], ['Bioaktiv', 'The Bio Dude: tiefes, gut drainiertes Substrat mit Drainageschicht und Bodentieren. Riesengeckos erzeugen viel Abfall. Die Quelle nennt keine Dicke der Drainageschicht.', ['biodude']], ['Laub', 'Eine großzügige Schicht Laub obenauf.', ['rfLeachie']], ['Wechsel', 'Kot und Urate täglich entfernen. Substrat alle 3–4 Monate komplett tauschen.', ['rfLeachie']]],
       buy: { title: 'Fertig kaufen oder selbst mischen', text: 'Meine Wahl nach den Quellen: The Bio Dude Terra Fauna, das bioaktive Substrat der Firma, die auch das Pflegeblatt für die Art schreibt (ReptiFiles nennt es für den Riesengecko). Günstiger: Zoo Med Eco Earth, Zoo Med Reptisoil oder Exo Terra Plantation Soil, die ReptiFiles ebenfalls nennt. Oder selbst mischen: 60 % Oberboden und 40 % Kokosfaser.', src: ['rfLeachie', 'biodude'] },
       shop: [['The Bio Dude Terra Fauna', 'The Bio Dude Terra Fauna bioaktiv'], ['Zoo Med Eco Earth', 'Zoo Med Eco Earth Kokos'], ['Zoo Med Reptisoil', 'Zoo Med Reptisoil'], ['Exo Terra Plantation Soil', 'Exo Terra Plantation Soil'], ['Laub für Terrarien', 'Terrarium Laub Buchenlaub']] }
   };
+  /** Bewertung des letzten Substratwechsels aus dem Protokoll t.subLog [{date, product, depth, note}]. */
+  function substrateStatus(t, nowMs) {
+    const sb = SUBSTRATE[t && t.species], log = (t && t.subLog || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    if (!sb || !log.length) return null;
+    const last = log[0], days = Math.floor((nowMs - Date.parse(last.date)) / DAY);
+    const out = { last, days, level: 'none', text: '', src: [] };
+    if (sb.change) {
+      out.src = sb.change.src;
+      if (days <= sb.change.ok) { out.level = 'green'; out.text = 'Vor ' + days + ' Tagen. Quelle: ' + sb.change.text + '.'; }
+      else if (days <= sb.change.max) { out.level = 'yellow'; out.text = 'Vor ' + days + ' Tagen. Bald wechseln, Quelle: ' + sb.change.text + '.'; }
+      else { out.level = 'orange'; out.text = 'Vor ' + days + ' Tagen. Überfällig, Quelle: ' + sb.change.text + '.'; }
+    } else out.text = 'Vor ' + days + ' Tagen. Die Quellen nennen für diese Art keinen Wechselrhythmus.';
+    const d = parseNum(last.depth);
+    if (d !== null && sb.depth.min !== null && d < sb.depth.min) { out.depthNote = 'Eingefüllt ' + d + ' cm, die Quelle nennt ' + sb.depth.text + '.'; if (out.level === 'green') out.level = 'yellow'; }
+    return out;
+  }
   /** Menge Substrat in Litern aus Grundfläche und Schichthöhe. depthOverride in cm ersetzt die Quellenwerte. */
   function substrateNeed(t, depthOverride) {
     const sb = SUBSTRATE[t && t.species]; if (!sb) return null;
@@ -268,6 +286,31 @@
     return res;
   }
 
+  /** Empfohlene Lichtdauer pro Tag. Jemenchamäleon: Sommer April bis September, sonst Winter (abgeleitet aus „im Sommer / im Winter“). */
+  function lightHours(species, nowMs) {
+    if (species === 'kn') return { min: 12, max: 14, text: '12–14 Stunden', src: ['dtschbKn'] };
+    if (species === 'jc') { const m = new Date(nowMs === undefined ? Date.now() : nowMs).getMonth(); return m >= 3 && m <= 8 ? { min: 12, max: 14, text: '12–14 Stunden (Sommer)', src: ['dtschbJc'] } : { min: 8, max: 10, text: '8–10 Stunden (Winter)', src: ['dtschbJc'] }; }
+    if (species === 'rg') return { min: 12, max: 12, text: '12 Stunden', src: ['biodude'], tol: 1 };
+    return null;
+  }
+  /** Bewertung der Brenndauer je Lampe (ohne Nachtlampen und ohne Wärmestrahler, die sich nach der Temperatur richten). */
+  function hoursCheck(t, lampList, nowMs) {
+    const r = lightHours(t.species, nowMs); if (!r) return null;
+    const tol = r.tol || 0;
+    const rows = (lampList || []).filter(l => l.tid === t.id && !l.night).map(l => {
+      const h = parseNum(l.hoursPerDay), g = (LAMP_TYPES[l.type] || {}).group;
+      const rated = g === 'uvb' || g === 'light' || l.type === 'uvbMV' || l.type === 'uvbMH';
+      let level = 'none', text = 'Wärmelampe: richtet sich nach der Temperatur am Sonnenplatz.';
+      if (rated && h !== null) {
+        if (h < r.min - tol) { level = 'yellow'; text = 'Kürzer als die Quelle nennt (' + r.text + ').'; }
+        else if (h > r.max + tol) { level = 'yellow'; text = 'Länger als die Quelle nennt (' + r.text + '). Das Tier braucht eine Nacht.'; }
+        else { level = 'green'; text = 'Passt zu ' + r.text + '.'; }
+      } else if (rated) text = 'Brenndauer fehlt.';
+      return { l, h, level, text };
+    });
+    const day = rows.filter(x => x.h !== null).reduce((m, x) => Math.max(m, x.h), 0);
+    return { range: r, rows, day, dayLevel: day === 0 ? 'none' : day < r.min - tol || day > r.max + tol ? 'yellow' : 'green' };
+  }
   /** Prüft die Lampen eines Terrariums gegen den Bedarf der Art. Gibt Hinweise mit Stufe zurück, schlimmste zuerst. */
   function lampAdvice(t, lampList) {
     const out = [];
@@ -284,6 +327,8 @@
       if (!uvb.length) add(t.species === 'jc' ? (unknown.length ? 'orange' : 'red') : 'yellow', 'Keine UV-B-Lampe eingetragen. LED, Glühbirne und Infrarotlampe geben kein UV-B.' + (unknown.length ? ' Falls eine der offenen Birnen eine UV-B-Lampe ist, trag ihre Art ein.' : ''), null, li.sources);
       if (!heat.length) add(unknown.length ? 'yellow' : 'orange', 'Kein Wärmestrahler für den Sonnenplatz eingetragen.', null, li.sources);
     }
+    const hc = hoursCheck(t, lampList);
+    if (hc) hc.rows.filter(x => x.level === 'yellow').forEach(x => add('yellow', nm(x.l) + ' brennt ' + x.h + ' Std. pro Tag. ' + x.text, x.l.id, hc.range.src));
     if (ballast === true && !uvb.some(l => l.type === 'uvbT5' || l.type === 'uvbT8' || l.type === 'uvbMH')) add('yellow', 'Ein Vorschaltgerät ist vorhanden, aber keine Röhre eingetragen. Steckt in der Abdeckung vielleicht eine UV-B-Röhre? Dann trag sie ein.');
     if (unknown.length) add('none', unknown.length + (unknown.length === 1 ? ' Birne ist' : ' Birnen sind') + ' noch ohne Art. Trag Art und Watt ein, dann prüft die App sie.');
     for (const l of own) {
@@ -391,7 +436,7 @@
   /** Prüft eine Lampe, die noch nicht eingebaut ist (zum Beispiel im Internet gefunden), für ein Terrarium.
    *  replaceId: eine vorhandene Lampe, die sie ersetzen soll. */
   function candidateCheck(t, cand, lampList, replaceId) {
-    const tmp = Object.assign({ hoursPerDay: 12 }, cand, { id: '_check', tid: t.id });
+    const tmp = Object.assign({ hoursPerDay: null }, cand, { id: '_check', tid: t.id });
     const list = (lampList || []).filter(l => l.id !== replaceId).concat(tmp);
     const items = lampAdvice(t, list).filter(a => a.lid === '_check' || !a.lid);
     const bad = items.filter(a => a.level !== 'none');
@@ -454,7 +499,7 @@
 
   /* Vorgegebene Aufgaben je Art. Intervalle sind Startwerte der App, keine Haltungsvorgabe. */
   const DEFAULT_TASKS = {
-    kn: [['water', 'Wasser wechseln, Napf reinigen', 2], ['clean', 'Kot entfernen', 3], ['clean', 'Scheiben reinigen', 14], ['soil', 'Substrat komplett wechseln', 90], ['clean', 'Einrichtung reinigen und desinfizieren', 180], ['batt', 'Sensor-Batterie prüfen', 90]],
+    kn: [['water', 'Wasser wechseln, Napf reinigen', 2], ['clean', 'Kot entfernen', 3], ['clean', 'Scheiben reinigen', 14], ['spray', 'Düsen der Beregnung entkalken', 30], ['soil', 'Substrat komplett wechseln', 90], ['clean', 'Einrichtung reinigen und desinfizieren', 180], ['batt', 'Sensor-Batterie prüfen', 90]],
     jc: [['spray', 'Düsen entkalken', 30], ['spray', 'Wassertank der Beregnung füllen', 7], ['plants', 'Pflanzen gießen und kontrollieren', 7], ['clean', 'Kot und Futterreste entfernen', 3], ['clean', 'Scheiben reinigen', 14], ['soil', 'Substrat wechseln', 90], ['batt', 'Sensor-Batterie prüfen', 90]],
     rg: [['water', 'Wasser wechseln, Napf reinigen', 2], ['clean', 'Futterschälchen reinigen', 2], ['spray', 'Düsen entkalken', 30], ['plants', 'Pflanzen kontrollieren', 14], ['clean', 'Scheiben reinigen', 14], ['soil', 'Substrat wechseln', 90], ['batt', 'Sensor-Batterie prüfen', 90]],
     other: [['water', 'Wasser wechseln', 2], ['clean', 'Scheiben reinigen', 14]]
@@ -570,6 +615,7 @@
 
   /** Restlaufzeit einer Lampe. */
   function lampInfo(l, now) {
+    if (l.type === 'led') return { level: 'none', label: 'LED, keine Lebensdauer nötig', pct: null, daysLeft: null };
     const inst = l.installed ? Date.parse(l.installed) : NaN;
     if (!Number.isFinite(inst)) return { level: 'none', label: 'Einbaudatum fehlt', pct: null, daysLeft: null };
     const months = parseNum(l.lifeMonths), hours = parseNum(l.lifeHours), hpd = parseNum(l.hoursPerDay);
@@ -1068,7 +1114,7 @@
   }
 
   return {
-    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, CATALOG, socketsOf, socketRecs, lampPlan, SUBSTRATE, substrateNeed, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, KNOWLEDGE, LEXICON, SETUP_CHECK, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
+    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, lightHours, hoursCheck, CATALOG, socketsOf, socketRecs, lampPlan, SUBSTRATE, substrateNeed, substrateStatus, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, KNOWLEDGE, LEXICON, SETUP_CHECK, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,
