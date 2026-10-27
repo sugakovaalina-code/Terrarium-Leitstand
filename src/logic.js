@@ -125,10 +125,11 @@
     ]
   };
   /** Exo-Terra-Abdeckungen nehmen nur Exo-Terra-Leuchtmittel auf. Lampenschirme mit freier Fassung nehmen jede Marke mit passender Fassung. */
-  function hasExoCover(t) { return /exo\s*-?\s*terra/i.test(t && t.equip && t.equip.covers || ''); }
+  function hasExoCover(t) { return /exo\s*-?\s*terra/i.test(t && t.equip && t.equip.covers || '') || ((t && t.equip && t.equip.sockets) || []).some(x => x.kind === 'exo'); }
   /** Plätze für Leuchtmittel: Exo-Terra-Abdeckung (nur Exo Terra) und Fassung mit Schirm (jede Marke). Fest eingebaute LEDs zählen nicht. */
   function slotUse(t, lampList) {
-    const sl = t && t.equip && t.equip.slots || {};
+    const ss = t && t.equip && Array.isArray(t.equip.sockets) && t.equip.sockets.length ? t.equip.sockets : null;
+    const sl = ss ? { exo: ss.filter(x => x.kind === 'exo').length, shade: ss.filter(x => x.kind !== 'exo').length } : (t && t.equip && t.equip.slots || {});
     const out = { exo: { total: Number.isFinite(sl.exo) ? sl.exo : null, used: 0 }, shade: { total: Number.isFinite(sl.shade) ? sl.shade : null, used: 0 } };
     (lampList || []).filter(l => l.tid === t.id && l.type !== 'led').forEach(l => {
       const f = String(l.fixture || '');
@@ -499,7 +500,7 @@
 
   /* Vorgegebene Aufgaben je Art. Intervalle sind Startwerte der App, keine Haltungsvorgabe. */
   const DEFAULT_TASKS = {
-    kn: [['water', 'Wasser wechseln, Napf reinigen', 2], ['clean', 'Kot entfernen', 3], ['clean', 'Scheiben reinigen', 14], ['spray', 'Düsen der Beregnung entkalken', 30], ['soil', 'Substrat komplett wechseln', 90], ['clean', 'Einrichtung reinigen und desinfizieren', 180], ['batt', 'Sensor-Batterie prüfen', 90]],
+    kn: [['water', 'Wasser wechseln, Napf reinigen', 2], ['spray', 'Düsen der Beregnung entkalken', 30], ['soil', 'Substrat komplett wechseln', 90], ['clean', 'Einrichtung reinigen und desinfizieren', 180], ['batt', 'Sensor-Batterie prüfen', 90]],
     jc: [['spray', 'Düsen entkalken', 30], ['spray', 'Wassertank der Beregnung füllen', 7], ['plants', 'Pflanzen gießen und kontrollieren', 7], ['clean', 'Kot und Futterreste entfernen', 3], ['clean', 'Scheiben reinigen', 14], ['soil', 'Substrat wechseln', 90], ['batt', 'Sensor-Batterie prüfen', 90]],
     rg: [['water', 'Wasser wechseln, Napf reinigen', 2], ['clean', 'Futterschälchen reinigen', 2], ['spray', 'Düsen entkalken', 30], ['plants', 'Pflanzen kontrollieren', 14], ['clean', 'Scheiben reinigen', 14], ['soil', 'Substrat wechseln', 90], ['batt', 'Sensor-Batterie prüfen', 90]],
     other: [['water', 'Wasser wechseln', 2], ['clean', 'Scheiben reinigen', 14]]

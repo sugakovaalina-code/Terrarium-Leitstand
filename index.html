@@ -728,7 +728,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     if (i.pct !== null) s += '<div class="bar" role="img" aria-label="' + i.pct + ' Prozent der Lebensdauer verbraucht"><i style="width:' + i.pct + '%"></i></div><span class="xs">Eingesetzt ' + esc(dayTxt(l.installed)) + ' · tauschen am <b class="num">' + esc(dateLong(i.dueAt)) + '</b></span>';
     s += '</div><div class="actions">' + (l.installed ? '<button class="btn sm" data-a="lnew" data-v="' + l.id + '">' + icon('swap', 16) + 'Neue Lampe eingesetzt</button>' : '') +
       '<button class="btn sm ghost" data-a="ledit" data-v="' + l.id + '" aria-label="Bearbeiten">' + icon('edit', 16) + '</button></div>';
-    if (!l.installed) s += '<div class="quick"><span>Wie alt ist die Lampe?</span><input class="num-in" inputmode="decimal" id="qa-' + l.id + '" placeholder="Monate" aria-label="Alter in Monaten"><button class="btn sm" data-a="lage" data-v="' + l.id + '">Speichern</button><button class="btn sm" data-a="lnew" data-v="' + l.id + '">Heute neu eingesetzt</button></div>';
+    if (l.type === 'led') { /* LED: kein Alter, keine Lebensdauer */ } else if (!l.installed) s += '<div class="quick"><span>Wie alt ist die Lampe?</span><input class="num-in" inputmode="decimal" id="qa-' + l.id + '" placeholder="Monate" aria-label="Alter in Monaten"><button class="btn sm" data-a="lage" data-v="' + l.id + '">Speichern</button><button class="btn sm" data-a="lnew" data-v="' + l.id + '">Heute neu eingesetzt</button></div>';
     else if (i.daysLeft === null) s += '<div class="quick"><span>Lebensdauer fehlt. Trag sie von der Verpackung ein.</span><button class="btn sm" data-a="ledit" data-v="' + l.id + '">Eintragen</button></div>';
     return s + '</div>';
   }
@@ -900,7 +900,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     else if (S.tab === 'empf') h += viewEmpf();
     else if (S.tab === 'subs') h += viewSubs();
     else if (S.tab === 'wissen') h += viewWissen();
-    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + hoursCard(t) + '<div class="banner lv-yellow"><span class="grow">Welche Lampe in welche Fassung passt, steht im Reiter Empfehlungen.</span><button class="btn sm pri" data-a="tab" data-v="empf">Empfehlungen öffnen</button></div>' + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + equipCard(t) + lightingCard(t, false) + lampSourceNote();
+    else if (S.tab === 'lampen') h += improveCard(t) + adviceCard(t) + hoursCard(t) + '<div class="banner lv-yellow"><span class="grow">Welche Lampe in welche Fassung passt, steht im Reiter Empfehlungen.</span><button class="btn sm pri" data-a="tab" data-v="empf">Empfehlungen öffnen</button></div>' + '<section class="card"><div class="card-h"><h3>Deine Lampen in diesem Terrarium</h3><button class="btn sm" data-a="lnewform" data-v="' + t.id + '">' + icon('plus', 16) + 'Lampe</button></div>' + (ll.length ? '<div class="list">' + ll.map(x => lampRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Lampen.</div>') + '</section>' + socketForm(t, false) + lightingCard(t, false) + lampSourceNote();
     else if (S.tab === 'aufgaben') h += quickTasks(t) + '<section class="card"><div class="card-h"><h3>Aufgaben für dieses Terrarium</h3><button class="btn sm" data-a="knew" data-v="' + t.id + '">' + icon('plus', 16) + 'Aufgabe</button></div>' + (tl.length ? '<div class="list">' + tl.map(x => taskRow(x, false)).join('') + '</div>' : '<div class="empty">Noch keine Aufgaben.</div>') + '</section><p class="xs">Die Intervalle sind Startwerte der App, keine Haltungsvorschrift. Pass sie über den Stift an deinen Rhythmus an.</p>';
     else h += tabAnimals(t);
     return h;
@@ -1041,22 +1041,22 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
   /* ===== Empfehlungen: welche Lampe passt in welche Fassung ===== */
   const SK_ROLE = { any: 'UV-B oder Wärme', uvb: 'nur UV-B', heat: 'nur Wärme' };
   function fitPill(n) { return n >= 2 ? pill('green', 'Passt') : pill('yellow', 'Bedingt'); }
-  function socketForm(t) {
+  function socketForm(t, inEmpf) {
     const ss = TL.socketsOf(t), sz = t.size || {};
     const sel = (id, opts, cur) => '<select id="' + id + '">' + opts.map(([v, l]) => '<option value="' + v + '"' + (String(cur) === v ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select>';
-    return '<form id="sock-form" class="card" novalidate><div class="card-h"><h3>Deine Fassungen in ' + esc(t.name) + '</h3><button type="button" class="btn sm" data-a="skadd">' + icon('plus', 16) + 'Fassung</button></div>' +
-      '<p class="sm">Trag jeden Platz ein, an dem eine Lampe sitzen kann. Fest eingebaute LEDs zählen nicht. Danach schlägt die App nur Lampen vor, die in diesen Platz passen.</p>' +
-      (ss.length ? ss.map((s, i) => '<div class="sk"><div class="row between"><b>Fassung ' + (i + 1) + '</b><button type="button" class="btn sm danger ghost" data-a="skdel" data-v="' + i + '">' + icon('trash', 16) + 'Entfernen</button></div><div class="f-grid">' +
-        '<label class="f">Name<input id="sk' + i + '-name" value="' + esc(s.name || '') + '" placeholder="z. B. Abdeckung links"></label>' +
-        '<label class="f">Art<select id="sk' + i + '-kind"><option value="free"' + (s.kind !== 'exo' ? ' selected' : '') + '>Fassung mit Schirm oder Halterung (jede Marke)</option><option value="exo"' + (s.kind === 'exo' ? ' selected' : '') + '>Exo-Terra-Abdeckung (nur Exo Terra)</option></select></label>' +
+    return '<form id="sock-form" class="card" novalidate><div class="card-h"><h3>Abdeckung und Technik: Plätze für Lampen</h3><button type="button" class="btn sm" data-a="skadd">' + icon('plus', 16) + 'Platz hinzufügen</button></div>' +
+      '<p class="sm">Trag für jeden Platz ein, an dem eine Lampe sitzen kann: wo er ist und was für eine Halterung es ist. Fest eingebaute LEDs zählen nicht. Danach schlägt die App nur Lampen vor, die dort hineinpassen.</p>' +
+      (ss.length ? ss.map((s, i) => '<div class="sk"><div class="row between"><b>Platz ' + (i + 1) + '</b><button type="button" class="btn sm danger ghost" data-a="skdel" data-v="' + i + '">' + icon('trash', 16) + 'Entfernen</button></div><div class="f-grid">' +
+        '<label class="f">Wo?<select id="sk' + i + '-cage"><option value="0"' + (!s.cage ? ' selected' : '') + '>Außerhalb des Terrariums</option><option value="1"' + (s.cage ? ' selected' : '') + '>Im Terrarium, im Schutzkäfig</option></select></label>' +
+        '<label class="f">Halterung<select id="sk' + i + '-kind"><option value="free"' + (s.kind !== 'exo' ? ' selected' : '') + '>Lampenschirm / freie Fassung (jede Marke)</option><option value="exo"' + (s.kind === 'exo' ? ' selected' : '') + '>Exo-Terra-Abdeckung (nur Exo Terra)</option></select></label>' +
+        '<label class="f">Name (freiwillig)<input id="sk' + i + '-name" value="' + esc(s.name || '') + '" placeholder="z. B. links hinten"></label></div><div class="f-grid">' +
         '<label class="f">Sockel<select id="sk' + i + '-base"><option value=""' + (!s.base ? ' selected' : '') + '>weiß nicht</option><option value="E27"' + (s.base === 'E27' ? ' selected' : '') + '>E27</option><option value="E14"' + (s.base === 'E14' ? ' selected' : '') + '>E14</option></select></label>' +
-        '<label class="f">Was soll dort sitzen?' + sel('sk' + i + '-role', Object.entries(SK_ROLE), s.role || 'any') + '</label></div><div class="f-grid">' +
+        '<label class="f">Was soll dort sitzen?' + sel('sk' + i + '-role', Object.entries(SK_ROLE), s.role || 'any') + '</label>' +
+        '<label class="f">Höchstens Watt<input class="num-in" inputmode="decimal" id="sk' + i + '-maxw" value="' + (Number.isFinite(s.maxW) ? esc(s.maxW) : '') + '" placeholder="leer = keine Grenze"></label></div><div class="f-grid">' +
         '<label class="f">Vorschaltgerät' + sel('sk' + i + '-ballast', [['', 'weiß nicht'], ['1', 'ja, vorhanden'], ['0', 'nein']], s.ballast === true ? '1' : s.ballast === false ? '0' : '') + '</label>' +
         '<label class="f">Vorschaltgerät: Typ<input id="sk' + i + '-bmodel" value="' + esc(s.ballastModel || '') + '" placeholder="z. B. Lucky Reptile Bright Control"></label>' +
-        '<label class="f">Vorschaltgerät: Watt<input class="num-in" inputmode="decimal" id="sk' + i + '-bw" value="' + (Number.isFinite(s.ballastW) ? esc(s.ballastW) : '') + '"></label>' +
-        '<label class="f">Höchstens Watt in dieser Fassung<input class="num-in" inputmode="decimal" id="sk' + i + '-maxw" value="' + (Number.isFinite(s.maxW) ? esc(s.maxW) : '') + '" placeholder="leer = keine Grenze"></label>' +
-        '<label class="f">Lampe sitzt<select id="sk' + i + '-cage"><option value="0"' + (!s.cage ? ' selected' : '') + '>außen oder über dem Gitter</option><option value="1"' + (s.cage ? ' selected' : '') + '>im Terrarium (Schutzkorb)</option></select></label></div></div>').join('') : '<div class="empty">Noch keine Fassung eingetragen.</div>') +
-      '<h4 style="margin:14px 0 6px">Maße des Terrariums (freiwillig)</h4><div class="f-grid"><label class="f">Länge in cm<input class="num-in" inputmode="decimal" id="sz-l" value="' + (sz.l ? esc(sz.l) : '') + '"></label><label class="f">Breite in cm<input class="num-in" inputmode="decimal" id="sz-b" value="' + (sz.b ? esc(sz.b) : '') + '"></label><label class="f">Höhe in cm<input class="num-in" inputmode="decimal" id="sz-h" value="' + (sz.h ? esc(sz.h) : '') + '"></label></div>' +
+        '<label class="f">Vorschaltgerät: Watt<input class="num-in" inputmode="decimal" id="sk' + i + '-bw" value="' + (Number.isFinite(s.ballastW) ? esc(s.ballastW) : '') + '"></label></div></div>').join('') : '<div class="empty">Noch kein Platz eingetragen.</div>') +
+      (inEmpf ? '<h4 style="margin:14px 0 6px">Maße des Terrariums (freiwillig)</h4><div class="f-grid"><label class="f">Länge in cm<input class="num-in" inputmode="decimal" id="sz-l" value="' + (sz.l ? esc(sz.l) : '') + '"></label><label class="f">Breite in cm<input class="num-in" inputmode="decimal" id="sz-b" value="' + (sz.b ? esc(sz.b) : '') + '"></label><label class="f">Höhe in cm<input class="num-in" inputmode="decimal" id="sz-h" value="' + (sz.h ? esc(sz.h) : '') + '"></label></div>' : '') +
       '<div class="row" style="margin-top:12px"><button type="submit" class="btn pri">Speichern</button></div></form>';
   }
   function recCard(t, r, top) {
@@ -1078,7 +1078,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     const t = ts.find(x => x.id === e.tid), spc = TL.SPECIES[t.species] || TL.SPECIES.other;
     let h = inT ? '' : '<div class="chips">' + ts.map(x => '<button class="chip ' + (e.tid === x.id ? 'on' : '') + '" data-a="emtid" data-v="' + x.id + '">' + esc(x.name) + '</button>').join('') + '</div>';
     h += '<section class="card ' + sp(t) + '"><div class="card-h"><h3>Lampen für ' + esc(t.name) + '</h3><span class="sptag">' + esc(spc.name) + '</span></div><p class="sm">Die App prüft jede Lampe gegen deine Fassung (Sockel, Vorschaltgerät, Höchstwatt, Exo-Terra-Pflicht) und gegen den Bedarf der Art. Die Amazon-Links öffnen eine Suche mit der genauen Firma, dem Modell und der Wattzahl. Preise und Bewertungen siehst du dort.</p></section>';
-    if (!TL.LIGHTING[t.species]) return h + '<div class="empty">Für diese Art hat die App keine Lichtempfehlung.</div>' + socketForm(t);
+    if (!TL.LIGHTING[t.species]) return h + '<div class="empty">Für diese Art hat die App keine Lichtempfehlung.</div>' + socketForm(t, true);
     const plan = TL.lampPlan(t);
     if (!plan.length) h += '<div class="banner lv-yellow"><span class="grow">Trag unten zuerst deine Fassungen ein. Ohne sie kann die App nicht wissen, was bei dir hineinpasst.</span></div>';
     plan.forEach(({ s, recs, top }, i) => {
@@ -1086,7 +1086,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       h += '<section class="card"><div class="card-h"><h3>' + esc(s.name || 'Fassung ' + (i + 1)) + '</h3>' + pill(recs.length ? 'green' : 'orange', recs.length ? recs.length + (recs.length === 1 ? ' Lampe passt' : ' Lampen passen') : 'Nichts gefunden') + '</div><div class="meta" style="margin-bottom:10px">' + tags.map(x => '<span class="tag">' + esc(x) + '</span>').join('') + '<span class="tag">' + esc(SK_ROLE[s.role] || SK_ROLE.any) + '</span></div>' +
         (recs.length ? '<div class="list">' + recs.map(r => recCard(t, r, top === r)).join('') + '</div>' : '<p class="sm">Für diese Kombination hat die App keine belegte Lampe. Prüfe Sockel, Vorschaltgerät und Wattgrenze. Oder prüfe eine eigene Lampe im Reiter Lampen-Check.</p>') + '</section>';
     });
-    h += '<p class="xs">Alle Angaben stammen von den verlinkten Seiten. Die Wattzahlen für die Tierarten sind dort genannt oder als abgeleitet markiert. Ob Terrariumgröße und Wattzahl zusammenpassen, kann nur ein Thermometer am Sonnenplatz zeigen, und bei UV-B nur ein UV-Index-Messgerät.</p>' + socketForm(t);
+    h += '<p class="xs">Alle Angaben stammen von den verlinkten Seiten. Die Wattzahlen für die Tierarten sind dort genannt oder als abgeleitet markiert. Ob Terrariumgröße und Wattzahl zusammenpassen, kann nur ein Thermometer am Sonnenplatz zeigen, und bei UV-B nur ein UV-Index-Messgerät.</p>' + socketForm(t, true);
     return h;
   }
   function readSockets(t) {
@@ -1570,8 +1570,8 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       case 'gotier': S.aid = v; S.edit = null; go('animals'); break;
       case 'emtid': S.empf = { tid: v }; render(); break;
       case 'stid': S.subs = { tid: v }; render(); break;
-      case 'skadd': { const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.empf || {}).tid); if (!t) break; t.equip = Object.assign({}, t.equip); t.equip.sockets = readSockets(t).concat({ id: TL.uid('s'), name: '', kind: 'free', base: 'E27', role: 'any', ballast: null, ballastModel: '', ballastW: null, maxW: null, cage: false }); saveConfig(cc); render(); break; }
-      case 'skdel': { const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.empf || {}).tid); if (!t) break; const l = readSockets(t); l.splice(Number(v), 1); t.equip = Object.assign({}, t.equip, { sockets: l }); saveConfig(cc); render(); break; }
+      case 'skadd': { const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.view === 'terr' ? S.tid : (S.empf || {}).tid)); if (!t) break; t.equip = Object.assign({}, t.equip); t.equip.sockets = readSockets(t).concat({ id: TL.uid('s'), name: '', kind: 'free', base: 'E27', role: 'any', ballast: null, ballastModel: '', ballastW: null, maxW: null, cage: false }); saveConfig(cc); render(); break; }
+      case 'skdel': { const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.view === 'terr' ? S.tid : (S.empf || {}).tid)); if (!t) break; const l = readSockets(t); l.splice(Number(v), 1); t.equip = Object.assign({}, t.equip, { sockets: l }); saveConfig(cc); render(); break; }
       case 'wtab': S.wissen = Object.assign(S.wissen || {}, { tab: v }); render(); break;
       case 'wtid': S.wissen = Object.assign(S.wissen || {}, { tid: v }); render(); break;
       case 'wsetup': { const w = S.wissen || {}; const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === w.tid); if (!t) break; t.setup = Object.assign({}, t.setup); if (t.setup[v]) delete t.setup[v]; else t.setup[v] = true; saveConfig(cc); render(); break; }
@@ -1736,10 +1736,10 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       saveConfig(cc); S.pf = null; S.errors = {}; render(); toast('Einrichtung gespeichert.' + note);
     } else if (id === 'sock-form') {
       const g = x => (document.getElementById(x) || {}).value ?? '';
-      const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.empf || {}).tid); if (!t) return;
+      const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === (S.view === 'terr' ? S.tid : (S.empf || {}).tid)); if (!t) return;
       t.equip = Object.assign({}, t.equip, { sockets: readSockets(t) });
-      t.size = { l: TL.parseNum(g('sz-l')), b: TL.parseNum(g('sz-b')), h: TL.parseNum(g('sz-h')) };
-      saveConfig(cc); toast('Fassungen gespeichert'); render();
+      if (document.getElementById('sz-l')) t.size = { l: TL.parseNum(g('sz-l')), b: TL.parseNum(g('sz-b')), h: TL.parseNum(g('sz-h')) };
+      saveConfig(cc); toast('Plätze gespeichert'); render();
     } else if (id === 'sublog-form') {
       const g = x => (document.getElementById(x) || {}).value ?? '';
       const date = g('sl-date'), ts = Date.parse(date);
