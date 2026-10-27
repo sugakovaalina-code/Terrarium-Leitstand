@@ -1206,7 +1206,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
 
   function viewSettings() {
     const theme = getTheme();
-    let h = '<div class="grid g-2"><section class="card"><div class="card-h"><h3>Speicher</h3>' + storeBadge() + '</div><p class="sm">' +
+    let h = '<section class="card"><div class="card-h"><h3>App neu laden</h3><button class="btn pri" data-a="reload">' + icon('swap', 16) + 'Neu laden</button></div><p class="sm">Holt die neueste Version der App. Deine Daten bleiben erhalten. Nutze das, wenn wir etwas geändert haben.</p></section><div class="grid g-2"><section class="card"><div class="card-h"><h3>Speicher</h3>' + storeBadge() + '</div><p class="sm">' +
       (Store.mode === 'cloud' ? 'Deine Daten liegen privat in deinem Claude-Konto. Auf dem iPad und am Rechner siehst du dieselben Daten.' : Store.mode === 'local' ? 'Deine Daten liegen nur in diesem Browser. Mach regelmäßig ein Backup.' : 'Dieser Browser speichert nichts. Exportiere vor dem Schließen ein Backup.') + '</p>' +
       '<div class="row wrap" style="margin-top:12px"><button class="btn" data-a="exp-json">Backup exportieren</button><button class="btn" data-a="exp-csv">Messwerte als CSV</button><label class="btn" for="imp-file">Backup einspielen</label><input type="file" id="imp-file" accept=".json,application/json" hidden>' + (Store.mode === 'supa' ? '<button class="btn ghost" data-a="logout">Abmelden</button>' : '') + '</div>';
     if (S.exportText) h += '<div class="col" style="margin-top:12px"><span class="xs">Download ist hier nicht möglich. Kopiere den Text und speichere ihn als Datei.</span><textarea id="exp-text" class="exp" readonly>' + esc(S.exportText) + '</textarea><button class="btn sm" data-a="exp-copy">Kopieren</button></div>';
@@ -1377,7 +1377,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     const tAc = v === 'terr' ? sp(terr(S.tid)) : '';
     $app.innerHTML = '<div class="shell"><aside class="side" aria-label="Navigation"><div class="brand"><div class="mark">' + icon('terr', 19) + '</div><div><b>Terrarium</b><span>Leitstand</span></div></div>' +
       '<nav class="snav">' + NAV.slice(0, 1).map(([k, l, ic]) => '<button class="' + (active === k ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (active === k ? ' aria-current="page"' : '') + '>' + icon(ic, 19) + l + (badge[k] ? '<span class="badge-n">' + badge[k] + '</span>' : '') + '</button>').join('') + '</nav><h4>Meine Tiere</h4><div class="sterr">' + terrs().map(t => { const a = assessOf(t), r = lastReading(t.id); return '<button class="' + lvl(a.level) + (v === 'terr' && S.tid === t.id ? ' on' : '') + '" data-a="open" data-v="' + t.id + '"><span class="dot"></span><span class="nm">' + esc(t.name) + '</span><span class="vals">' + (r ? fmt(r.t) + ' °C · ' + fmt(r.h, 0) + ' %' : 'kein Wert') + '</span></button>'; }).join('') + '</div><nav class="snav">' + NAV.slice(1).map(([k, l, ic]) => '<button class="' + (active === k ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (active === k ? ' aria-current="page"' : '') + '>' + icon(ic, 19) + l + (badge[k] ? '<span class="badge-n">' + badge[k] + '</span>' : '') + '</button>').join('') + '</nav>' +
-      '<div class="foot">' + storeBadge().replace('class="store', 'style="color:var(--sidemuted)" class="store') + '<span>Sensoren: noch manuell</span></div></aside>' +
+      '<div class="foot"><button class="btn sm" data-a="reload" style="margin-bottom:8px">' + icon('swap', 16) + 'App neu laden</button>' + storeBadge().replace('class="store', 'style="color:var(--sidemuted)" class="store') + '<span>Sensoren: noch manuell</span></div></aside>' +
       '<div class="main ' + tAc + '"><header class="topbar">' + (back ? '<button class="btn sm ghost" data-a="back" aria-label="Zurück">' + icon('back', 18) + '</button>' : '') + '<div class="title"><h1>' + esc(title) + '</h1>' + (sub ? '<span class="xs">' + esc(sub) + '</span>' : '') + '</div>' + actions + '</header>' +
       '<div class="content">' + (S.demo ? '<div class="banner lv-yellow"><span class="grow">Du siehst Beispieldaten. Nichts davon wird gespeichert.</span><button class="btn sm" data-a="demo-off">Zu meinen Daten</button></div>' : '') + body + '</div></div>' +
       '<nav class="tabbar" aria-label="Hauptnavigation">' + TABNAV.map(([k, l, ic]) => { const on = active === k || (k === 'settings' && ['animals', 'warn'].includes(active)); return '<button class="' + (on ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (on ? ' aria-current="page"' : '') + '>' + icon(ic, 22) + l + (badge[k] ? '<span class="cnt">' + badge[k] + '</span>' : '') + '</button>'; }).join('') + '</nav></div>';
@@ -1438,6 +1438,13 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
         const tid = v || (S.view === 'terr' ? S.tid : terrs()[0].id);
         S.entry = { tid, t: '', h: '', ts: nowLocalInput(now()), n: '' };
         openForm('entry'); setTimeout(() => { const el = document.getElementById('e-t'); if (el) el.focus(); }, 30); break;
+      }
+      case 'reload': {
+        toast('Lade die neueste Version …');
+        const done = () => location.reload();
+        Promise.resolve().then(() => navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(rs => Promise.all(rs.map(r => r.unregister()))) : null)
+          .then(() => window.caches ? caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))) : null).then(done, done);
+        break;
       }
       case 'gempf': S.tid = v; S.tab = 'empf'; go('terr'); break;
       case 'etid': S.entry.tid = v; render(); break;
