@@ -10,7 +10,7 @@ cp logic.js $OUT/
   printf '%s\n' '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
   printf '%s\n' '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">'
   printf '%s\n' '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Terrarium">'
-  printf '%s\n' '<meta name="theme-color" content="#121A17"><link rel="manifest" href="manifest.webmanifest">'
+  printf '%s\n' '<meta name="theme-color" content="#F7EAE5"><link rel="manifest" href="manifest.webmanifest">'
   printf '%s\n' '<link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png">'
   printf '%s\n' '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>'
   printf '%s\n' '<script src="config.js"></script>'
