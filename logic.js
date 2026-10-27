@@ -199,6 +199,32 @@
     return { level: bad.length ? bad[0].level : 'green', items };
   }
 
+  /** Kennzahlen für den Steckbrief eines Tieres aus dem Tagebuch. */
+  function animalStats(a, journal, nowMs) {
+    const j = (journal || []).filter(e => e.aid === a.id).slice().sort((x, y) => y.ts - x.ts);
+    const last = type => j.find(e => e.type === type) || null;
+    const ws = j.filter(e => e.type === 'weight' && Number.isFinite(parseNum(e.value))).map(e => ({ ts: e.ts, w: parseNum(e.value) }));
+    const w = ws.length ? ws[0] : null, prev = ws.length > 1 ? ws[1] : null;
+    const hatch = a.hatch ? Date.parse(a.hatch) : NaN;
+    const daysSince = e => e ? Math.max(0, Math.floor((nowMs - e.ts) / DAY)) : null;
+    return {
+      weight: w, prevWeight: prev,
+      weightDelta: w && prev ? round1(w.w - prev.w) : null,
+      weightPct: w && prev && prev.w ? round1((w.w - prev.w) / prev.w * 100) : null,
+      daysSinceFeed: daysSince(last('feed')), daysSinceShed: daysSince(last('shed')), daysSincePoop: daysSince(last('poop')), daysSinceVet: daysSince(last('vet')),
+      ageDays: Number.isFinite(hatch) && hatch <= nowMs ? Math.floor((nowMs - hatch) / DAY) : null,
+      entries: j.length
+    };
+  }
+  /** Alter als Text: Tage, Monate oder Jahre. */
+  function ageLabel(days) {
+    if (days === null || days === undefined) return null;
+    if (days < 60) return days + ' Tage';
+    if (days < 730) return Math.round(days / 30.44) + ' Monate';
+    const y = Math.floor(days / 365.25), m = Math.floor((days - y * 365.25) / 30.44);
+    return y + ' Jahre' + (m ? ' ' + m + ' Monate' : '');
+  }
+
   /** Vergleicht eingetragene Lampen mit dem Bedarf der Art. */
   function lightCheck(t, lampList) {
     const li = LIGHTING[t.species];
@@ -843,7 +869,7 @@
   }
 
   return {
-    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
+    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,

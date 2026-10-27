@@ -375,3 +375,17 @@ test('Lampen-Check: Kandidat gegen Tier prüfen', () => {
   const rep = TL.candidateCheck(t, { type: 'led', name: 'led' }, [{ id: 'u', tid: 'a', type: 'uvbT5', uvbPct: 12, name: 'UV', hoursPerDay: 12 }, { id: 'h', tid: 'a', type: 'heat', name: 'Spot', hoursPerDay: 12 }], 'u');
   assert.equal(rep.level, 'red');
 });
+
+test('Steckbrief: Kennzahlen aus dem Tagebuch', () => {
+  const now = Date.parse('2026-10-27T12:00:00Z'), D = 86400000;
+  const a = { id: 'a1', hatch: '2025-10-27' };
+  const j = [
+    { aid: 'a1', type: 'weight', ts: now - 10 * D, value: 100 }, { aid: 'a1', type: 'weight', ts: now - 3 * D, value: 110 },
+    { aid: 'a1', type: 'feed', ts: now - 2 * D }, { aid: 'a1', type: 'shed', ts: now - 20 * D }, { aid: 'x', type: 'feed', ts: now - 1 * D }
+  ];
+  const s = TL.animalStats(a, j, now);
+  assert.equal(s.weight.w, 110); assert.equal(s.weightDelta, 10); assert.equal(s.weightPct, 10);
+  assert.equal(s.daysSinceFeed, 2); assert.equal(s.daysSinceShed, 20); assert.equal(s.daysSinceVet, null);
+  assert.equal(s.ageDays, 365); assert.equal(TL.ageLabel(365), '12 Monate');
+  assert.equal(TL.ageLabel(null), null); assert.equal(TL.ageLabel(20), '20 Tage'); assert.equal(TL.ageLabel(800), '2 Jahre 2 Monate');
+});
