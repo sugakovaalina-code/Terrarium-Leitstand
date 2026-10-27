@@ -239,6 +239,19 @@ textarea { min-height: 76px; resize: vertical; }
 .photo-in .sb-av { width: 88px; height: 88px; font-size: 30px; }
 @media (max-width: 720px) { .sb { grid-template-columns: 1fr; } }
 
+.wsub { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.wsec h4 { margin: 0 0 6px; font-size: 14px; }
+.wsec ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.wsec li { font-size: 14px; line-height: 1.45; }
+.wsec .src { display: block; margin-top: 2px; }
+.wgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+.chk { display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line2); padding: 10px 2px; cursor: pointer; font: inherit; color: inherit; }
+.chk .box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--line); flex: none; display: grid; place-items: center; color: #fff; }
+.chk.on .box { background: var(--g); border-color: var(--g); }
+.chk.on .lbl { text-decoration: line-through; opacity: .6; }
+.prog { height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; margin: 6px 0 12px; }
+.prog i { display: block; height: 100%; background: var(--g); }
+
 .selbtn { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 10px; padding: 10px; cursor: pointer; }
 .selbtn.on { background: var(--acsoft); border-color: var(--line); }
 ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
@@ -937,6 +950,29 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       groups.filter(g => g[1].length).map(g => '<section class="card"><div class="card-h"><h3>' + g[0] + '</h3><span class="xs">' + g[1].length + '</span></div><div class="list">' + g[1].map(x => taskRow(x, f === 'all')).join('') + '</div></section>').join('') +
       (tl.length ? '' : '<div class="empty">Keine Aufgaben.</div>') + '<p class="xs">Die vorgegebenen Intervalle sind Startwerte der App, keine Haltungsvorschrift. Mit dem Stift änderst du Intervall, Name und Terrarium.</p>';
   }
+  /* ===== Wissen: Artenprofile, Checkliste, Lexikon ===== */
+  function viewWissen() {
+    const ts = terrs(); const w = S.wissen = S.wissen || { tab: 'profil', tid: null };
+    if (!ts.length) return '<div class="empty">Leg zuerst ein Terrarium an.</div>';
+    if (!ts.some(x => x.id === w.tid)) w.tid = ts[0].id;
+    const t = ts.find(x => x.id === w.tid);
+    const sub = [['profil', 'Artenprofil'], ['check', 'Einrichtungs-Checkliste'], ['lex', 'Lexikon']];
+    let h = '<div class="wsub">' + sub.map(([k, l]) => '<button class="chip ' + (w.tab === k ? 'on' : '') + '" data-a="wtab" data-v="' + k + '">' + l + '</button>').join('') + '</div>';
+    if (w.tab === 'lex') {
+      return h + '<section class="card"><div class="card-h"><h3>Lexikon</h3></div><div class="list">' + TL.LEXICON.map(e => '<div class="li"><div class="grow col" style="gap:3px"><span class="main-t sm">' + esc(e.term) + '</span><span class="sm">' + esc(e.text) + '</span><span class="src">' + srcLinks(e.src) + '</span></div></div>').join('') + '</div></section>';
+    }
+    h += '<div class="chips">' + ts.map(x => '<button class="chip ' + (w.tid === x.id ? 'on' : '') + '" data-a="wtid" data-v="' + x.id + '">' + esc(x.name) + '</button>').join('') + '</div>';
+    const kb = TL.KNOWLEDGE[t.species], spc = TL.SPECIES[t.species] || TL.SPECIES.other;
+    if (!kb) return h + '<div class="empty">Für diese Art gibt es noch kein Profil.</div>';
+    if (w.tab === 'check') {
+      const items = TL.SETUP_CHECK[t.species] || [], done = t.setup || {}, n = items.filter(i => done[i[0]]).length;
+      return h + '<section class="card ' + sp(t) + '"><div class="card-h"><h3>Einrichtung prüfen: ' + esc(t.name) + '</h3>' + pill(n === items.length ? 'green' : 'none', n + ' von ' + items.length) + '</div>' +
+        '<div class="prog"><i style="width:' + Math.round(n / items.length * 100) + '%"></i></div><p class="xs" style="margin:0 0 6px">Hak ab, was in deinem Terrarium schon da ist. Jeder Punkt stammt aus den Quellen des Artenprofils.</p>' +
+        items.map(([id, label, src]) => '<button class="chk ' + (done[id] ? 'on' : '') + '" data-a="wsetup" data-v="' + id + '"><span class="box">' + (done[id] ? icon('check', 14) : '') + '</span><span class="grow col" style="gap:2px"><span class="lbl sm">' + esc(label) + '</span><span class="src">' + srcLinks([src]) + '</span></span></button>').join('') + '</section>';
+    }
+    return h + '<section class="card ' + sp(t) + '" style="border-top:4px solid var(--sp)"><div class="card-h"><div class="grow col" style="gap:2px"><h3>' + esc(spc.name) + '</h3>' + (spc.latin ? '<span class="sb-lat">' + esc(spc.latin) + '</span>' : '') + '</div></div><p class="xs" style="margin:0 0 12px">' + esc(kb.note) + '</p><div class="wgrid">' +
+      kb.sections.map(sec => { const key = x => x.src.join(','); const same = sec.items.every(i => key(i) === key(sec.items[0])); return '<div class="wsec"><h4>' + esc(sec.title) + '</h4><ul>' + sec.items.map(i => '<li>' + esc(i.text) + (same ? '' : '<span class="src">' + srcLinks(i.src) + '</span>') + '</li>').join('') + '</ul>' + (same ? '<span class="src" style="margin-top:6px">' + srcLinks(sec.items[0].src) + '</span>' : '') + '</div>'; }).join('') + '</div></section>';
+  }
   /* ===== Lampen-Check: eine Lampe prüfen, bevor man sie kauft ===== */
   function viewCheck() {
     const ts = terrs(); if (!ts.length) return '<div class="empty">Leg zuerst ein Terrarium an.</div>';
@@ -1174,7 +1210,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
   }
 
   /* ================= Rahmen und Navigation ================= */
-  const NAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['check', 'Lampen-Check', 'lamp'], ['animals', 'Tiere', 'paw'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
+  const NAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['check', 'Lampen-Check', 'lamp'], ['wissen', 'Wissen', 'other'], ['animals', 'Tiere', 'paw'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
   const TABNAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['settings', 'Mehr', 'more']];
   const NAVOF = { terr: 'terrs', entry: 'dash', lampform: 'lamps', taskform: 'tasks', animalform: 'animals' };
   const FORMS = ['entry', 'lampform', 'taskform', 'animalform'];
@@ -1186,6 +1222,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     if (v === 'terr') { const t = terr(S.tid); return [t.name, (TL.SPECIES[t.species] || TL.SPECIES.other).name, '<button class="btn pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button>']; }
     if (v === 'tasks') return ['Aufgaben', 'Pflege nach Intervall', '<button class="btn pri" data-a="knew">' + icon('plus', 16) + 'Aufgabe</button>'];
     if (v === 'lamps') return ['Lampen', 'Alter und Tauschtermin', '<button class="btn pri" data-a="lnewform">' + icon('plus', 16) + 'Lampe</button>'];
+    if (v === 'wissen') return ['Wissen', 'Artenprofile, Checkliste und Lexikon, mit Quellen', ''];
     if (v === 'check') return ['Lampen-Check', 'Passt eine Lampe zum Tier?', ''];
     if (v === 'animals') return ['Tiere', 'Tagebuch', ''];
     if (v === 'warn') return ['Warnungen', 'Was braucht Aufmerksamkeit?', ''];
@@ -1202,7 +1239,7 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
     if (!S.ready) return;
     S.pendingRender = false;
     const v = S.view;
-    const body = v === 'dash' ? viewDash() : v === 'terrs' ? viewTerrs() : v === 'terr' ? viewTerr() : v === 'tasks' ? viewTasks() : v === 'lamps' ? viewLamps() : v === 'check' ? viewCheck()
+    const body = v === 'dash' ? viewDash() : v === 'terrs' ? viewTerrs() : v === 'terr' ? viewTerr() : v === 'tasks' ? viewTasks() : v === 'lamps' ? viewLamps() : v === 'check' ? viewCheck() : v === 'wissen' ? viewWissen()
       : v === 'animals' ? viewAnimals() : v === 'warn' ? viewWarn() : v === 'entry' ? viewEntry() : v === 'lampform' ? viewLampForm() : v === 'taskform' ? viewTaskForm()
       : v === 'animalform' ? viewAnimalForm() : viewSettings();
     const active = NAVOF[v] || v;
@@ -1365,6 +1402,9 @@ ul.adv { margin: 0; padding-left: 18px; display: flex; flex-direction: column; g
       case 'lnewform': S.edit = { id: '', tid: v || (S.lampFilter !== 'all' ? S.lampFilter : (terrs()[0] || {}).id), type: 'uvbT5', name: 'UV-B-Lampe', model: '', watt: '', installed: '', lifeMonths: TL.LAMP_TYPES.uvbT5.months, lifeHours: '', hoursPerDay: 12, log: [], pos: '', guard: null, uvbPct: '', night: false, fixture: '' }; S.errors = {}; openForm('lampform'); break;
       case 'ledit': { const l = lamps().find(x => x.id === v); if (l) { S.edit = clone(l); S.errors = {}; openForm('lampform'); } break; }
       case 'ldel': { const cc = c(); cc.lamps = cc.lamps.filter(x => x.id !== v); saveConfig(cc); toast('Lampe gelöscht'); goBack(); break; }
+      case 'wtab': S.wissen = Object.assign(S.wissen || {}, { tab: v }); render(); break;
+      case 'wtid': S.wissen = Object.assign(S.wissen || {}, { tid: v }); render(); break;
+      case 'wsetup': { const w = S.wissen || {}; const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === w.tid); if (!t) break; t.setup = Object.assign({}, t.setup); if (t.setup[v]) delete t.setup[v]; else t.setup[v] = true; saveConfig(cc); render(); break; }
       case 'aphotodel': S.edit = Object.assign(readAnimalForm(), { photo: '' }); render(); break;
       case 'anew': S.edit = { id: '', name: '', tid: v || terrs()[0].id, sex: '', hatch: '', morph: '', origin: '', acquired: '', notes: '', photo: '' }; S.errors = {}; openForm('animalform'); break;
       case 'aedit': { const an = animals().find(x => x.id === v); if (an) { S.edit = clone(an); S.errors = {}; openForm('animalform'); } break; }

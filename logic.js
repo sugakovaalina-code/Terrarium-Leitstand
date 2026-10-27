@@ -189,6 +189,77 @@
     return out.sort((a, b) => order[a.level] - order[b.level]);
   }
 
+
+  /* ---------- Wissen: Artenprofile, Lexikon, Einrichtungs-Checkliste ----------
+     Alles aus den genannten Quellen. Fahrenheit-Werte aus The Bio Dude sind umgerechnet (gerundet). */
+  const K = (text, src) => ({ text, src: [].concat(src) });
+  const KNOWLEDGE = {
+    kn: {
+      note: 'Quelle: Deutscher Tierschutzbund. Er weist auf Tierschutzprobleme bei Futtertieren hin und rät vom Kauf von Wildfängen ab.',
+      sections: [
+        { id: 'ueber', title: 'Überblick', items: [K('Länge bis 180 cm, die meisten Tiere bleiben unter 150 cm.', 'dtschbKn'), K('Lebenserwartung über 20 Jahre, meist 12–15 Jahre.', 'dtschbKn')] },
+        { id: 'terr', title: 'Terrarium', items: [K('Mindestgröße für bis zu zwei Tiere: Länge der längsten Schlange × halbe Länge × Länge. Beispiel bei 130 cm Schlange: 130 × 65 × 130 cm. Je weiteres Tier 20 % mehr Bodenfläche.', 'dtschbKn'), K('Für zwei erwachsene Tiere empfiehlt der Tierschutzbund 150 × 100 × 150 cm.', 'dtschbKn'), K('Drei Seiten blickdicht. Das Terrarium gut sichern, Kornnattern drücken unverschlossene Türen auf.', 'dtschbKn')] },
+        { id: 'einr', title: 'Einrichtung', items: [K('Mehrere höhlenartige Verstecke.', 'dtschbKn'), K('Klettermöglichkeiten auf mehreren Ebenen und ein erhöhter Aussichts- und Sonnenplatz.', 'dtschbKn'), K('Eine Häutungshilfe (Ast oder raue Steine).', 'dtschbKn'), K('Eine Badeschale, groß genug für die ganze Schlange.', 'dtschbKn'), K('Ein Eiablagekasten mit leicht feuchtem Substrat, auch für einzelne Weibchen.', 'dtschbKn'), K('Mit Thermometer ohne Quecksilber und Hygrometer im Terrarium. Außen angebrachte sind zu ungenau.', 'dtschbKn')] },
+        { id: 'sub', title: 'Substrat', items: [K('Erde, Sand, Ton und Torf, dazu optional dünn Rindenmulch. Ein Bereich feucht, nicht alles nass (sonst Bakterien und Pilze).', 'dtschbKn'), K('Teile des Substrats erhöhen, Kornnattern graben gern.', 'dtschbKn'), K('Substrat etwa zweimal im Jahr wechseln. Zeitung nur kurz oder in der Quarantäne.', 'dtschbKn')] },
+        { id: 'klima', title: 'Klima', items: [K('Tag 24–28 °C, am Sonnenplatz lokal 28 bis über 35 °C.', 'dtschbKn'), K('Nacht 18–20 °C.', 'dtschbKn'), K('Luftfeuchte 50–70 %, durch regelmäßiges Sprühen oder eine Beregnung. Dazu eine Feuchtbox mit feuchtem Moos.', 'dtschbKn')] },
+        { id: 'licht', title: 'Licht', items: [K('12–14 Stunden Licht am Tag, außerhalb der Winterruhe.', 'dtschbKn'), K('UV-Licht ist für Wohlbefinden und Aktivität empfohlen. Für die Sonnenplätze ist Metalldampf besser als Halogen.', 'dtschbKn'), K('Lampen außer Reichweite oder mit Schutzkorb, sonst drohen Verbrennungen.', 'dtschbKn'), K('Ferguson-Zone 1–2, UV-Index am Liegeplatz höchstens 1,1–3,0.', 'baines')] },
+        { id: 'futter', title: 'Wasser und Futter', items: [K('Jeden Tag frisches Trinkwasser. Wasser- und Badeschalen täglich reinigen.', 'dtschbKn'), K('Passende Mäuse, kleine Ratten oder Küken. Erwachsene etwa 1–3 Mäuse alle 2–3 Wochen, Jungtiere wöchentlich.', 'dtschbKn'), K('Einzeln außerhalb des Terrariums füttern.', 'dtschbKn'), K('Die Verdauung beginnt ab 10 °C und läuft bei 30 °C am besten. Zu kalt kann Erbrechen auslösen, zu heiß Blähungen.', 'dtschbKn')] },
+        { id: 'winter', title: 'Winterruhe', items: [K('Etwa zwei Monate, Oktober bis März, bei 8–12 °C in völliger Dunkelheit.', 'dtschbKn'), K('4–5 Wochen vorher nicht mehr füttern. Kotproben davor und danach. Nur gesunde Tiere.', 'dtschbKn'), K('Licht langsam reduzieren und wieder steigern.', 'dtschbKn')] },
+        { id: 'ges', title: 'Gesundheit', items: [K('Häufig: Häutungsprobleme, Milben, Fressstörungen und Veränderungen von Kot und Schleimhaut.', 'dtschbKn'), K('Einmal pro Woche wiegen. Bei Verdacht auf Krankheit zum Tierarzt.', 'dtschbKn'), K('Neue Tiere mindestens sechs Wochen in Quarantäne, mit zwei negativen Kotproben.', 'dtschbKn'), K('Kornnattern tragen oft Salmonellen: Hände waschen, Futter- und Wassergefäße getrennt von der Küche halten. Vorsicht bei kleinen Kindern, Schwangeren und geschwächter Abwehr.', 'dtschbKn'), K('Qualzuchten meiden: schuppenlose Tiere und „Sunkissed“ (kann zum Sterngucker-Syndrom führen).', 'dtschbKn')] }
+      ]
+    },
+    jc: {
+      note: 'Quelle: Deutscher Tierschutzbund. Er nennt das Jemenchamäleon stressempfindlich und nicht für Anfänger und rät von Wildfängen ab. Die Art steht in Anhang B der EU-Artenschutzverordnung: meldepflichtig, Herkunftsnachweis nötig.',
+      sections: [
+        { id: 'ueber', title: 'Überblick', items: [K('Bis 50 cm lang, Lebenserwartung etwa 7 Jahre. Stammt von der Arabischen Halbinsel und ist tagaktiv.', 'dtschbJc'), K('Strenger Einzelgänger. Schon der Anblick eines Artgenossen kann Stress auslösen.', 'dtschbJc')] },
+        { id: 'terr', title: 'Terrarium', items: [K('Mindestens 200 × 100 × 150 cm für ein Tier. Die Höhe ist wichtig, weil es ein Kletterer ist.', 'dtschbJc'), K('Drei Seiten blickdicht, zum Beispiel mit Korkwänden. Blickkontakt zu anderen Chamäleons, Tieren und Menschen vermeiden.', 'dtschbJc'), K('Viel Frischluft, zum Beispiel ein Gaze- oder Netzterrarium. Gute Luft zeigt sich daran, dass es nach dem Sprühen schnell abtrocknet.', 'dtschbJc')] },
+        { id: 'einr', title: 'Einrichtung', items: [K('Viele Verstecke aus Steinen, Wurzeln, Ästen und Zweigen.', 'dtschbJc'), K('Dichte Bepflanzung, zum Beispiel Ficus benjamina, Farne, Sukkulenten, Bromelien und Tillandsien.', 'dtschbJc'), K('Substrat aus Sand und Erde, das Wasser aufnimmt.', 'dtschbJc')] },
+        { id: 'klima', title: 'Klima', items: [K('Lufttemperatur 25–28 °C, lokal bis 40 °C.', 'dtschbJc'), K('Nachts mindestens 20 °C, ein deutlicher Unterschied zum Tag ist erwünscht.', 'dtschbJc'), K('Luftfeuchte 60–90 %.', 'dtschbJc')] },
+        { id: 'licht', title: 'Licht', items: [K('Sommer 12–14 Stunden Licht, Winter etwa 8–10 Stunden.', 'dtschbJc'), K('UV-A und UV-B sind nötig. Als Beispiel nennt der Tierschutzbund eine 300-W-Lampe (Osram Ultra-Vitalux oder Radium Sanolux) aus 60–80 cm Abstand, höchstens 30 Minuten pro Tag.', 'dtschbJc'), K('Ferguson-Zone 3, UV-Index am Sonnenplatz 2,9–7,4.', 'baines'), K('Lampen in hitzefesten Porzellanfassungen, Schutzgitter um die Strahler.', 'dtschbJc')] },
+        { id: 'wasser', title: 'Wasser', items: [K('Chamäleons erkennen stehendes Wasser nicht, sie trinken Tautropfen. Mindestens täglich sprühen, nach dem Tierschutzbund ein- bis zweimal.', 'dtschbJc'), K('Besser sind Tropftränke oder eine Benebelung. Stehendes Wasser kann Bakterien enthalten.', 'dtschbJc')] },
+        { id: 'futter', title: 'Futter', items: [K('Grillen, Heimchen, kleine Heuschrecken und Schaben. Dazu Pflanzen wie Löwenzahn, Gurke und Sukkulenten.', 'dtschbJc'), K('Erwachsene: 3–4 Insekten, zwei- bis dreimal pro Woche, damit sie nicht verfetten.', 'dtschbJc'), K('Jungtiere: die ersten acht Monate täglich, mit gelegentlichen Fastentagen, dann zwei- bis dreimal pro Woche.', 'dtschbJc'), K('Vitamin D und Mineralien: Insekten damit bestäuben und die Futtertiere selbst gut füttern.', 'dtschbJc')] },
+        { id: 'winter', title: 'Winterruhe', items: [K('Etwa November bis März, rund zwei Monate: Licht 8–10 Stunden, tags 20 °C, nachts 12–16 °C, etwa ein Insekt pro Woche, frisches Wasser weiter anbieten.', 'dtschbJc')] },
+        { id: 'ges', title: 'Gesundheit', items: [K('Mangel an Vitamin D oder Calcium zeigt sich in unkoordinierten Bewegungen und Rachitis.', 'dtschbJc'), K('Legenot kann tödlich sein. Ursachen sind fehlende Ablageplätze, Mangel, Infektionen oder Stress.', 'dtschbJc'), K('Zu fettes oder eiweißreiches Futter kann die Organe verfetten, bei Wassermangel droht Gicht.', 'dtschbJc'), K('Häutungsprobleme hängen oft mit zu niedriger Luftfeuchte zusammen.', 'dtschbJc'), K('Neue Tiere auf Parasiten untersuchen lassen.', 'dtschbJc')] }
+      ]
+    },
+    rg: {
+      note: 'Quelle: The Bio Dude. Die Seite nennt trotz ihrer Rubrik keine Belege, und bei Terrariengrößen und UV-B-Stärke widerspricht sie sich. Prüf wichtige Werte zusätzlich bei einer tierärztlichen Quelle. Fahrenheit-Werte sind in °C umgerechnet.',
+      sections: [
+        { id: 'ueber', title: 'Überblick', items: [K('Länge 14–20+ Zoll, also etwa 36–51 cm. Lebenserwartung weit über 40 Jahre.', 'biodude'), K('Meist leicht zu handhaben, aber nur kurze Sitzungen. Große Tiere „von Hand zu Hand“ führen. Bei Störung rufen und bellen sie.', 'biodude')] },
+        { id: 'terr', title: 'Terrarium', items: [K('Erwachsene mindestens 36 × 18 × 36 Zoll, also etwa 91 × 46 × 91 cm. Größer ist besser. Die Quelle widerspricht sich bei den Maßen für Jungtiere.', 'biodude')] },
+        { id: 'klima', title: 'Klima', items: [K('Sonnenplatz 86–88 °F, also etwa 30–31 °C. Kühle Seite 72–78 °F, etwa 22–26 °C.', 'biodude'), K('Nachts 66–72 °F, etwa 19–22 °C. Nachtwärme nur, wenn es unter 65 °F (etwa 18 °C) fällt.', 'biodude'), K('Wärmequelle: 50-W-Strahler an Dimmer und Zeitschaltuhr, mehr Leistung nur bei Bedarf.', 'biodude'), K('Luftfeuchte 60–80 %. Zweimal täglich sprühen, morgens und abends. Zwei Hygrometer: oben an kühler Stelle, unten am Boden.', 'biodude')] },
+        { id: 'licht', title: 'Licht', items: [K('Dämmerungsaktiv. Die Quelle empfiehlt dennoch UV-A und UV-B für Verdauung, Calcium- und D3-Stoffwechsel und gegen Knochenerkrankungen. Genannt wird eine 12-Zoll-Arcadia-ShadeDweller mit 2,4 % (an anderer Stelle 7 %).', 'biodude'), K('Sonnenast etwa 6 Zoll (15 cm) von der Lampe, 12 Stunden am Tag. UV-B alle 8–12 Monate tauschen und das Einbaudatum notieren.', 'biodude'), K('Sundown Reptiles hält UV-B für möglich, aber nicht nötig.', 'sundown'), K('Ferguson-Zone 1–2 ist abgeleitet, die Art steht nicht in der Studie.', 'baines')] },
+        { id: 'einr', title: 'Einrichtung', items: [K('Tiefes, gut drainiertes Substrat mit Drainageschicht (bioaktiv mit Bodentieren). Riesengeckos erzeugen viel Abfall.', 'biodude'), K('Stabile Äste und Baumstämme, die nicht kippen. Mehrere Korkröhren.', 'biodude'), K('Pflanzen wie Ficus und Schefflera. Wasser speichernde Pflanzen wie Bromelien und Bogenhanf. Viele Verstecke.', 'biodude'), K('Eine flache, breite Wasserschale, keine Wasserfälle.', 'biodude')] },
+        { id: 'futter', title: 'Futter', items: [K('Basis ist Fertigfutter wie Repashy oder Pangea. Dazu Grillen und Dubia-Schaben, nur für Zuchtweibchen gelegentlich ein Pinkie.', 'biodude'), K('Erwachsene: 1,5–2 oz (etwa 43–57 g) Fertigbrei alle 1–2 Tage, abends füttern.', 'biodude'), K('Flache, breite Schale, mit Magnet fixiert, damit schwere Tiere sie nicht umwerfen.', 'biodude'), K('Futterinsekten mit Calcium und Multivitamin bestäuben und vorher gut füttern.', 'biodude')] },
+        { id: 'ges', title: 'Gesundheit', items: [K('UV-B hilft, Knochenerkrankungen vorzubeugen. Passende Luftfeuchte hilft bei der Häutung.', 'biodude')] }
+      ]
+    }
+  };
+
+  const LEXICON = [
+    { term: 'UV-Index (UVI)', text: 'Misst, wie stark UV-Strahlung ist. Am Sonnenplatz brauchst du ein UV-Index-Messgerät, um zu wissen, was wirklich ankommt. Baines et al. geben die Werte je Art als Bereich an.', src: ['baines'] },
+    { term: 'Ferguson-Zonen', text: 'Einteilung der Arten nach ihrem UV-Bedarf. In Baines et al. (2016) liegen Kornnatter in Zone 1–2 und Jemenchamäleon in Zone 3. Je höher die Zone, desto mehr UV am Sonnenplatz.', src: ['baines'] },
+    { term: 'UV-A und UV-B', text: 'UV-B braucht das Tier für Vitamin D3 und damit für Calcium und Knochen. LED, Glühbirne und Infrarotlampe geben kein UV-B.', src: ['biodude', 'arcadia'] },
+    { term: 'T5- und T8-Röhre', text: 'Leuchtstoffröhren mit UV-B in Prozent (zum Beispiel 6 % oder 12 %). Sie brauchen ein Vorschaltgerät. Arcadia nennt für T5 12 Monate bis zum Tausch, CTT Light für T8 sechs Monate.', src: ['arcadia', 'ctt'] },
+    { term: 'Vorschaltgerät', text: 'Steuert Röhren und Metalldampflampen. Ohne Vorschaltgerät leuchten sie nicht. Komplettsets haben eines eingebaut.', src: ['zoomedPS'] },
+    { term: 'Metalldampflampe (HID)', text: 'Starker Strahler mit Licht, Wärme und UV-B. Braucht ein eigenes Vorschaltgerät. Für Zone 1–2 nur mit viel Abstand und Schattenbereichen. Tausch nach 18–24 Monaten laut CTT Light, die App nimmt die untere Grenze.', src: ['ctt', 'baines'] },
+    { term: 'Mischlichtlampe', text: 'UV-B-Lampe mit Quecksilberdampf, die selbst vorschaltend in eine normale Fassung passt, zum Beispiel Zoo Med PowerSun UV. Richtwert 6–12 Monate laut CTT Light.', src: ['zoomedPS', 'ctt'] },
+    { term: 'Infrarot- und Keramikstrahler', text: 'Infrarotlampen (rot) geben Licht ab, das Reptilien sehen. Nachts stört das den Rhythmus. Ein Keramikstrahler gibt nur Wärme und braucht einen Thermostat.', src: ['biodudeRed'] },
+    { term: 'Tag-Nacht-Gefälle', text: 'Der Temperaturunterschied zwischen Tag und Nacht. Beim Jemenchamäleon ist ein deutlicher Abfall erwünscht, nachts aber nicht unter 20 °C.', src: ['dtschbJc'] },
+    { term: 'Photoperiode', text: 'Wie viele Stunden am Tag das Licht an ist. Kornnatter 12–14 Stunden, Jemenchamäleon im Sommer 12–14 und im Winter 8–10 Stunden, Riesengecko 12 Stunden.', src: ['dtschbKn', 'dtschbJc', 'biodude'] },
+    { term: 'Hygrometer und Thermometer', text: 'Messen Luftfeuchte und Temperatur. Der Tierschutzbund rät zu Thermometern ohne Quecksilber im Terrarium, außen angebrachte sind zu ungenau.', src: ['dtschbKn'] },
+    { term: 'Quarantäne', text: 'Neue Tiere kommen erst allein unter. Der Tierschutzbund nennt für Kornnattern mindestens sechs Wochen und zwei negative Kotproben.', src: ['dtschbKn'] },
+    { term: 'Winterruhe', text: 'Eine kühle, dunkle Ruhephase. Kornnattern etwa zwei Monate bei 8–12 °C, Jemenchamäleons mit kürzerem Licht und kühleren Nächten (12–16 °C).', src: ['dtschbKn', 'dtschbJc'] },
+    { term: 'Bioaktives Substrat', text: 'Tiefes Substrat mit Drainage, in dem Bodentiere (zum Beispiel Springschwänze und Asseln) Abfall abbauen. The Bio Dude empfiehlt es für Riesengeckos.', src: ['biodude'] }
+  ];
+
+  /** Einrichtungs-Checkliste je Art: Punkte aus den Artenprofilen, mit Quelle. */
+  const SETUP_CHECK = {
+    kn: [['hide', 'Mehrere höhlenartige Verstecke', 'dtschbKn'], ['climb', 'Klettermöglichkeiten und erhöhter Sonnenplatz', 'dtschbKn'], ['shed', 'Häutungshilfe (Ast oder raue Steine)', 'dtschbKn'], ['bath', 'Badeschale, groß genug für die ganze Schlange', 'dtschbKn'], ['wet', 'Feuchtbox mit Moos', 'dtschbKn'], ['egg', 'Eiablagekasten mit leicht feuchtem Substrat', 'dtschbKn'], ['therm', 'Thermometer ohne Quecksilber und Hygrometer im Terrarium', 'dtschbKn'], ['guard', 'Wärmelampen außer Reichweite oder mit Schutzkorb', 'dtschbKn'], ['uvb', 'UV-B-Lampe passend zu Zone 1–2', 'baines'], ['secure', 'Terrarium gut gesichert, Türen verschlossen', 'dtschbKn']],
+    jc: [['gauze', 'Gaze- oder Netzterrarium mit viel Frischluft', 'dtschbJc'], ['block', 'Drei Seiten blickdicht, kein Sichtkontakt zu anderen Tieren', 'dtschbJc'], ['plants', 'Dichte Bepflanzung und viele Kletteräste', 'dtschbJc'], ['hide', 'Verstecke aus Steinen, Wurzeln und Zweigen', 'dtschbJc'], ['drip', 'Tropftränke oder Benebelung für Tautropfen', 'dtschbJc'], ['uvb', 'UV-B-Lampe passend zu Zone 3, über dem Sonnenplatz', 'baines'], ['guard', 'Schutzgitter um die Strahler, Porzellanfassungen', 'dtschbJc'], ['night', 'Nachts alle Lampen aus, mindestens 20 °C', 'dtschbJc'], ['suppl', 'Vitamin- und Mineralpulver für Futterinsekten', 'dtschbJc']],
+    rg: [['dim', 'Wärmestrahler an Dimmer und Zeitschaltuhr', 'biodude'], ['hygro', 'Zwei Hygrometer, oben und unten', 'biodude'], ['mist', 'Zweimal täglich sprühen', 'biodude'], ['water', 'Flache, breite Wasserschale', 'biodude'], ['cork', 'Mehrere Korkröhren und stabile, kippsichere Äste', 'biodude'], ['plants', 'Pflanzen, die Wasser speichern', 'biodude'], ['drain', 'Tiefes, gut drainiertes Substrat', 'biodude'], ['uvb', 'Schwache UV-B-Röhre über dem Sonnenast', 'biodude'], ['dark', 'Nachts kein Licht', 'biodude'], ['dish', 'Breite, kippsichere Futterschale', 'biodude']]
+  };
+
   /** Prüft eine Lampe, die noch nicht eingebaut ist (zum Beispiel im Internet gefunden), für ein Terrarium.
    *  replaceId: eine vorhandene Lampe, die sie ersetzen soll. */
   function candidateCheck(t, cand, lampList, replaceId) {
@@ -869,7 +940,7 @@
   }
 
   return {
-    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
+    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, KNOWLEDGE, LEXICON, SETUP_CHECK, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,

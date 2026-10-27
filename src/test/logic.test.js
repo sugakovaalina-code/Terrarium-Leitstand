@@ -389,3 +389,13 @@ test('Steckbrief: Kennzahlen aus dem Tagebuch', () => {
   assert.equal(s.ageDays, 365); assert.equal(TL.ageLabel(365), '12 Monate');
   assert.equal(TL.ageLabel(null), null); assert.equal(TL.ageLabel(20), '20 Tage'); assert.equal(TL.ageLabel(800), '2 Jahre 2 Monate');
 });
+
+test('Wissen: alle Quellen existieren, jeder Eintrag hat Text', () => {
+  const check = src => src.forEach(k => assert.ok(TL.SOURCES[k], 'Quelle fehlt: ' + k));
+  for (const sp of ['kn', 'jc', 'rg']) {
+    assert.ok(TL.KNOWLEDGE[sp].sections.length >= 6);
+    TL.KNOWLEDGE[sp].sections.forEach(sec => sec.items.forEach(i => { assert.ok(i.text.length > 10); check(i.src); }));
+    TL.SETUP_CHECK[sp].forEach(([id, label, src]) => { assert.ok(id && label); check([src]); });
+  }
+  TL.LEXICON.forEach(e => { assert.ok(e.term && e.text); check(e.src); });
+});
