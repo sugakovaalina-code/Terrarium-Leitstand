@@ -151,6 +151,8 @@
     hpDaytime: { label: 'Hugglepets, Exo Terra Daytime Heat Lamp (15–150 W)', url: 'https://hugglepets.co.uk/product/exo-terra-daytime-heat-lamp' },
     luckyDesert: { label: 'Reptile Centre, Lucky Reptile Bright Sun UV Desert (E27, mit Vorschaltgerät)', url: 'https://reptilecentre.com/products/lucky-reptile-bright-sun-uv-desert' },
     luckyJungle: { label: 'Testsieger.de, Lucky Reptile Bright Sun UV Jungle 35 W (E27, Thermo Socket und Bright Control nötig)', url: 'https://www.testsieger.de/moebel-und-accessoires/70AMA9GHGWXBK-lucky-reptile-bright-sun-uv-jungle-wattstaerke35-watt.html' },
+    luckyBrosch: { label: 'Lucky Reptile, Broschüre Bright Sun UV (Vergleichstabelle Jungle 50 W)', url: 'https://lucky-reptile.de/media/pdf/fa/42/bf/Broschu-re-Bright-Sun-DE.pdf' },
+    luckyManual: { label: 'Lucky Reptile, Bedienungsanleitung Bright Sun UV (Abstände, Vorschaltgerät)', url: 'https://lucky-reptile.de/media/pdf/g0/da/61/Bright-Sun-UV.pdf' },
     rfVeiled: { label: 'ReptiFiles, Veiled Chameleon Care Sheet (Jemenchamäleon)', url: 'https://reptifiles.com/wp-content/uploads/2021/09/Veiled-Chameleon-Care-Sheet-ReptiFiles.pdf' },
     rfLeachie: { label: 'ReptiFiles, Leachie Gecko Care Sheet (Neukaledonischer Riesengecko)', url: 'https://reptifiles.com/wp-content/uploads/2022/06/Leachie-Gecko-Care-Sheet-ReptiFiles-PDF.pdf' },
     zenCorn: { label: 'Zen Habitats, Corn Snake Care Guide (Madeline Smith)', url: 'https://zenhabitats.com/blogs/reptile-care-sheets-resources/corn-snake-essential-care-information' }
@@ -185,9 +187,9 @@
       fit: { kn: [1, 'Der Tierschutzbund nennt Metalldampf für Sonnenplätze besser als Halogen. Die Wüstenvariante ist für Zone 1–2 aber stark, mit Abstand einsetzen.'], jc: [2, 'Tageslicht, UV und Wärme für Zone 3. Hohe Leistung, Abstand per UV-Index-Messgerät einstellen.'], rg: [0, 'Zu stark für diese Art (abgeleitet).'] },
       pick: { kn: [35], jc: [35, 50], rg: [] }, sources: ['luckyDesert', 'dtschbKn'] },
     { id: 'lrJungle', brand: 'Lucky Reptile', model: 'Bright Sun UV Jungle', kind: 'both', watts: [35, 50], base: 'E27', ballast: 'own', q: 'Lucky Reptile Bright Sun UV Jungle 35W',
-      facts: 'Metalldampflampe für tropische Arten mit E27-Gewinde. Händlerangabe: „Lucky Reptile Thermo Socket und Bright Control Vorschaltgerät erforderlich“. Keine UV-Zahlen angegeben. Die 50-W-Stufe steht auf der Verpackung („Vorschaltgerät erforderlich“).',
+      facts: 'Metalldampflampe für tropische Arten mit E27-Gewinde. Händlerangabe: „Lucky Reptile Thermo Socket und Bright Control Vorschaltgerät erforderlich“. Keine UV-Zahlen angegeben. Die 50-W-Stufe steht auf der Verpackung („Vorschaltgerät erforderlich“). Herstellerwerte für 50 W: UV-B 180 µW/cm² in 20 cm (Mindestabstand), 80 µW/cm² in 30 cm (empfohlen), 29 µW/cm² in 50 cm; Temperatur dort 50, 41 und 30 °C. Optimaler Abstand laut Anleitung 25–35 cm. Ein UV-B-Prozentwert wird nicht angegeben.',
       fit: { kn: [2, 'Der Tierschutzbund nennt Metalldampf für Sonnenplätze besser als Halogen. Tropische Variante passt zu Zone 1–2 (abgeleitet).'], jc: [1, 'Tropische Variante, für Zone 3 eher schwächer (abgeleitet). Nur mit UV-Index-Messgerät.'], rg: [1, 'Für diese Art nennen die Quellen Halogen am Dimmer. Metalldampf ist dort nicht belegt, nur mit UV-Index-Messgerät.'] },
-      pick: { kn: [35], jc: [35], rg: [35] }, sources: ['luckyJungle', 'dtschbKn'] }
+      pick: { kn: [35], jc: [35], rg: [35] }, sources: ['luckyJungle', 'luckyBrosch', 'luckyManual', 'dtschbKn'] }
   ];
   function socketsOf(t) { return t && t.equip && Array.isArray(t.equip.sockets) ? t.equip.sockets : []; }
   /** Welche Lampen passen in eine Fassung? Sortiert nach Eignung für die Art. */
