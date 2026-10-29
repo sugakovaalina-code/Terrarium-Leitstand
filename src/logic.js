@@ -697,7 +697,9 @@
     if ((l.lifeMonths !== '' && l.lifeMonths !== null && l.lifeMonths !== undefined) && m === null) errors.lifeMonths = 'Bitte eine Zahl eingeben.';
     if (h !== null && (h <= 0 || h > 100000)) errors.lifeHours = 'Bitte 1 bis 100000 Stunden.';
     const hpd = parseNum(l.hoursPerDay);
-    if (hpd === null || hpd <= 0 || hpd > 24) errors.hoursPerDay = 'Bitte 1 bis 24 Stunden pro Tag.';
+    const hpdEmpty = l.hoursPerDay === '' || l.hoursPerDay === null || l.hoursPerDay === undefined;
+    if (hpdEmpty && h === null) { /* ohne Stundenlebensdauer nicht nötig */ }
+    else if (hpd === null || hpd <= 0 || hpd > 24) errors.hoursPerDay = 'Bitte 1 bis 24 Stunden pro Tag.';
     if (l.watt !== '' && l.watt !== null && l.watt !== undefined) { const w = parseNum(l.watt); if (w === null || w <= 0 || w > 2000) errors.watt = 'Bitte Watt als Zahl.'; }
     return { ok: Object.keys(errors).length === 0, errors };
   }

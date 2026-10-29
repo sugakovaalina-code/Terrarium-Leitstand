@@ -1363,7 +1363,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       '<span class="hint">Weißt du das Datum nicht genau, trag das ungefähre Alter ein. Die App rechnet das Einbaudatum aus.</span>' +
       '<div class="f-grid"><label class="f' + ec('lifeMonths') + '">Tauschen nach Monaten<input class="num-in" inputmode="numeric" id="l-months" value="' + esc(l.lifeMonths ?? '') + '">' + err('lifeMonths') + '</label>' +
       '<label class="f' + ec('lifeHours') + '">oder Lebensdauer in Std.<input class="num-in" inputmode="numeric" id="l-hours" value="' + esc(l.lifeHours ?? '') + '" placeholder="Packung">' + err('lifeHours') + '</label></div>' +
-      '<label class="f' + ec('hoursPerDay') + '">Brennt Stunden pro Tag<input class="num-in" inputmode="numeric" id="l-hpd" value="' + esc(l.hoursPerDay ?? 12) + '">' + err('hoursPerDay') + '</label>' +
+      '<label class="f' + ec('hoursPerDay') + '">Brennt Stunden pro Tag (kann leer bleiben, wenn die Lampe nach Thermostat schaltet)<input class="num-in" inputmode="numeric" id="l-hpd" value="' + esc(l.hoursPerDay ?? 12) + '">' + err('hoursPerDay') + '</label>' +
       '<span class="hint">Sind Monate eingetragen, gelten die Monate. Sonst rechnet die App mit Stunden geteilt durch Stunden pro Tag.</span>' +
       (ty.sources.length ? '<div class="src">' + srcLinks(ty.sources) + '</div>' : '') + '</fieldset>') + '</div>' +
       '<div class="row wrap"><button type="submit" class="btn pri">Speichern</button><button type="button" class="btn" data-a="back">Abbrechen</button><span class="grow"></span>' +
