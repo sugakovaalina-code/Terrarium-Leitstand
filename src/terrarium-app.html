@@ -979,7 +979,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const r = lastReading(t.id), a = assessOf(t), rows = readingsOf(t.id);
     const adv = TL.adviceFor(a), pats = TL.patterns(t, rows, now(), 7);
     let h = '<div class="grid g-2 g-2w"><section class="card big-rings"><div class="card-h"><h3>Aktuell</h3>' + pill(a.level, a.reason === 'nodata' ? 'Kein Messwert' : a.stale ? 'Messwert alt' : null) + '</div>' + ringsFor(t, a, r) +
-      targetsHtml(t) + '<div class="row between" style="margin-top:12px"><span class="xs">' + (r ? esc(dateTime(r.ts)) + ' · ' + (a.phase === 'night' ? 'Nachtwerte' : 'Tagwerte') + ' · ' + (r.src === 'sensor' ? 'Sensor' : 'manuell') : 'Noch kein Messwert') + '</span><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div></section>' +
+      targetsHtml(t) + '<div class="row between" style="margin-top:12px"><span class="xs">' + (r ? esc(dateTime(r.ts)) + ' · ' + (a.phase === 'night' ? 'Nachtwerte' : 'Tagwerte') + ' · ' + (r.src === 'sensor' ? 'Sensor' : 'manuell') : 'Noch kein Messwert') + (t.spot ? ' · Messort: ' + esc(t.spot) : '') + '</span><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div></section>' +
       '<section class="card"><div class="card-h"><h3>Was prüfen?</h3></div>' + (a.level === 'green' ? '<p class="sm">Alles im Zielbereich. Nichts zu tun.</p>' : '<ul class="adv">' + adv.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>') +
       '<h4 style="margin:16px 0 8px">Letzte 7 Tage</h4>' + (pats.list.length ? '<div class="list">' + pats.list.map(p => '<div class="li ' + lvl(p.level) + '"><div class="ic">' + icon(p.kind === 'temp' ? 'temp' : 'drop', 18) + '</div><div class="grow col" style="gap:2px"><span class="sm">' + esc(p.text) + '</span><span class="xs">' + esc(p.tip) + '</span></div></div>').join('') + '</div>' : '<p class="xs">' + (pats.considered ? 'Keine wiederkehrenden Abweichungen.' : 'Noch zu wenige Messwerte.') + '</p>') + '</section></div>';
     const last = rows.slice(-12).reverse();
@@ -1018,7 +1018,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const v = id => { const el = document.getElementById(id); return el ? el.value : null; };
     const p = clone(S.pf);
     const set = (path, id) => { const x = v(id); if (x !== null) path(x.trim()); };
-    set(x => p.name = x, 'p-name'); set(x => p.species = x, 'p-species');
+    set(x => p.name = x, 'p-name'); set(x => p.species = x, 'p-species'); set(x => p.spot = x, 'p-spot');
     set(x => p.size.l = x, 'p-l'); set(x => p.size.b = x, 'p-b'); set(x => p.size.h = x, 'p-h');
     set(x => p.animalLen = x, 'p-len'); set(x => p.count = x, 'p-count');
     set(x => p.dayStart = x, 'p-dayStart'); set(x => p.dayEnd = x, 'p-dayEnd');
@@ -1050,6 +1050,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       '<label class="f' + ec('count') + '">Anzahl Tiere<input class="num-in" inputmode="numeric" id="p-count" value="' + esc(p.count) + '">' + err('count') + '</label></div>' +
       '<div id="size-check">' + sizeHtml(p) + '</div>' + (rule ? '<div class="src"><span>' + esc(rule.text) + '</span>' + srcLinks([rule.src]) + '</div>' : '') + '</details></fieldset>' +
       '<fieldset><legend>Zielwerte</legend>' + (pr ? '<div class="banner lv-green" style="padding:10px 12px"><span class="grow sm">Vorausgefüllt aus belegten Quellen für ' + esc(TL.SPECIES[p.species].name) + '. Du kannst jeden Wert ändern.</span><button type="button" class="btn sm" data-a="preset">Vorschlag neu eintragen</button></div>' : '') +
+      '<label class="f" style="margin-top:10px">Wo hängt der Sensor? (Messort)<input id="p-spot" value="' + esc(p.spot || '') + '" placeholder="z. B. Boden, kühle Ecke ohne Wärmelampe"></label><span class="hint">Trag unten die Zielwerte für genau diesen Ort ein, wenn du sie recherchiert hast. Dann bewertet die App die Messung dort danach.</span>' +
       '<div class="tbl-wrap"><table class="zt"><thead><tr><th></th><th>°C min</th><th>°C max</th><th>% min</th><th>% max</th></tr></thead><tbody>' +
       '<tr><td>Tag</td>' + zrow('day', 'temp') + zrow('day', 'hum') + '</tr><tr><td>Nacht</td>' + zrow('night', 'temp') + zrow('night', 'hum') + '</tr></tbody></table></div>' + zerr +
       (pr ? '<p class="xs">Hotspot: ' + esc(pr.hotspot) + '. Die App bewertet die Luft am Sensor, nicht den Sonnenplatz.</p>' : '') +
