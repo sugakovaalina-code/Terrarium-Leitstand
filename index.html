@@ -122,6 +122,7 @@ button.kpi { text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .seg { display: inline-flex; background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; }
 .seg button { background: none; border: 0; padding: 6px 12px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
 .seg button.on { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
+.spotbox { display: flex; gap: 10px; align-items: flex-end; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line2); } .spotbox .f { flex: 1; }
 a.btn { text-decoration: none; }
 .lp-row { padding: 12px 0; border-top: 1px solid var(--line2); } .lp-row:first-of-type { border-top: 0; }
 .lp-track { position: relative; height: 14px; border-radius: 8px; background: var(--track); margin-top: 8px; overflow: hidden; }
@@ -987,7 +988,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const r = lastReading(t.id), a = assessOf(t), rows = readingsOf(t.id);
     const adv = TL.adviceFor(a), pats = TL.patterns(t, rows, now(), 7);
     let h = '<div class="grid g-2 g-2w"><section class="card big-rings"><div class="card-h"><h3>Aktuell</h3>' + pill(a.level, a.reason === 'nodata' ? 'Kein Messwert' : a.stale ? 'Messwert alt' : null) + '</div>' + ringsFor(t, a, r) +
-      targetsHtml(t) + '<div class="row between" style="margin-top:12px"><span class="xs">' + (r ? esc(dateTime(r.ts)) + ' · ' + (a.phase === 'night' ? 'Nachtwerte' : 'Tagwerte') + ' · ' + (r.src === 'sensor' ? 'Sensor' : 'manuell') : 'Noch kein Messwert') + (t.spot ? ' · Messort: ' + esc(t.spot) : '') + '</span><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div></section>' +
+      targetsHtml(t) + '<div class="row between" style="margin-top:12px"><span class="xs">' + (r ? esc(dateTime(r.ts)) + ' · ' + (a.phase === 'night' ? 'Nachtwerte' : 'Tagwerte') + ' · ' + (r.src === 'sensor' ? 'Sensor' : 'manuell') : 'Noch kein Messwert') + '</span><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div>' +
+      '<div class="spotbox"><label class="f">Messort: wo hängt der Sensor?<input id="spot-in" value="' + esc(t.spot || '') + '" placeholder="z. B. Boden, kühle Ecke ohne Wärmelampe, deshalb kälter"></label><button class="btn sm" data-a="spotsave" data-v="' + t.id + '">Speichern</button></div>' +
+      '<p class="xs" style="margin-top:8px">Tag und Nacht hat das Terrarium eigene Zielwerte (Reiter Einrichtung, Zielwerte). Die App ordnet jeden Messwert nach der Tagzeit automatisch Tag oder Nacht zu.</p></section>' +
       '<section class="card"><div class="card-h"><h3>Was prüfen?</h3></div>' + (a.level === 'green' ? '<p class="sm">Alles im Zielbereich. Nichts zu tun.</p>' : '<ul class="adv">' + adv.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>') +
       '<h4 style="margin:16px 0 8px">Letzte 7 Tage</h4>' + (pats.list.length ? '<div class="list">' + pats.list.map(p => '<div class="li ' + lvl(p.level) + '"><div class="ic">' + icon(p.kind === 'temp' ? 'temp' : 'drop', 18) + '</div><div class="grow col" style="gap:2px"><span class="sm">' + esc(p.text) + '</span><span class="xs">' + esc(p.tip) + '</span></div></div>').join('') + '</div>' : '<p class="xs">' + (pats.considered ? 'Keine wiederkehrenden Abweichungen.' : 'Noch zu wenige Messwerte.') + '</p>') + '</section></div>';
     const last = rows.slice(-12).reverse();
@@ -1550,6 +1553,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
         S.entry = { tid, t: '', h: '', ts: nowLocalInput(now()), n: '' };
         openForm('entry'); setTimeout(() => { const el = document.getElementById('e-t'); if (el) el.focus(); }, 30); break;
       }
+      case 'spotsave': { const inp = document.getElementById('spot-in'); const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === v); if (!t || !inp) break; t.spot = inp.value.trim(); saveConfig(cc); toast('Messort gespeichert'); render(); break; }
       case 'reload': {
         toast('Lade die neueste Version …');
         const done = () => location.reload();
