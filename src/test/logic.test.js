@@ -461,11 +461,14 @@ test('Brenndauer und LED', () => {
   const kn = TL.newTerrarium('kn', 'K');
   const lamps = [{ id: 'a', tid: kn.id, type: 'uvbT5', hoursPerDay: 8, name: 'UV' }, { id: 'b', tid: kn.id, type: 'led', hoursPerDay: 13, name: 'LED' }, { id: 'c', tid: kn.id, type: 'heat', hoursPerDay: 5, name: 'Spot' }];
   const h = TL.hoursCheck(kn, lamps, Date.parse('2026-10-27'));
-  assert.equal(h.rows.find(x => x.l.id === 'a').level, 'yellow');
+  assert.equal(h.rows.find(x => x.l.id === 'a').level, 'green'); // UV-B darf kürzer brennen
+  const lang = TL.hoursCheck(kn, [{ id: 'z', tid: kn.id, type: 'uvbT5', hoursPerDay: 18, name: 'UV' }], Date.parse('2026-10-27'));
+  assert.equal(lang.rows[0].level, 'yellow');
   assert.equal(h.rows.find(x => x.l.id === 'b').level, 'green');
   assert.equal(h.rows.find(x => x.l.id === 'c').level, 'none');
   assert.equal(h.day, 13); assert.equal(h.dayLevel, 'green');
-  assert.ok(TL.lampAdvice(kn, lamps).some(a => a.lid === 'a' && /8 Std/.test(a.text)));
+  assert.ok(!TL.lampAdvice(kn, lamps).some(a => a.lid === 'a' && /brennt 8 Std/.test(a.text)));
+  assert.ok(TL.lampAdvice(kn, [{ id: 'z', tid: kn.id, type: 'led', hoursPerDay: 5, name: 'LED' }]).some(a => a.lid === 'z' && /5 Std/.test(a.text)));
   assert.equal(TL.lampInfo({ type: 'led', installed: '', hoursPerDay: 12 }, Date.now()).level, 'none');
   assert.equal(TL.lightHours('jc', Date.parse('2026-10-27')).min, 8);
   assert.equal(TL.lightHours('jc', Date.parse('2026-06-27')).min, 12);

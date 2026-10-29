@@ -324,7 +324,7 @@
         if (out > 0) issues.push({ level: 'orange', text: 'Läuft ' + Math.round(out) + ' Minuten außerhalb der Tagzeit (' + t.dayStart + '–' + t.dayEnd + ').' });
       }
       if (rated && sp.hours !== null) {
-        if (sp.hours < r.min - tol) issues.push({ level: 'yellow', text: 'Kürzer als die Quelle nennt (' + r.text + ').' });
+        if (sp.hours < r.min - tol) { if (g !== 'uvb') issues.push({ level: 'yellow', text: 'Kürzer als die Quelle nennt (' + r.text + ').' }); }
         else if (sp.hours > r.max + tol) issues.push({ level: 'yellow', text: 'Länger als die Quelle nennt (' + r.text + ').' });
       }
       const order = { orange: 2, yellow: 1 };
@@ -348,7 +348,7 @@
       const rated = g === 'uvb' || g === 'light' || l.type === 'uvbMV' || l.type === 'uvbMH';
       let level = 'none', text = 'Wärmelampe: richtet sich nach der Temperatur am Sonnenplatz.';
       if (rated && h !== null) {
-        if (h < r.min - tol) { level = 'yellow'; text = 'Kürzer als die Quelle nennt (' + r.text + ').'; }
+        if (h < r.min - tol) { if (g === 'uvb') { level = 'green'; text = 'UV-B-Lampen müssen nicht den ganzen Lichttag brennen, die Quelle nennt dafür keine feste Dauer. Hersteller Lucky Reptile empfiehlt etwa 8 Std.'; } else { level = 'yellow'; text = 'Kürzer als die Quelle nennt (' + r.text + ').'; } }
         else if (h > r.max + tol) { level = 'yellow'; text = 'Länger als die Quelle nennt (' + r.text + '). Das Tier braucht eine Nacht.'; }
         else { level = 'green'; text = 'Passt zu ' + r.text + '.'; }
       } else if (rated) text = 'Brenndauer fehlt.';
