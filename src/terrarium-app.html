@@ -775,7 +775,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     s += '</div><div class="actions">' + (l.installed ? '<button class="btn sm" data-a="lnew" data-v="' + l.id + '">' + icon('swap', 16) + 'Neue Lampe eingesetzt</button>' : '') +
       '<button class="btn sm ghost" data-a="ledit" data-v="' + l.id + '" aria-label="Bearbeiten">' + icon('edit', 16) + '</button></div>';
     if (l.type === 'led') { /* LED: kein Alter, keine Lebensdauer */ } else if (!l.installed) s += '<div class="quick"><span>Wie alt ist die Lampe?</span><input class="num-in" inputmode="decimal" id="qa-' + l.id + '" placeholder="Monate" aria-label="Alter in Monaten"><button class="btn sm" data-a="lage" data-v="' + l.id + '">Speichern</button><button class="btn sm" data-a="lnew" data-v="' + l.id + '">Heute neu eingesetzt</button></div>';
-    else if (i.daysLeft === null) s += '<div class="quick"><span>Lebensdauer fehlt. Trag sie von der Verpackung ein.</span><button class="btn sm" data-a="ledit" data-v="' + l.id + '">Eintragen</button></div>';
+    else if (i.daysLeft === null && l.type !== 'chc') s += '<div class="quick"><span>Lebensdauer fehlt. Trag sie von der Verpackung ein.</span><button class="btn sm" data-a="ledit" data-v="' + l.id + '">Eintragen</button></div>';
     return s + '</div>';
   }
 

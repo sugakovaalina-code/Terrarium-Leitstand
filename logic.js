@@ -668,6 +668,7 @@
     let dueAt = null;
     if (months && months > 0) dueAt = addMonths(inst, months);
     else if (hours && hours > 0 && hpd && hpd > 0) dueAt = inst + Math.round(hours / hpd) * DAY;
+    if (dueAt === null && l.type === 'chc') return { level: 'none', label: 'Keine feste Austauschfrist', pct: null, daysLeft: null, ageDays: Math.floor((now - inst) / DAY) };
     if (dueAt === null) return { level: 'none', label: 'Lebensdauer fehlt', pct: null, daysLeft: null, ageDays: Math.floor((now - inst) / DAY) };
     const startToday = new Date(now); startToday.setHours(0, 0, 0, 0);
     const dd = new Date(dueAt); dd.setHours(0, 0, 0, 0);
