@@ -176,12 +176,16 @@
       facts: 'Quecksilberdampflampe mit eingebautem Vorschaltgerät: UV-A, UV-B und Wärme in einer Lampe, „passt in eine normale Keramikfassung“. Nicht dimmbar. Nicht bewegen oder erschüttern. Nach 12 Monaten tauschen.',
       fit: { kn: [1, 'Viel Leistung für wenig UV-B-Bedarf. Nur in größeren Terrarien mit viel Abstand.'], jc: [1, 'Liefert Wärme und UV in einem. Keine UV-B-Zahl angegeben, daher nur mit UV-Index-Messgerät.'], rg: [0, 'Zu stark und nicht dimmbar. Die Quellen nennen für diese Art 25–50 W gedimmt.'] },
       pick: { kn: [80], jc: [80], rg: [] }, sources: ['zoomedPS'] },
+    { id: 'arcCeramic', brand: 'Arcadia', model: 'Ceramic Heater IR-C (Keramikstrahler)', kind: 'heat', watts: [50], base: 'E27', ballast: 'none', q: 'Arcadia Ceramic Heater 50W E27',
+      facts: 'Keramikstrahler ohne Licht, Infrarot C, E27, 50 W (Angabe auf der Verpackung). Gibt Wärme, aber kein sichtbares Licht und kein UV.',
+      fit: { kn: [2, 'The Bio Dude nennt Keramikstrahler ohne Licht für nächtliche Zusatzwärme, immer mit Thermostat. Nachts passt er zum Ziel 18–20 °C.'], jc: [1, 'Nur als Zusatzwärme, immer mit Thermostat. Der Sonnenplatz braucht weißes Licht und UV-B.'], rg: [2, 'The Bio Dude: Zusätzliche Wärme nachts nur, wenn es unter etwa 18 °C fällt, ohne Licht.'] },
+      pick: { kn: [50], jc: [50], rg: [50] }, sources: ['biodudeRed', 'biodude'] },
     { id: 'lrDesert', brand: 'Lucky Reptile', model: 'Bright Sun UV Desert', kind: 'both', watts: [35, 50, 70, 100], base: 'E27', ballast: 'needs', q: 'Lucky Reptile Bright Sun UV Desert 35W',
       facts: 'Metalldampflampe mit Tageslichtspektrum (6000 K) für Wüstenarten. Passt in eine E27-Porzellanfassung, braucht ein Vorschaltgerät „wie das Lucky Reptile Bright Control“. Hersteller empfiehlt jährlichen Tausch.',
       fit: { kn: [1, 'Der Tierschutzbund nennt Metalldampf für Sonnenplätze besser als Halogen. Die Wüstenvariante ist für Zone 1–2 aber stark, mit Abstand einsetzen.'], jc: [2, 'Tageslicht, UV und Wärme für Zone 3. Hohe Leistung, Abstand per UV-Index-Messgerät einstellen.'], rg: [0, 'Zu stark für diese Art (abgeleitet).'] },
       pick: { kn: [35], jc: [35, 50], rg: [] }, sources: ['luckyDesert', 'dtschbKn'] },
-    { id: 'lrJungle', brand: 'Lucky Reptile', model: 'Bright Sun UV Jungle', kind: 'both', watts: [35], base: 'E27', ballast: 'own', q: 'Lucky Reptile Bright Sun UV Jungle 35W',
-      facts: 'Metalldampflampe für tropische Arten mit E27-Gewinde. Händlerangabe: „Lucky Reptile Thermo Socket und Bright Control Vorschaltgerät erforderlich“. Keine UV-Zahlen angegeben.',
+    { id: 'lrJungle', brand: 'Lucky Reptile', model: 'Bright Sun UV Jungle', kind: 'both', watts: [35, 50], base: 'E27', ballast: 'own', q: 'Lucky Reptile Bright Sun UV Jungle 35W',
+      facts: 'Metalldampflampe für tropische Arten mit E27-Gewinde. Händlerangabe: „Lucky Reptile Thermo Socket und Bright Control Vorschaltgerät erforderlich“. Keine UV-Zahlen angegeben. Die 50-W-Stufe steht auf der Verpackung („Vorschaltgerät erforderlich“).',
       fit: { kn: [2, 'Der Tierschutzbund nennt Metalldampf für Sonnenplätze besser als Halogen. Tropische Variante passt zu Zone 1–2 (abgeleitet).'], jc: [1, 'Tropische Variante, für Zone 3 eher schwächer (abgeleitet). Nur mit UV-Index-Messgerät.'], rg: [1, 'Für diese Art nennen die Quellen Halogen am Dimmer. Metalldampf ist dort nicht belegt, nur mit UV-Index-Messgerät.'] },
       pick: { kn: [35], jc: [35], rg: [35] }, sources: ['luckyJungle', 'dtschbKn'] }
   ];
