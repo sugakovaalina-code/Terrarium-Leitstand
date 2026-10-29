@@ -1304,7 +1304,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const last = tid => { const r = S.sensor.filter(x => x.tid === tid); return r.length ? r[r.length - 1] : null; };
     const dev = S.devices;
     return '<section class="card"><div class="card-h"><h3>Sensoren (SwitchBot)</h3><button class="btn sm" data-a="sdev">Geräte laden</button><button class="btn sm" data-a="stest">Jetzt abrufen</button></div>' +
-      '<p class="xs" style="margin-bottom:10px">Die Werte kommen alle 30 Minuten automatisch. Ordne jedem Terrarium seinen Sensor zu.</p><div class="list">' +
+      '<p class="xs" style="margin-bottom:10px">Die Werte kommen jede Stunde automatisch. Ordne jedem Terrarium seinen Sensor zu.</p><div class="list">' +
       terrs().map(t => { const se = t.sensor || {}, l = last(t.id);
         return '<div class="li stackm ' + sp(t) + '"><div class="grow col" style="gap:2px"><span class="main-t">' + esc(t.name) + '</span><span class="xs">' + (se.type === 'switchbot' ? 'Sensor: ' + esc(se.name || se.deviceId) : 'Kein Sensor zugeordnet') + (l ? ' · letzter Wert ' + esc(ageText(l.ts)) + ' · ' + fmt(l.t) + ' °C · ' + fmt(l.h, 0) + ' %' + (l.battery != null ? ' · Batterie ' + l.battery + ' %' : '') : '') + '</span></div>' +
           (dev ? '<select data-sensor="' + t.id + '" aria-label="Sensor für ' + esc(t.name) + '" style="max-width:260px"><option value="">kein Sensor</option>' + dev.map(d => '<option value="' + esc(d.id) + '"' + (se.deviceId === d.id ? ' selected' : '') + '>' + esc(d.name) + ' (' + esc(d.type) + ')</option>').join('') + '</select>' : '') + '</div>'; }).join('') + '</div>' +

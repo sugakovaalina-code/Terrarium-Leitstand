@@ -1,4 +1,4 @@
--- Ruft die Abruf-Funktion alle 10 Minuten auf. Vorher in Supabase unter Vault zwei Geheimnisse anlegen:
+-- Ruft die Abruf-Funktion jede Stunde auf. Vorher in Supabase unter Vault zwei Geheimnisse anlegen:
 --   project_url  = https://<projekt>.supabase.co
 --   cron_secret  = derselbe Wert wie das Function-Secret CRON_SECRET
 create extension if not exists pg_cron;
@@ -7,7 +7,7 @@ create extension if not exists pg_net;
 select cron.unschedule('switchbot-poll') where exists (select 1 from cron.job where jobname = 'switchbot-poll');
 select cron.schedule(
   'switchbot-poll',
-  '*/30 * * * *',
+  '0 * * * *',
   $$
   select net.http_post(
     url := (select decrypted_secret from vault.decrypted_secrets where name = 'project_url') || '/functions/v1/switchbot-poll',
