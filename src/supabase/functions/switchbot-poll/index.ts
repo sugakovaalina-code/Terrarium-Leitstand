@@ -46,6 +46,8 @@ async function poll(db: ReturnType<typeof createClient>, uid: string) {
       const t = typeof s.temperature === 'number' ? s.temperature : null;
       const h = typeof s.humidity === 'number' ? s.humidity : null;
       if (t === null && h === null) { out.push({ ...a, ok: false, error: 'Gerät liefert keine Temperatur oder Luftfeuchte.' }); continue; }
+      const bat = typeof s.battery === 'number' ? s.battery : null;
+      if (t === 0 && h === 0 && (bat === 0 || bat === null)) { out.push({ ...a, ok: false, error: 'Das Gerät meldet 0 °C, 0 % und 0 % Batterie (Typ ' + (s.deviceType ?? 'unbekannt') + '). Entweder ist es kein Thermometer, oder es hat noch keine Werte an die SwitchBot-Cloud geschickt.' }); continue; }
       const row = { user_id: uid, tid: a.tid, device_id: a.deviceId, t, h, battery: typeof s.battery === 'number' ? s.battery : null };
       const { error } = await db.from('sensor_readings').insert(row);
       if (error) throw error;
