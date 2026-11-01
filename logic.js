@@ -774,6 +774,8 @@
       night: { temp: emptyRange(), hum: emptyRange() },
       tol: Object.assign({}, DEFAULT_TOL),
       staleHours: 24,
+      rampUp: RAMP_DEFAULT_MIN,
+      rampDown: RAMP_DEFAULT_MIN,
       sensor: { type: 'manual', deviceId: '' },
       source: '',
       size: { l: null, b: null, h: null },
@@ -811,9 +813,35 @@
     return inDay ? 'day' : 'night';
   }
 
+  /** Startwert der App für Aufwärm- und Abkühlphase in Minuten. Keine Haltungsvorgabe, sondern Toleranz für die Bewertung. */
+  const RAMP_DEFAULT_MIN = 120;
+  function rampMin(t, which) {
+    const v = parseNum(which === 'up' ? t.rampUp : t.rampDown);
+    return v === null ? RAMP_DEFAULT_MIN : Math.max(0, v);
+  }
+  /** 'up' in den ersten Minuten nach Licht an, 'down' in den ersten Minuten nach Licht aus, sonst null. */
+  function rampAt(t, ts) {
+    const s = hhmmToMin(t.dayStart), e = hhmmToMin(t.dayEnd);
+    if (s === null || e === null || s === e) return null;
+    const d = new Date(ts);
+    const m = d.getHours() * 60 + d.getMinutes();
+    const since = start => (m - start + 1440) % 1440;
+    const dayLen = (e - s + 1440) % 1440, nightLen = 1440 - dayLen;
+    if (since(s) < Math.min(rampMin(t, 'up'), dayLen)) return 'up';
+    if (since(e) < Math.min(rampMin(t, 'down'), nightLen)) return 'down';
+    return null;
+  }
+  /** Zielbereich zu einem Zeitpunkt. In der Aufwärm- und Abkühlphase gilt alles zwischen Tag- und Nachtbereich als im Ziel. */
   function rangesAt(t, ts) {
     const phase = phaseAt(t, ts);
-    return { phase, temp: t[phase].temp, hum: t[phase].hum };
+    const ramp = rampAt(t, ts);
+    if (!ramp) return { phase, ramp: null, temp: t[phase].temp, hum: t[phase].hum };
+    const span = k => {
+      const a = t.day[k], b = t.night[k];
+      if (!rangeSet(a) || !rangeSet(b)) return t[phase][k];
+      return { min: Math.min(a.min, b.min), max: Math.max(a.max, b.max) };
+    };
+    return { phase, ramp, temp: span('temp'), hum: span('hum') };
   }
 
   /* ---------- Bewertung ---------- */
@@ -863,7 +891,7 @@
     let level = worst([temp.level, hum.level]);
     if (stale && LEVELS.indexOf(level) < LEVELS.indexOf('yellow')) level = 'yellow';
     if (!profileAnySet(t)) level = stale ? 'yellow' : 'none';
-    return { level, temp, hum, phase: r.phase, ranges: r, stale, sensorStale, ageH, reason: stale ? 'stale' : (profileAnySet(t) ? 'ok' : 'noprofile') };
+    return { level, temp, hum, phase: r.phase, ramp: r.ramp, ranges: r, stale, sensorStale, ageH, reason: stale ? 'stale' : (profileAnySet(t) ? 'ok' : 'noprofile') };
   }
 
   /** Empfohlene Prüfschritte. Bewusst als Prüfungen formuliert, nicht als Haltungsvorgaben. */
@@ -954,6 +982,12 @@
     if (cnt === null || cnt < 1 || cnt > 20 || Math.round(cnt) !== cnt) errors.count = 'Anzahl bitte als ganze Zahl von 1 bis 20.';
     const sh = parseNum(p.staleHours);
     if (sh === null || sh < 1 || sh > 720) errors.staleHours = 'Bitte 1 bis 720 Stunden.';
+    for (const k of ['rampUp', 'rampDown']) {
+      const raw = p[k];
+      if (raw === '' || raw === null || raw === undefined) continue;
+      const v = parseNum(raw);
+      if (v === null || v < 0 || v > 360 || Math.round(v) !== v) errors[k] = 'Bitte 0 bis 360 Minuten.';
+    }
     return { ok: Object.keys(errors).length === 0, errors };
   }
 
@@ -1184,7 +1218,7 @@
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,
-    newTerrarium, defaultConfig, rangeSet, profileComplete, profileAnySet, phaseAt, rangesAt,
+    newTerrarium, defaultConfig, rangeSet, profileComplete, profileAnySet, phaseAt, rampAt, rangesAt, RAMP_DEFAULT_MIN,
     assess, worst, assessTerrarium, adviceFor,
     validateReading, validateProfile, validateTask, validateJournal,
     stats, patterns, dueInfo,

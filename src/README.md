@@ -56,3 +56,9 @@ Außerhalb: localStorage des Browsers. Dokumente: `config` (Terrarien, Zielwerte
 - Jemenchamäleon: Thieme Heimtier-Info (2020) als zweite Quelle für die Nachttemperatur.
 - Grammatik („2 Terrarien brauchen dich“) und Untertitel beim Messwert.
 - Tests: 51.
+
+## Version 8 (01.11.2026): Aufwärm- und Abkühlphase
+
+- Je Terrarium „Aufwärmphase nach Licht an“ und „Abkühlphase nach Licht aus“ in Minuten (Startwert 120, 0 = aus). In diesen Phasen gilt alles zwischen Tag- und Nachtbereich als im Ziel; Werte außerhalb beider Bereiche warnen weiter.
+- Kacheln zeigen „Aufwärmphase“ / „Abkühlphase“, das grüne Band im Verlauf wird in diesen Phasen breiter, die Muster („nachts zu warm“) zählen Übergangswerte nicht mehr als Fehler.
+- Tests: 52.
