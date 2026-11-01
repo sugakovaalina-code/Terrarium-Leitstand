@@ -46,3 +46,13 @@ Außerhalb: localStorage des Browsers. Dokumente: `config` (Terrarien, Zielwerte
 
 - Je Terrarium eine Liste „Verbesserungen“ (`improve`) zum Abhaken, mit Quellen. Sie steht im Reiter Klima und im Reiter Lampen, offene Punkte zeigt die Übersicht an.
 - Neue Prüfregel: Metalldampf-UV-B bei Kornnatter und Gecko (Zone 1–2) wird angemerkt.
+
+## Version 7 (01.11.2026): Feinschliff nach dem Kornnattern-Eintrag
+
+- Wärmelampen haben das Feld „Geregelt über“ (Thermostat, Dimmer, Zeitschaltuhr, gar nicht). Keramikstrahler ohne Thermostat werden angemerkt.
+- Sensorwerte gelten nach 3 Stunden ohne neuen Wert als ausgefallen (Abruf läuft stündlich). Handwerte weiter nach „Wert alt nach Std.“.
+- Seitenleiste zeigt, wann zuletzt ein Sensorwert kam, statt „noch manuell“.
+- Mini-Diagramme zeigen Tiefst- und Höchstwert der letzten 48 Stunden.
+- Jemenchamäleon: Thieme Heimtier-Info (2020) als zweite Quelle für die Nachttemperatur.
+- Grammatik („2 Terrarien brauchen dich“) und Untertitel beim Messwert.
+- Tests: 51.

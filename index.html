@@ -168,7 +168,8 @@ a.btn { text-decoration: none; }
 .ring-unit { fill: var(--muted); font-size: 10px; text-anchor: middle; font-family: var(--sans); }
 .sparks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .spark { width: 100%; height: 38px; display: block; }
-.spark-l { font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; }
+.spark-l { font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; column-gap: 6px; }
+.spark-l > span { white-space: nowrap; }
 .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--muted); }
 .big-rings .ringbox svg { max-width: 190px; }
 .targets { display: grid; grid-template-columns: auto auto auto; justify-content: space-between; gap: 4px 12px; font-size: 13px; align-items: center; background: var(--surface2); border-radius: 10px; padding: 8px 12px; }
@@ -385,6 +386,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
   function allReadings() { refresh(); return cacheR; }
   function allJournal() { refresh(); return cacheJ; }
   function readingsOf(tid) { return allReadings().filter(r => r.tid === tid); }
+  /** Kurzer Text, ob Sensorwerte ankommen. Nur echte Werte aus der Datenbank zählen. */
+  function sensorStatus() {
+    if (!S.sensor || !S.sensor.length) return 'Sensoren: noch manuell';
+    const last = S.sensor.reduce((m, x) => Math.max(m, x.ts), 0);
+    return 'Sensoren: letzter Wert ' + ageText(last);
+  }
   function lastReading(tid) { const r = readingsOf(tid); return r.length ? r[r.length - 1] : null; }
 
   /* ================= Speicher ================= */
@@ -644,6 +651,11 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       '<div class="ringbox">' + ring({ value: tv, range: tr, lo: tlo, hi: thi, unit: '°C', level: a.temp.level, digits: 1, aria: 'Temperatur ' + (Number.isFinite(tv) ? fmt(tv) + ' Grad' : 'kein Wert') }) + '<span class="cap">' + (a.phase === 'night' ? 'Ziel Nacht ' : 'Ziel Tag ') + rangeTxt(tr, '°C') + '</span></div>' +
       '<div class="ringbox">' + ring({ value: hv, range: hr, lo: 0, hi: 100, unit: '% rF', level: a.hum.level, digits: 0, aria: 'Luftfeuchte ' + (Number.isFinite(hv) ? fmt(hv, 0) + ' Prozent' : 'kein Wert') }) + '<span class="cap">' + (a.phase === 'night' ? 'Ziel Nacht ' : 'Ziel Tag ') + rangeTxt(hr, '%') + '</span></div></div>';
   }
+  /** Tiefst- und Höchstwert für die Beschriftung der Mini-Diagramme, die sich an den Werten ausrichten. */
+  function sparkSpan(rows, kind, dec, unit) {
+    const vs = rows.map(r => r[kind]).filter(Number.isFinite);
+    return vs.length < 2 ? '' : fmt(Math.min(...vs), dec) + '–' + fmt(Math.max(...vs), dec) + unit;
+  }
   function spark(rows, kind) {
     const pts = rows.filter(r => Number.isFinite(r[kind]));
     if (pts.length < 2) return '<div class="spark xs" style="display:flex;align-items:center">Noch kein Verlauf</div>';
@@ -776,7 +788,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     let s = '<div class="li stackm ' + lvl(i.level) + '"><div class="ic">' + icon(lampIcon(l), 18) + '</div>' +
       '<div class="grow col" style="gap:4px"><div class="row between wrap" style="gap:6px"><span class="main-t">' + esc(l.name) + '</span>' + (i.daysLeft !== null ? pill(i.level, i.label) : '') + '</div>' +
       '<span class="xs">' + (showTerr ? esc(terrName(l.tid)) + ' · ' : '') + esc(ty.label) + (l.brand ? ' · ' + esc(l.brand) : '') + (l.model ? ' · ' + esc(l.model) : '') + (l.watt ? ' · ' + esc(l.watt) + ' W' : ' · Watt offen') + (l.uvbPct ? ' · ' + esc(l.uvbPct) + ' % UV-B' : '') + (ty.months || l.lifeHours ? ' · ' + life : '') + '</span>' +
-      ((l.fixture || l.pos || l.night) ? '<span class="uvi">' + (l.fixture ? '<span class="tag">' + esc(l.fixture) + '</span>' : '') + (l.pos === 'inside' ? '<span class="tag">im Terrarium' + (l.guard === true ? ', mit Schutzkorb' : l.guard === false ? ', ohne Schutzkorb' : '') + '</span>' : l.pos === 'above' ? '<span class="tag">über dem Gitter</span>' : '') + (l.night ? '<span class="tag">auch nachts an</span>' : '') + '</span>' : '');
+      ((l.fixture || l.pos || l.night || l.ctrl) ? '<span class="uvi">' + (l.fixture ? '<span class="tag">' + esc(l.fixture) + '</span>' : '') + (l.pos === 'inside' ? '<span class="tag">im Terrarium' + (l.guard === true ? ', mit Schutzkorb' : l.guard === false ? ', ohne Schutzkorb' : '') + '</span>' : l.pos === 'above' ? '<span class="tag">über dem Gitter</span>' : '') + (l.night ? '<span class="tag">auch nachts an</span>' : '') + (l.ctrl === 'thermostat' ? '<span class="tag">mit Thermostat</span>' : l.ctrl === 'dimmer' ? '<span class="tag">mit Dimmer</span>' : '') + '</span>' : '');
     const own = adviceOf(terrs().find(x => x.id === l.tid) || terrs()[0]).filter(a => a.lid === l.id && a.level !== 'none');
     if (own.length) s += own.map(a => '<span class="xs ' + lvl(a.level) + '" style="color:var(--lt);background:var(--ls);border-radius:8px;padding:6px 9px">' + esc(a.text) + '</span>').join('');
     if (i.pct !== null) s += '<div class="bar" role="img" aria-label="' + i.pct + ' Prozent der Lebensdauer verbraucht"><i style="width:' + i.pct + '%"></i></div><span class="xs">Eingesetzt ' + esc(dayTxt(l.installed)) + ' · tauschen am <b class="num">' + esc(dateLong(i.dueAt)) + '</b></span>';
@@ -806,7 +818,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       '<div class="quick-row"><button class="qbtn" data-a="entry"><span class="ic">' + icon('temp', 18) + '</span><span class="sm"><b>Messwert</b></span></button><button class="qbtn" data-a="go" data-v="animals"><span class="ic">' + icon('paw', 18) + '</span><span class="sm"><b>Tier-Eintrag</b></span></button><button class="qbtn" data-a="go" data-v="check"><span class="ic">' + icon('lamp', 18) + '</span><span class="sm"><b>Lampen-Check</b></span></button><button class="qbtn" data-a="go" data-v="wissen"><span class="ic">' + icon('other', 18) + '</span><span class="sm"><b>Wissen</b></span></button></div>' +
       (animals().length ? '<section class="card"><div class="card-h"><h3>Meine Tiere</h3></div><div class="pets">' + animals().map(a => '<button class="pet ' + sp(terrs().find(x => x.id === a.tid) || { species: 'other' }) + '" data-a="gotier" data-v="' + a.id + '"><span class="sb-av">' + (a.photo ? '<img src="' + esc(a.photo) + '" alt="">' : esc((a.name || '?').slice(0, 1).toUpperCase())) + '</span><span class="col" style="gap:0;text-align:left"><b class="sm">' + esc(a.name) + '</b><span class="xs">' + esc(terrName(a.tid)) + '</span></span></button>').join('') + '</div></section>' : '') +
       '<div class="grid g-kpi">' +
-      '<button class="card kpi ' + lvl(climLv) + '" data-a="go" data-v="warn"><span class="lab">Klima im Zielbereich</span><span class="val">' + inTarget + '<small> / ' + list.length + '</small></span><span class="sub">' + (c.climate ? c.climate + ' Terrarium braucht dich' : climateIssues().length ? 'Beobachten' : latest ? 'Alles ruhig' : 'Noch keine Messwerte') + '</span></button>' +
+      '<button class="card kpi ' + lvl(climLv) + '" data-a="go" data-v="warn"><span class="lab">Klima im Zielbereich</span><span class="val">' + inTarget + '<small> / ' + list.length + '</small></span><span class="sub">' + (c.climate ? c.climate + (c.climate === 1 ? ' Terrarium braucht dich' : ' Terrarien brauchen dich') : climateIssues().length ? 'Beobachten' : latest ? 'Alles ruhig' : 'Noch keine Messwerte') + '</span></button>' +
       '<button class="card kpi ' + lvl(c.tasksDue ? 'orange' : c.tasksSoon ? 'yellow' : 'green') + '" data-a="go" data-v="tasks"><span class="lab">Aufgaben fällig</span><span class="val">' + c.tasksDue + '</span><span class="sub">' + (c.tasksSoon ? c.tasksSoon + ' bald' : 'keine bald fällig') + (c.tasksNoDate ? ' · ' + c.tasksNoDate + ' ohne Datum' : '') + '</span></button>' +
       '<button class="card kpi ' + lvl(c.lampsDue || c.lampWarn ? 'orange' : c.lampsSoon ? 'yellow' : c.lampsNoDate ? 'none' : 'green') + '" data-a="go" data-v="lamps"><span class="lab">Lampen tauschen / prüfen</span><span class="val">' + c.lampsDue + '</span><span class="sub">' + (c.lampWarn ? c.lampWarn + ' Hinweise · ' : '') + (c.lampsSoon ? c.lampsSoon + ' bald' : 'keine bald') + (c.lampsNoDate ? ' · ' + c.lampsNoDate + ' ohne Alter' : '') + '</span></button>' +
       '<div class="card kpi ' + lvl(latest ? ((now() - latest) / TL.HOUR > 24 ? 'yellow' : 'green') : 'none') + '"><span class="lab">Letzte Messung</span><span class="val" style="font-size:20px;padding:5px 0">' + (latest ? esc(ageText(latest)) : '–') + '</span><span class="sub">' + (latest ? esc(dateTime(latest)) : 'Trag den ersten Wert ein') + '</span></div></div>';
@@ -815,7 +827,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       const sm = TL.SPECIES[t.species] || TL.SPECIES.other;
       return '<section class="card tpanel ' + sp(t) + '"><div class="hd"><div class="grow col" style="gap:2px"><h2>' + esc(t.name) + '</h2><span class="sptag">' + esc(sm.name) + ' · ' + (a.phase === 'night' ? 'Nacht' : 'Tag') + '</span></div>' + pill(a.level, a.reason === 'nodata' ? 'Kein Messwert' : a.stale ? 'Messwert alt' : null) + '</div>' +
         ringsFor(t, a, r) + targetsHtml(t) +
-        '<div class="sparks"><div><div class="spark-l"><span>Temperatur 48 Std.</span></div>' + spark(rows, 't') + '</div><div><div class="spark-l"><span>Luftfeuchte 48 Std.</span></div>' + spark(rows, 'h') + '</div></div>' +
+        '<div class="sparks"><div><div class="spark-l"><span>Temperatur 48 Std.</span><span class="num">' + sparkSpan(rows, 't', 1, ' °C') + '</span></div>' + spark(rows, 't') + '</div><div><div class="spark-l"><span>Luftfeuchte 48 Std.</span><span class="num">' + sparkSpan(rows, 'h', 0, ' %') + '</span></div>' + spark(rows, 'h') + '</div></div>' +
         '<div class="row between"><span class="xs">' + (r ? 'Gemessen ' + esc(ageText(r.ts)) : 'Noch nicht gemessen') + '</span><div class="row" style="gap:6px"><button class="btn sm" data-a="open" data-v="' + t.id + '">Details</button><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div></div></section>';
     }).join('') + '</div>';
     const tl = taskList().filter(x => x.d.daysLeft !== null).slice(0, 6);
@@ -1364,6 +1376,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       '<label class="f">Sitzt in<input id="l-fix" value="' + esc(l.fixture || '') + '" placeholder="z. B. Exo Terra Abdeckung klein"></label></div>' +
       '<div class="f-grid"><label class="f">Position<select id="l-pos"><option value=""' + (!l.pos ? ' selected' : '') + '>weiß nicht</option><option value="above"' + (l.pos === 'above' ? ' selected' : '') + '>über dem Gitter / in der Abdeckung</option><option value="inside"' + (l.pos === 'inside' ? ' selected' : '') + '>im Terrarium</option></select></label>' +
       '<label class="f">Schutzkorb<select id="l-guard"><option value=""' + (l.guard == null ? ' selected' : '') + '>weiß nicht</option><option value="1"' + (l.guard === true ? ' selected' : '') + '>ja</option><option value="0"' + (l.guard === false ? ' selected' : '') + '>nein</option></select></label></div>' +
+      ((TL.LAMP_TYPES[l.type] || {}).group === 'heat' ? '<label class="f' + ec('ctrl') + '">Geregelt über<select id="l-ctrl"><option value=""' + (!l.ctrl ? ' selected' : '') + '>weiß nicht</option>' + Object.entries(TL.LAMP_CTRL).map(([k, v]) => '<option value="' + k + '"' + (l.ctrl === k ? ' selected' : '') + '>' + esc(v) + '</option>').join('') + '</select>' + err('ctrl') + '</label>' : '') +
       '<label class="row sm" style="gap:8px"><input type="checkbox" id="l-night"' + (l.night ? ' checked' : '') + ' style="width:20px;height:20px"> Lampe ist auch nachts an</label>' +
       '<div id="lamp-adv">' + lampFormAdvice(l) + '</div></fieldset>' +
       (l.type === 'led' ? '<fieldset><legend>Brenndauer</legend><label class="f' + ec('hoursPerDay') + '">Brennt Stunden pro Tag<input class="num-in" inputmode="numeric" id="l-hpd" value="' + esc(l.hoursPerDay ?? 12) + '">' + err('hoursPerDay') + '</label><span class="hint">Bei einer LED trägst du kein Alter und keine Lebensdauer ein.</span></fieldset>' : '<fieldset><legend>Alter und Lebensdauer</legend><div class="f-grid"><label class="f' + ec('installed') + '">Eingesetzt am<input type="date" id="l-inst" value="' + esc(l.installed) + '" max="' + TL.isoDay(now()) + '">' + err('installed') + '</label>' +
@@ -1380,9 +1393,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
   }
   function readLampForm() {
     const v = id => (document.getElementById(id) || {}).value ?? '';
-    const g = v('l-guard'), nEl = document.getElementById('l-night');
+    const g = v('l-guard'), nEl = document.getElementById('l-night'), cEl = document.getElementById('l-ctrl');
     return Object.assign({}, S.edit, { name: v('l-name').trim(), type: v('l-type'), tid: v('l-tid'), brand: v('l-brand').trim(), model: v('l-model').trim(), watt: v('l-watt').trim(), installed: v('l-inst'), _age: v('l-age').trim(), lifeMonths: v('l-months').trim(), lifeHours: v('l-hours').trim(), hoursPerDay: v('l-hpd').trim(),
-      uvbPct: v('l-pct').trim(), fixture: v('l-fix').trim(), pos: v('l-pos'), guard: g === '1' ? true : g === '0' ? false : null, night: nEl ? nEl.checked : !!S.edit.night });
+      uvbPct: v('l-pct').trim(), fixture: v('l-fix').trim(), pos: v('l-pos'), guard: g === '1' ? true : g === '0' ? false : null, night: nEl ? nEl.checked : !!S.edit.night, ctrl: cEl ? cEl.value : (S.edit.ctrl || '') });
   }
   /* Live-Prüfung im Lampenformular: zeigt, was mit dieser Änderung nicht optimal wäre */
   function lampFormAdvice(l) {
@@ -1466,7 +1479,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     if (v === 'animals') return ['Tiere', 'Tagebuch', ''];
     if (v === 'warn') return ['Warnungen', 'Was braucht Aufmerksamkeit?', ''];
     if (v === 'settings') return ['Daten & Technik', '', ''];
-    if (v === 'entry') return ['Messwert eintragen', 'Von Hand, bis die Sensoren verbunden sind', ''];
+    if (v === 'entry') return ['Messwert eintragen', S.sensor.length ? 'Von Hand, zusätzlich zu den Sensorwerten' : 'Von Hand, bis die Sensoren verbunden sind', ''];
     if (v === 'lampform') return [S.edit.id ? 'Lampe bearbeiten' : 'Neue Lampe', '', ''];
     if (v === 'taskform') return [S.edit.id ? 'Aufgabe bearbeiten' : 'Neue Aufgabe', '', ''];
     if (v === 'animalform') return [S.edit.id ? 'Tier bearbeiten' : 'Neues Tier', '', ''];
@@ -1489,7 +1502,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const tAc = v === 'terr' ? sp(terr(S.tid)) : '';
     $app.innerHTML = '<div class="shell"><aside class="side" aria-label="Navigation"><div class="brand"><div class="mark">' + icon('terr', 19) + '</div><div><b>Terrarium</b><span>Leitstand</span></div></div>' +
       '<nav class="snav">' + NAV.slice(0, 1).map(([k, l, ic]) => '<button class="' + (active === k ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (active === k ? ' aria-current="page"' : '') + '>' + icon(ic, 19) + l + (badge[k] ? '<span class="badge-n">' + badge[k] + '</span>' : '') + '</button>').join('') + '</nav><h4>Meine Tiere</h4><div class="sterr">' + terrs().map(t => { const a = assessOf(t), r = lastReading(t.id); return '<button class="' + lvl(a.level) + (v === 'terr' && S.tid === t.id ? ' on' : '') + '" data-a="open" data-v="' + t.id + '"><span class="dot"></span><span class="nm">' + esc(t.name) + '</span><span class="vals">' + (r ? fmt(r.t) + ' °C · ' + fmt(r.h, 0) + ' %' : 'kein Wert') + '</span></button>'; }).join('') + '</div><nav class="snav">' + NAV.slice(1).map(([k, l, ic]) => '<button class="' + (active === k ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (active === k ? ' aria-current="page"' : '') + '>' + icon(ic, 19) + l + (badge[k] ? '<span class="badge-n">' + badge[k] + '</span>' : '') + '</button>').join('') + '</nav>' +
-      '<div class="foot"><button class="btn sm" data-a="reload" style="margin-bottom:8px">' + icon('swap', 16) + 'App neu laden</button>' + storeBadge().replace('class="store', 'style="color:var(--sidemuted)" class="store') + '<span>Sensoren: noch manuell</span></div></aside>' +
+      '<div class="foot"><button class="btn sm" data-a="reload" style="margin-bottom:8px">' + icon('swap', 16) + 'App neu laden</button>' + storeBadge().replace('class="store', 'style="color:var(--sidemuted)" class="store') + '<span>' + esc(sensorStatus()) + '</span></div></aside>' +
       '<div class="main ' + tAc + '"><header class="topbar">' + (back ? '<button class="btn sm ghost" data-a="back" aria-label="Zurück">' + icon('back', 18) + '</button>' : '') + '<div class="title"><h1>' + esc(title) + '</h1>' + (sub ? '<span class="xs">' + esc(sub) + '</span>' : '') + '</div>' + actions + '</header>' +
       '<div class="content">' + (S.demo ? '<div class="banner lv-yellow"><span class="grow">Du siehst Beispieldaten. Nichts davon wird gespeichert.</span><button class="btn sm" data-a="demo-off">Zu meinen Daten</button></div>' : '') + body + '</div></div>' +
       '<nav class="tabbar" aria-label="Hauptnavigation">' + TABNAV.map(([k, l, ic]) => { const on = active === k || (k === 'settings' && ['animals', 'warn'].includes(active)); return '<button class="' + (on ? 'on' : '') + '" data-a="go" data-v="' + k + '"' + (on ? ' aria-current="page"' : '') + '>' + icon(ic, 22) + l + (badge[k] ? '<span class="cnt">' + badge[k] + '</span>' : '') + '</button>'; }).join('') + '</nav></div>';
