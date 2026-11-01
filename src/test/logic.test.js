@@ -524,3 +524,40 @@ test('Wärmelampen: Regelung über Thermostat wird geprüft', () => {
   assert.equal(TL.validateLamp({ name: 'a', type: 'chc', ctrl: 'quatsch', hoursPerDay: 12 }, T0).errors.ctrl !== undefined, true);
   assert.equal(TL.validateLamp({ name: 'a', type: 'chc', ctrl: 'thermostat', hoursPerDay: 12 }, T0).ok, true);
 });
+
+test('Aufwärm- und Abkühlphase: Übergangswerte gelten als im Ziel', () => {
+  const t = TL.newTerrarium('kn', 'Korn');
+  t.dayStart = '08:00'; t.dayEnd = '20:00';
+  t.day.temp = { min: 24, max: 28 }; t.night.temp = { min: 18, max: 20 };
+  t.day.hum = { min: 50, max: 70 }; t.night.hum = { min: 50, max: 70 };
+  const at = (h, m) => new Date(2026, 10, 1, h, m || 0).getTime();
+  assert.equal(TL.rampAt(t, at(8, 30)), 'up');
+  assert.equal(TL.rampAt(t, at(10, 0)), null);
+  assert.equal(TL.rampAt(t, at(21, 0)), 'down');
+  assert.equal(TL.rampAt(t, at(23, 0)), null);
+  // 21 °C am Morgen: im Übergang grün, nach der Aufwärmphase nicht mehr
+  assert.equal(TL.assessTerrarium(t, { ts: at(9, 0), t: 21, h: 60 }, at(9, 0)).level, 'green');
+  assert.equal(TL.assessTerrarium(t, { ts: at(9, 0), t: 21, h: 60 }, at(9, 0)).ramp, 'up');
+  assert.notEqual(TL.assessTerrarium(t, { ts: at(11, 0), t: 21, h: 60 }, at(11, 0)).level, 'green');
+  // 23 °C am Abend: in der Abkühlphase grün, um Mitternacht zu warm
+  assert.equal(TL.assessTerrarium(t, { ts: at(21, 0), t: 23, h: 60 }, at(21, 0)).level, 'green');
+  assert.equal(TL.assessTerrarium(t, { ts: at(0, 0), t: 23, h: 60 }, at(0, 0)).level, 'red');
+  // Auch im Übergang: außerhalb von Tag- und Nachtbereich bleibt es eine Warnung
+  assert.equal(TL.assessTerrarium(t, { ts: at(9, 0), t: 31, h: 60 }, at(9, 0)).level, 'red');
+  assert.equal(TL.assessTerrarium(t, { ts: at(21, 0), t: 15, h: 60 }, at(21, 0)).level, 'red');
+  // 0 schaltet ab, alte Terrarien ohne Feld bekommen den Startwert
+  t.rampUp = 0; assert.equal(TL.rampAt(t, at(8, 30)), null);
+  delete t.rampDown; assert.equal(TL.rampAt(t, at(21, 0)), 'down');
+  // Muster: Abendwerte in der Abkühlphase zählen nicht mehr als „nachts zu warm“
+  t.rampUp = 120; t.rampDown = 180;
+  const rows = [];
+  for (let d = 0; d < 4; d++) for (const [h, v] of [[20, 24], [21, 23], [22, 21.5]]) rows.push({ ts: new Date(2026, 9, 27 + d, h, 0).getTime(), t: v, h: 60 });
+  const pat = TL.patterns(t, rows, new Date(2026, 9, 31, 23, 0).getTime(), 7);
+  assert.ok(!pat.list.some(x => x.phase === 'night' && x.kind === 'temp' && x.dir > 0));
+  t.rampDown = 0;
+  assert.ok(TL.patterns(t, rows, new Date(2026, 9, 31, 23, 0).getTime(), 7).list.some(x => x.phase === 'night' && x.kind === 'temp' && x.dir > 0));
+  // Validierung
+  const base = { name: 'x', dayStart: '08:00', dayEnd: '20:00', day: t.day, night: t.night, count: 1, staleHours: 24 };
+  assert.equal(TL.validateProfile(Object.assign({}, base, { rampUp: 400 })).errors.rampUp !== undefined, true);
+  assert.equal(TL.validateProfile(Object.assign({}, base, { rampUp: 90, rampDown: 0 })).ok, true);
+});

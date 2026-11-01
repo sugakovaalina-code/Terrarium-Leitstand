@@ -384,6 +384,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const last = S.sensor.reduce((m, x) => Math.max(m, x.ts), 0);
     return 'Sensoren: letzter Wert ' + ageText(last);
   }
+  function rampTxt(t) {
+    const u = TL.parseNum(t.rampUp) ?? TL.RAMP_DEFAULT_MIN, d = TL.parseNum(t.rampDown) ?? TL.RAMP_DEFAULT_MIN;
+    const m = x => x % 60 ? x + ' Min.' : (x / 60) + ' Std.';
+    return (u ? ' · Aufwärmen ' + m(u) : '') + (d ? ' · Abkühlen ' + m(d) : '');
+  }
+  /** Anzeigename der Phase, mit Aufwärm- und Abkühlphase. */
+  function phaseName(a) { return a.ramp === 'up' ? 'Aufwärmphase' : a.ramp === 'down' ? 'Abkühlphase' : a.phase === 'night' ? 'Nacht' : 'Tag'; }
   function lastReading(tid) { const r = readingsOf(tid); return r.length ? r[r.length - 1] : null; }
 
   /* ================= Speicher ================= */
@@ -640,8 +647,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const tv = r ? r.t : null, hv = r ? r.h : null;
     const tlo = Math.min(TL.rangeSet(tr) ? tr.min - 6 : 15, Number.isFinite(tv) ? tv - 2 : 99), thi = Math.max(TL.rangeSet(tr) ? tr.max + 6 : 35, Number.isFinite(tv) ? tv + 2 : -99);
     return '<div class="rings">' +
-      '<div class="ringbox">' + ring({ value: tv, range: tr, lo: tlo, hi: thi, unit: '°C', level: a.temp.level, digits: 1, aria: 'Temperatur ' + (Number.isFinite(tv) ? fmt(tv) + ' Grad' : 'kein Wert') }) + '<span class="cap">' + (a.phase === 'night' ? 'Ziel Nacht ' : 'Ziel Tag ') + rangeTxt(tr, '°C') + '</span></div>' +
-      '<div class="ringbox">' + ring({ value: hv, range: hr, lo: 0, hi: 100, unit: '% rF', level: a.hum.level, digits: 0, aria: 'Luftfeuchte ' + (Number.isFinite(hv) ? fmt(hv, 0) + ' Prozent' : 'kein Wert') }) + '<span class="cap">' + (a.phase === 'night' ? 'Ziel Nacht ' : 'Ziel Tag ') + rangeTxt(hr, '%') + '</span></div></div>';
+      '<div class="ringbox">' + ring({ value: tv, range: tr, lo: tlo, hi: thi, unit: '°C', level: a.temp.level, digits: 1, aria: 'Temperatur ' + (Number.isFinite(tv) ? fmt(tv) + ' Grad' : 'kein Wert') }) + '<span class="cap">' + (a.ramp ? 'Ziel Übergang ' : a.phase === 'night' ? 'Ziel Nacht ' : 'Ziel Tag ') + rangeTxt(tr, '°C') + '</span></div>' +
+      '<div class="ringbox">' + ring({ value: hv, range: hr, lo: 0, hi: 100, unit: '% rF', level: a.hum.level, digits: 0, aria: 'Luftfeuchte ' + (Number.isFinite(hv) ? fmt(hv, 0) + ' Prozent' : 'kein Wert') }) + '<span class="cap">' + (a.ramp ? 'Ziel Übergang ' : a.phase === 'night' ? 'Ziel Nacht ' : 'Ziel Tag ') + rangeTxt(hr, '%') + '</span></div></div>';
   }
   /** Tiefst- und Höchstwert für die Beschriftung der Mini-Diagramme, die sich an den Werten ausrichten. */
   function sparkSpan(rows, kind, dec, unit) {
@@ -817,7 +824,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     h += '<div class="grid g-3">' + list.map(t => {
       const r = lastReading(t.id), a = assessOf(t), rows = readingsOf(t.id).filter(x => x.ts >= now() - 2 * TL.DAY);
       const sm = TL.SPECIES[t.species] || TL.SPECIES.other;
-      return '<section class="card tpanel ' + sp(t) + '"><div class="hd"><div class="grow col" style="gap:2px"><h2>' + esc(t.name) + '</h2><span class="sptag">' + esc(sm.name) + ' · ' + (a.phase === 'night' ? 'Nacht' : 'Tag') + '</span></div>' + pill(a.level, a.reason === 'nodata' ? 'Kein Messwert' : a.stale ? 'Messwert alt' : null) + '</div>' +
+      return '<section class="card tpanel ' + sp(t) + '"><div class="hd"><div class="grow col" style="gap:2px"><h2>' + esc(t.name) + '</h2><span class="sptag">' + esc(sm.name) + ' · ' + phaseName(a) + '</span></div>' + pill(a.level, a.reason === 'nodata' ? 'Kein Messwert' : a.stale ? 'Messwert alt' : null) + '</div>' +
         ringsFor(t, a, r) + targetsHtml(t) +
         '<div class="sparks"><div><div class="spark-l"><span>Temperatur 48 Std.</span><span class="num">' + sparkSpan(rows, 't', 1, ' °C') + '</span></div>' + spark(rows, 't') + '</div><div><div class="spark-l"><span>Luftfeuchte 48 Std.</span><span class="num">' + sparkSpan(rows, 'h', 0, ' %') + '</span></div>' + spark(rows, 'h') + '</div></div>' +
         '<div class="row between"><span class="xs">' + (r ? 'Gemessen ' + esc(ageText(r.ts)) : 'Noch nicht gemessen') + '</span><div class="row" style="gap:6px"><button class="btn sm" data-a="open" data-v="' + t.id + '">Details</button><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div></div></section>';
@@ -861,7 +868,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const n = v => fmt(v, Number.isInteger(v) ? 0 : 1);
     const rt = (r, u) => TL.rangeSet(r) ? n(r.min) + '–' + n(r.max) + ' ' + u : 'offen';
     const row = (k, l, ic) => '<span class="ph' + (ph === k ? ' on' : '') + '">' + icon(ic, 15) + l + '</span><span class="num">' + esc(rt(t[k].temp, '°C')) + '</span><span class="num">' + esc(rt(t[k].hum, '%')) + '</span>';
-    return '<div class="targets" aria-label="Zielwerte">' + row('day', 'Tag', 'sun') + row('night', 'Nacht', 'moon') + '<span class="xs" style="grid-column:1/-1">Tag ' + esc(t.dayStart) + '–' + esc(t.dayEnd) + ' Uhr, sonst Nacht</span></div>';
+    return '<div class="targets" aria-label="Zielwerte">' + row('day', 'Tag', 'sun') + row('night', 'Nacht', 'moon') + '<span class="xs" style="grid-column:1/-1">Tag ' + esc(t.dayStart) + '–' + esc(t.dayEnd) + ' Uhr, sonst Nacht' + esc(rampTxt(t)) + '</span></div>';
   }
   function adviceOf(t, list) { return TL.lampAdvice(t, list || lamps()); }
   function adviceLine(x, withSrc) {
@@ -992,7 +999,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const r = lastReading(t.id), a = assessOf(t), rows = readingsOf(t.id);
     const adv = TL.adviceFor(a), pats = TL.patterns(t, rows, now(), 7);
     let h = '<div class="grid g-2 g-2w"><section class="card big-rings"><div class="card-h"><h3>Aktuell</h3>' + pill(a.level, a.reason === 'nodata' ? 'Kein Messwert' : a.stale ? 'Messwert alt' : null) + '</div>' + ringsFor(t, a, r) +
-      targetsHtml(t) + '<div class="row between" style="margin-top:12px"><span class="xs">' + (r ? esc(dateTime(r.ts)) + ' · ' + (a.phase === 'night' ? 'Nachtwerte' : 'Tagwerte') + ' · ' + (r.src === 'sensor' ? 'Sensor' : 'manuell') : 'Noch kein Messwert') + '</span><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div>' +
+      targetsHtml(t) + '<div class="row between" style="margin-top:12px"><span class="xs">' + (r ? esc(dateTime(r.ts)) + ' · ' + (a.ramp ? phaseName(a) : a.phase === 'night' ? 'Nachtwerte' : 'Tagwerte') + ' · ' + (r.src === 'sensor' ? 'Sensor' : 'manuell') : 'Noch kein Messwert') + '</span><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div>' +
       '<div class="spotbox"><label class="f">Messort: wo hängt der Sensor?<input id="spot-in" value="' + esc(t.spot || '') + '" placeholder="z. B. Boden, kühle Ecke ohne Wärmelampe, deshalb kälter"></label><button class="btn sm" data-a="spotsave" data-v="' + t.id + '">Speichern</button></div>' +
       '<p class="xs" style="margin-top:8px">Tag und Nacht hat das Terrarium eigene Zielwerte (Reiter Einrichtung, Zielwerte). Die App ordnet jeden Messwert nach der Tagzeit automatisch Tag oder Nacht zu.</p></section>' +
       '<section class="card"><div class="card-h"><h3>Was prüfen?</h3></div>' + (a.level === 'green' ? '<p class="sm">Alles im Zielbereich. Nichts zu tun.</p>' : '<ul class="adv">' + adv.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>') +
@@ -1014,7 +1021,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const sv = (o, k, u, d) => o ? fmt(o[k], d) + ' ' + u : '–';
     return '<section class="card"><div class="row between wrap" style="margin-bottom:12px"><div class="seg">' + [['t', 'Temperatur'], ['h', 'Luftfeuchte']].map(([k, l]) => '<button class="' + (S.chartKind === k ? 'on' : '') + '" data-a="ckind" data-v="' + k + '">' + l + '</button>').join('') + '</div><div class="seg">' + [['1', '24 Std.'], ['7', '7 Tage'], ['30', '30 Tage']].map(([k, l]) => '<button class="' + (S.chartRange === k ? 'on' : '') + '" data-a="crange" data-v="' + k + '">' + l + '</button>').join('') + '</div></div>' +
       chartSvg(t, rows, S.chartKind, from, to) +
-      '<div class="readout" id="readout"><span class="xs">' + (inR.length ? 'Tippe auf das Diagramm für einzelne Werte. Grau = Nacht, grünes Band = Zielbereich.' : 'In diesem Zeitraum gibt es keine Messwerte.') + '</span></div></section>' +
+      '<div class="readout" id="readout"><span class="xs">' + (inR.length ? 'Tippe auf das Diagramm für einzelne Werte. Grau = Nacht, grünes Band = Zielbereich (in der Aufwärm- und Abkühlphase breiter).' : 'In diesem Zeitraum gibt es keine Messwerte.') + '</span></div></section>' +
       '<div class="stats"><div class="stat"><span class="xs">Messwerte</span><b>' + st.count + '</b></div><div class="stat"><span class="xs">Temperatur Ø</span><b>' + sv(st.temp, 'avg', '°C', 1) + '</b><span class="xs">' + (st.temp ? fmt(st.temp.min) + ' bis ' + fmt(st.temp.max) : '') + '</span></div><div class="stat"><span class="xs">Luftfeuchte Ø</span><b>' + sv(st.hum, 'avg', '%', 0) + '</b><span class="xs">' + (st.hum ? fmt(st.hum.min, 0) + ' bis ' + fmt(st.hum.max, 0) : '') + '</span></div><div class="stat"><span class="xs">Zeit im Ziel</span><b>' + (st.inRange.temp === null ? '–' : st.inRange.temp + ' %') + ' / ' + (st.inRange.hum === null ? '–' : st.inRange.hum + ' %') + '</b><span class="xs">Temp. / Feuchte</span></div></div>';
   }
 
@@ -1027,6 +1034,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const sz = t.size || {};
     p.size = { l: sz.l ?? '', b: sz.b ?? '', h: sz.h ?? '' };
     p.animalLen = t.animalLen ?? ''; p.count = t.count ?? 1; p.staleHours = t.staleHours ?? 24;
+    p.rampUp = t.rampUp ?? TL.RAMP_DEFAULT_MIN; p.rampDown = t.rampDown ?? TL.RAMP_DEFAULT_MIN;
     return p;
   }
   function readPf() {
@@ -1039,6 +1047,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     set(x => p.dayStart = x, 'p-dayStart'); set(x => p.dayEnd = x, 'p-dayEnd');
     for (const ph of ['day', 'night']) for (const k of ['temp', 'hum']) { set(x => p[ph][k].min = x, 'p-' + ph + '-' + k + '-min'); set(x => p[ph][k].max = x, 'p-' + ph + '-' + k + '-max'); }
     set(x => p.tolT = x, 'p-tolT'); set(x => p.tolH = x, 'p-tolH'); set(x => p.staleHours = x, 'p-stale');
+    set(x => p.rampUp = x, 'p-rampUp'); set(x => p.rampDown = x, 'p-rampDown');
     return p;
   }
   function sizeHtml(p) {
@@ -1070,6 +1079,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       '<tr><td>Tag</td>' + zrow('day', 'temp') + zrow('day', 'hum') + '</tr><tr><td>Nacht</td>' + zrow('night', 'temp') + zrow('night', 'hum') + '</tr></tbody></table></div>' + zerr +
       (pr ? '<p class="xs">Hotspot: ' + esc(pr.hotspot) + '. Die App bewertet die Luft am Sensor, nicht den Sonnenplatz.</p>' : '') +
       '<div class="f-grid"><label class="f' + ec('dayStart') + '">Licht an (Tag beginnt)<input type="time" id="p-dayStart" value="' + esc(p.dayStart) + '">' + err('dayStart') + '</label><label class="f' + ec('dayEnd') + '">Licht aus (Nacht beginnt)<input type="time" id="p-dayEnd" value="' + esc(p.dayEnd) + '">' + err('dayEnd') + '</label></div>' +
+      '<div class="f-grid"><label class="f' + ec('rampUp') + '">Aufwärmphase nach Licht an (Min.)<input class="num-in" inputmode="numeric" id="p-rampUp" value="' + esc(p.rampUp) + '">' + err('rampUp') + '</label><label class="f' + ec('rampDown') + '">Abkühlphase nach Licht aus (Min.)<input class="num-in" inputmode="numeric" id="p-rampDown" value="' + esc(p.rampDown) + '">' + err('rampDown') + '</label></div>' +
+      '<span class="hint">Nach dem Einschalten braucht ein Terrarium Zeit zum Aufwärmen, abends kühlt es langsam ab. In diesen Phasen gilt alles zwischen Tag- und Nachtbereich als im Ziel. 120 Minuten sind ein Startwert der App, keine Haltungsvorgabe: Schau im Verlauf nach, wie lange dein Terrarium braucht. 0 schaltet die Phase ab.</span>' +
       '<div class="f-grid3"><label class="f' + ec('tempOrange') + '">Orange bis ± °C<input class="num-in" inputmode="decimal" id="p-tolT" value="' + esc(p.tolT) + '">' + err('tempOrange') + '</label><label class="f' + ec('humOrange') + '">Orange bis ± %<input class="num-in" inputmode="decimal" id="p-tolH" value="' + esc(p.tolH) + '">' + err('humOrange') + '</label><label class="f' + ec('staleHours') + '">Wert alt nach Std.<input class="num-in" inputmode="numeric" id="p-stale" value="' + esc(p.staleHours) + '">' + err('staleHours') + '</label></div>' +
       '<span class="hint">Grün im Ziel, gelb knapp am Rand, orange leicht daneben, rot weiter daneben als die Orange-Grenze.</span>' +
       (pr ? '<div class="src"><b>Quellen</b>' + srcLinks(pr.sources) + pr.notes.map(n => '<span>' + esc(n) + '</span>').join('') + '</div>' : '') + '</fieldset></div>' +
@@ -1811,6 +1822,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       for (const ph of ['day', 'night']) for (const k of ['temp', 'hum']) { const r = p[ph][k]; out[ph][k] = { min: TL.parseNum(r.min), max: TL.parseNum(r.max) }; }
       out.tol = Object.assign({}, TL.DEFAULT_TOL, old?.tol, { tempOrange: tolT, humOrange: tolH });
       out.staleHours = TL.parseNum(p.staleHours);
+      out.rampUp = TL.parseNum(p.rampUp) ?? TL.RAMP_DEFAULT_MIN; out.rampDown = TL.parseNum(p.rampDown) ?? TL.RAMP_DEFAULT_MIN;
       out.size = { l: TL.parseNum(p.size.l), b: TL.parseNum(p.size.b), h: TL.parseNum(p.size.h) };
       out.animalLen = TL.parseNum(p.animalLen); out.count = TL.parseNum(p.count) || 1;
       const pr = TL.PRESETS[out.species];
