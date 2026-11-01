@@ -153,6 +153,7 @@
     luckyJungle: { label: 'Testsieger.de, Lucky Reptile Bright Sun UV Jungle 35 W (E27, Thermo Socket und Bright Control nötig)', url: 'https://www.testsieger.de/moebel-und-accessoires/70AMA9GHGWXBK-lucky-reptile-bright-sun-uv-jungle-wattstaerke35-watt.html' },
     luckyBrosch: { label: 'Lucky Reptile, Broschüre Bright Sun UV (Vergleichstabelle Jungle 50 W)', url: 'https://lucky-reptile.de/media/pdf/fa/42/bf/Broschu-re-Bright-Sun-DE.pdf' },
     luckyManual: { label: 'Lucky Reptile, Bedienungsanleitung Bright Sun UV (Abstände, Vorschaltgerät)', url: 'https://lucky-reptile.de/media/pdf/g0/da/61/Bright-Sun-UV.pdf' },
+    thiemeJc: { label: 'Thieme Heimtier-Info, Jemenchamäleon (2020)', url: 'https://tiermedizin.thieme.de/fileadmin/tiermedizin/04_Downloads/02_Patientenb%C3%B6gen/Jemencham%C3%A4leon.pdf' },
     rfVeiled: { label: 'ReptiFiles, Veiled Chameleon Care Sheet (Jemenchamäleon)', url: 'https://reptifiles.com/wp-content/uploads/2021/09/Veiled-Chameleon-Care-Sheet-ReptiFiles.pdf' },
     rfLeachie: { label: 'ReptiFiles, Leachie Gecko Care Sheet (Neukaledonischer Riesengecko)', url: 'https://reptifiles.com/wp-content/uploads/2022/06/Leachie-Gecko-Care-Sheet-ReptiFiles-PDF.pdf' },
     zenCorn: { label: 'Zen Habitats, Corn Snake Care Guide (Madeline Smith)', url: 'https://zenhabitats.com/blogs/reptile-care-sheets-resources/corn-snake-essential-care-information' }
@@ -180,7 +181,7 @@
       pick: { kn: [80], jc: [80], rg: [] }, sources: ['zoomedPS'] },
     { id: 'arcCeramic', brand: 'Arcadia', model: 'Ceramic Heater IR-C (Keramikstrahler)', kind: 'heat', watts: [50], base: 'E27', ballast: 'none', q: 'Arcadia Ceramic Heater 50W E27',
       facts: 'Keramikstrahler ohne Licht, Infrarot C, E27, 50 W (Angabe auf der Verpackung). Gibt Wärme, aber kein sichtbares Licht und kein UV.',
-      fit: { kn: [2, 'The Bio Dude nennt Keramikstrahler ohne Licht für nächtliche Zusatzwärme, immer mit Thermostat. Nachts passt er zum Ziel 18–20 °C.'], jc: [1, 'Nur als Zusatzwärme, immer mit Thermostat. Der Sonnenplatz braucht weißes Licht und UV-B.'], rg: [2, 'The Bio Dude: Zusätzliche Wärme nachts nur, wenn es unter etwa 18 °C fällt, ohne Licht.'] },
+      fit: { kn: [2, 'The Bio Dude nennt Keramikstrahler ohne Licht als beste Wahl für Wärme in der Nacht und rät zu Thermostat und täglicher Kontrolle gegen Überhitzung. Nachts passt er zum Ziel 18–20 °C.'], jc: [1, 'Nur als Zusatzwärme, immer mit Thermostat. Der Sonnenplatz braucht weißes Licht und UV-B.'], rg: [2, 'The Bio Dude: Zusätzliche Wärme nachts nur, wenn es unter etwa 18 °C fällt, ohne Licht.'] },
       pick: { kn: [50], jc: [50], rg: [50] }, sources: ['biodudeRed', 'biodude'] },
     { id: 'lrDesert', brand: 'Lucky Reptile', model: 'Bright Sun UV Desert', kind: 'both', watts: [35, 50, 70, 100], base: 'E27', ballast: 'needs', q: 'Lucky Reptile Bright Sun UV Desert 35W',
       facts: 'Metalldampflampe mit Tageslichtspektrum (6000 K) für Wüstenarten. Passt in eine E27-Porzellanfassung, braucht ein Vorschaltgerät „wie das Lucky Reptile Bright Control“. Hersteller empfiehlt jährlichen Tausch.',
@@ -381,6 +382,12 @@
       const hot = grp(l) === 'heat' || ['uvbMV', 'uvbMH', 'unknown'].includes(l.type);
       if (l.type === 'ir') add(l.night ? 'orange' : 'yellow', nm(l) + ': Rotes Infrarotlicht. Reptilien sehen Rot, nachts stört es den Tag-Nacht-Rhythmus. Für den Sonnenplatz am Tag ist ein weißer Strahler üblich, für Wärme in der Nacht ein Keramikstrahler ohne Licht.', l.id, ['biodudeRed']);
       if (l.night && l.type !== 'chc' && l.type !== 'ir') add('orange', nm(l) + ' ist auch nachts an. ' + (li ? li.night : 'Nachts sollte es dunkel sein.'), l.id, li ? li.sources.slice(0, 1) : []);
+      if (grp(l) === 'heat') {
+        const ctrl = l.ctrl || '';
+        if (l.type === 'chc' && ctrl !== 'thermostat') add(ctrl === '' ? 'yellow' : 'orange', nm(l) + (ctrl === '' ? ': Trag ein, womit er geregelt wird.' : ' läuft ohne Thermostat.') + ' Ein Keramikstrahler gibt kein Licht ab, eine Überhitzung sieht man also nicht. The Bio Dude nennt Thermostat, Zeitschaltuhr, passende Fassung und tägliche Kontrolle als Schutz vor Überhitzung und Verbrennungen. Der Fühler des Thermostats gehört an den Liegeplatz.', l.id, ['biodudeRed']);
+        else if (ctrl === 'none' || ctrl === 'timer') add(l.night ? 'orange' : 'yellow', nm(l) + ' wird nur ' + (ctrl === 'timer' ? 'über die Zeitschaltuhr' : 'per Stecker') + ' geschaltet. Ohne Thermostat oder Dimmer folgt die Temperatur am Platz der Raumtemperatur. Ein Thermostat mit Fühler am Liegeplatz verhindert Überhitzung.', l.id);
+        else if (ctrl === '') add('none', nm(l) + ': Trag ein, womit die Lampe geregelt wird (Thermostat, Dimmer, Zeitschaltuhr).', l.id);
+      }
       if (hot && l.pos === 'inside' && l.guard !== true) add(l.guard === false ? 'red' : 'orange', nm(l) + ' hängt im Terrarium' + (l.guard === false ? ' ohne Schutzkorb' : '; ist ein Schutzkorb drum?') + ' Wärmelampen müssen außer Reichweite oder gesichert sein, sonst drohen Verbrennungen.', l.id, t.species === 'jc' ? ['dtschbJc'] : ['dtschbKn']);
       if ((l.type === 'uvbT5' || l.type === 'uvbT8') && ballast === false) add('red', nm(l) + ' ist eine Röhre. Röhren leuchten nur mit Vorschaltgerät, und hier ist keins eingetragen. Ohne Vorschaltgerät gehen ein Röhren-Komplettset mit eingebautem Vorschaltgerät oder eine selbstvorschaltende UV-B-Mischlichtlampe für eine Keramikfassung.', l.id, ['zoomedPS']);
       const txt = ((l.brand || '') + ' ' + (l.model || '')).toLowerCase();
@@ -543,6 +550,9 @@
     other: { label: 'Andere Lampe', group: 'other', months: null, sources: [], note: '' }
   };
 
+  /** Womit eine Lampe geregelt wird. */
+  const LAMP_CTRL = { thermostat: 'Thermostat (auch Dimm- oder Puls-Thermostat)', dimmer: 'Dimmer ohne Temperaturfühler', timer: 'nur Zeitschaltuhr', none: 'gar nicht, einfach an' };
+
   /* Vorgegebene Aufgaben je Art. Intervalle sind Startwerte der App, keine Haltungsvorgabe. */
   const DEFAULT_TASKS = {
     kn: [['water', 'Wasser wechseln, Napf reinigen', 2], ['spray', 'Düsen der Beregnung entkalken', 30], ['soil', 'Substrat komplett wechseln', 90], ['clean', 'Einrichtung reinigen und desinfizieren', 180], ['batt', 'Sensor-Batterie prüfen', 90]],
@@ -570,8 +580,8 @@
       day: { temp: { min: 25, max: 28 }, hum: { min: 60, max: 90 } },
       night: { temp: { min: 20, max: 23 }, hum: { min: 60, max: 90 } },
       hotspot: 'bis 40 °C lokal unter dem Wärmestrahler',
-      notes: ['Nachts nennt der Tierschutzbund nur „mindestens 20 °C“. Die Obergrenze 23 °C ist abgeleitet: Das BMEL-Gutachten empfiehlt für viele Chamäleons eine Nachtabsenkung um 5–8 °C.', 'Luftfeuchte gibt die Quelle ohne Tag/Nacht-Unterschied an.'],
-      sources: ['dtschbJc', 'bmel97']
+      notes: ['Nachts nennt der Tierschutzbund nur „mindestens 20 °C“. Die Obergrenze 23 °C ist abgeleitet: Das BMEL-Gutachten empfiehlt für viele Chamäleons eine Nachtabsenkung um 5–8 °C.', 'Luftfeuchte gibt die Quelle ohne Tag/Nacht-Unterschied an.', 'Die Quellen sind sich nachts nicht einig: Die Thieme Heimtier-Info nennt eine Absenkung auf 16–20 °C (bzw. 12–14 °C, ohne zu sagen, wann welcher Bereich gilt). Orange bei 18–20 °C heißt daher: unter dem Wert des Tierschutzbunds, laut Thieme aber noch im Rahmen. Unter 16 °C (außerhalb der Winterruhe) gegensteuern.'],
+      sources: ['dtschbJc', 'bmel97', 'thiemeJc']
     },
     rg: {
       day: { temp: { min: 22, max: 26 }, hum: { min: 60, max: 80 } },
@@ -700,6 +710,7 @@
     const hpdEmpty = l.hoursPerDay === '' || l.hoursPerDay === null || l.hoursPerDay === undefined;
     if (hpdEmpty && h === null) { /* ohne Stundenlebensdauer nicht nötig */ }
     else if (hpd === null || hpd <= 0 || hpd > 24) errors.hoursPerDay = 'Bitte 1 bis 24 Stunden pro Tag.';
+    if (l.ctrl && !LAMP_CTRL[l.ctrl]) errors.ctrl = 'Bitte eine Regelung aus der Liste wählen.';
     if (l.watt !== '' && l.watt !== null && l.watt !== undefined) { const w = parseNum(l.watt); if (w === null || w <= 0 || w > 2000) errors.watt = 'Bitte Watt als Zahl.'; }
     return { ok: Object.keys(errors).length === 0, errors };
   }
@@ -834,6 +845,9 @@
     return best;
   }
 
+  /** Ab so vielen Stunden ohne neuen Sensorwert gilt der Sensor als ausgefallen (Abruf läuft stündlich). */
+  const SENSOR_STALE_H = 3;
+
   /** Gesamtbewertung des letzten Messwerts eines Terrariums. */
   function assessTerrarium(t, reading, now) {
     if (!reading) {
@@ -843,11 +857,13 @@
     const temp = assess(reading.t, r.temp, 'temp', t.tol);
     const hum = assess(reading.h, r.hum, 'hum', t.tol);
     const ageH = (now - reading.ts) / HOUR;
-    const stale = ageH > (t.staleHours || 24);
+    /* Sensorwerte kommen stündlich. Fehlen sie länger als SENSOR_STALE_H Stunden, ist eher der Sensor oder der Abruf ausgefallen. */
+    const sensorStale = reading.src === 'sensor' && ageH > Math.min(SENSOR_STALE_H, t.staleHours || 24);
+    const stale = sensorStale || ageH > (t.staleHours || 24);
     let level = worst([temp.level, hum.level]);
     if (stale && LEVELS.indexOf(level) < LEVELS.indexOf('yellow')) level = 'yellow';
     if (!profileAnySet(t)) level = stale ? 'yellow' : 'none';
-    return { level, temp, hum, phase: r.phase, ranges: r, stale, ageH, reason: stale ? 'stale' : (profileAnySet(t) ? 'ok' : 'noprofile') };
+    return { level, temp, hum, phase: r.phase, ranges: r, stale, sensorStale, ageH, reason: stale ? 'stale' : (profileAnySet(t) ? 'ok' : 'noprofile') };
   }
 
   /** Empfohlene Prüfschritte. Bewusst als Prüfungen formuliert, nicht als Haltungsvorgaben. */
@@ -855,7 +871,8 @@
     const out = [];
     if (!a || a.reason === 'nodata') return ['Trage einen ersten Messwert ein oder verbinde später einen Sensor.'];
     if (a.reason === 'noprofile') return ['Lege für dieses Terrarium Zielwerte für Tag und Nacht fest. Erst dann kann die App bewerten.'];
-    if (a.stale) out.push('Der letzte Messwert ist älter als ' + Math.round(a.ageH) + ' Stunden. Miss neu oder prüfe den Sensor.');
+    if (a.sensorStale) out.push('Der Sensor hat seit ' + Math.round(a.ageH) + ' Stunden keinen Wert geliefert, normal ist einer pro Stunde. Prüfe Batterie, Hub und WLAN in der SwitchBot-App. Bis dahin von Hand messen.');
+    else if (a.stale) out.push('Der letzte Messwert ist älter als ' + Math.round(a.ageH) + ' Stunden. Miss neu oder prüfe den Sensor.');
     if (a.temp.dir > 0 && a.temp.level !== 'green' && !a.temp.edge) {
       out.push('Prüfe den Sollwert am Thermostat und ob der Thermostat-Fühler richtig sitzt.');
       out.push('Prüfe die Raumtemperatur. Im Sommer kann der Raum das Terrarium mit aufheizen.');
@@ -1163,7 +1180,7 @@
   }
 
   return {
-    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, lightHours, hoursCheck, lampSpan, lightPlan, CATALOG, socketsOf, socketRecs, lampPlan, SUBSTRATE, substrateNeed, substrateStatus, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, KNOWLEDGE, LEXICON, SETUP_CHECK, minSize, checkSize, LAMP_TYPES, DEFAULT_TASKS, DEFAULT_LAMPS,
+    SOURCES, PRESETS, SIZE_RULES, LIGHTING, SHOP, shopLink, lightHours, hoursCheck, lampSpan, lightPlan, CATALOG, socketsOf, socketRecs, lampPlan, SUBSTRATE, substrateNeed, substrateStatus, hasExoCover, slotUse, lightCheck, lampAdvice, candidateCheck, animalStats, ageLabel, KNOWLEDGE, LEXICON, SETUP_CHECK, minSize, checkSize, LAMP_TYPES, LAMP_CTRL, DEFAULT_TASKS, DEFAULT_LAMPS,
     defaultTasksFor, defaultLampsFor, applyPreset, migrateConfig, lampInfo, validateLamp, installedFromAge, addMonths,
     SCHEMA, DAY, HOUR, SPECIES, LEVELS, LEVEL_INFO, LIMITS, DEFAULT_TOL, TASK_KINDS, TASK_TEMPLATES, JOURNAL_TYPES,
     uid, parseNum, round1, fmt, hhmmToMin, monthKey, isoDay,

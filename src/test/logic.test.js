@@ -494,3 +494,33 @@ test('Lichtplan: Zeiten, Gesamtdauer und Nachtkontrolle', () => {
   assert.equal(TL.lampSpan({ onTime: '22:00', offTime: '06:00' }).hours, 8);
   assert.equal(TL.lampSpan({ hoursPerDay: 10 }).hours, 10);
 });
+
+test('Sensor-Ausfall: Sensorwerte gelten nach 3 Stunden als veraltet, Handwerte erst nach staleHours', () => {
+  const t = terr({ staleHours: 24 });
+  const sens = TL.assessTerrarium(t, { ts: T0 - 4 * TL.HOUR, t: 28, h: 50, src: 'sensor' }, T0);
+  assert.equal(sens.stale, true); assert.equal(sens.sensorStale, true); assert.equal(sens.level, 'yellow');
+  assert.match(TL.adviceFor(sens)[0], /Sensor hat seit 4 Stunden/);
+  const frisch = TL.assessTerrarium(t, { ts: T0 - 2 * TL.HOUR, t: 28, h: 50, src: 'sensor' }, T0);
+  assert.equal(frisch.stale, false);
+  const hand = TL.assessTerrarium(t, { ts: T0 - 4 * TL.HOUR, t: 28, h: 50, src: 'manual' }, T0);
+  assert.equal(hand.stale, false); assert.equal(hand.sensorStale, false);
+  const kurz = TL.assessTerrarium(terr({ staleHours: 1 }), { ts: T0 - 2 * TL.HOUR, t: 28, h: 50, src: 'sensor' }, T0);
+  assert.equal(kurz.stale, true);
+});
+
+test('Wärmelampen: Regelung über Thermostat wird geprüft', () => {
+  const k = TL.newTerrarium('kn', 'Korn'); k.equip.ballast = true;
+  const L = (o) => Object.assign({ id: TL.uid('l'), tid: k.id, name: 'X', type: 'chc', watt: 50, pos: 'above', guard: null, uvbPct: null, night: true }, o);
+  const uv = L({ type: 'uvbT5', uvbPct: 6, watt: 24, night: false });
+  const lv = (ctrl, type) => TL.lampAdvice(k, [uv, L({ ctrl, type: type || 'chc' })]).filter(a => /Thermostat|geregelt/.test(a.text)).map(a => a.level);
+  assert.deepEqual(lv('thermostat'), []);
+  assert.deepEqual(lv(''), ['yellow']);
+  assert.deepEqual(lv('timer'), ['orange']);
+  assert.deepEqual(lv('none'), ['orange']);
+  assert.deepEqual(lv('dimmer'), ['orange']);
+  assert.deepEqual(lv('dimmer', 'heat'), []);
+  assert.deepEqual(lv('none', 'heat'), ['orange']);
+  assert.deepEqual(lv('', 'heat'), ['none']);
+  assert.equal(TL.validateLamp({ name: 'a', type: 'chc', ctrl: 'quatsch', hoursPerDay: 12 }, T0).errors.ctrl !== undefined, true);
+  assert.equal(TL.validateLamp({ name: 'a', type: 'chc', ctrl: 'thermostat', hoursPerDay: 12 }, T0).ok, true);
+});
