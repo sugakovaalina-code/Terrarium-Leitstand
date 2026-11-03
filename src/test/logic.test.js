@@ -308,7 +308,7 @@ test('Migration auf Schema 3 ergänzt Technik-Felder', () => {
   assert.equal(TL.migrateConfig(c), true);
   assert.deepEqual(c.terrariums[0].equip, { covers: '', ballast: null, notes: '' });
   assert.equal(c.lamps[0].pos, '');
-  assert.equal(c.v, 3);
+  assert.equal(c.v, TL.SCHEMA);
 });
 
 test('Lampenprüfung: Metalldampf bei Zone 1–2 wird angemerkt', () => {
@@ -560,4 +560,136 @@ test('Aufwärm- und Abkühlphase: Übergangswerte gelten als im Ziel', () => {
   const base = { name: 'x', dayStart: '08:00', dayEnd: '20:00', day: t.day, night: t.night, count: 1, staleHours: 24 };
   assert.equal(TL.validateProfile(Object.assign({}, base, { rampUp: 400 })).errors.rampUp !== undefined, true);
   assert.equal(TL.validateProfile(Object.assign({}, base, { rampUp: 90, rampDown: 0 })).ok, true);
+});
+
+/* ---------- Futterplan ---------- */
+
+// 01.11.2026 ist ein Sonntag, 03.11.2026 ein Dienstag.
+const SUN = new Date(2026, 10, 1, 10, 0).getTime();
+const TUE = new Date(2026, 10, 3, 10, 0).getTime();
+const at = (base, days) => base + days * TL.DAY;
+const feed = (aid, ts, fed, ate) => ({ id: TL.uid('j'), aid, type: 'feed', ts, value: '', fed, ate: ate || '', note: '' });
+
+test('Futterplan: Startwerte je Art (Kornnatter Sonntag, Chamäleon und Gecko alle 2 Tage)', () => {
+  assert.deepEqual(TL.feedPlanOf(TL.newTerrarium('kn')).mode, 'weekday');
+  assert.equal(TL.feedPlanOf(TL.newTerrarium('kn')).weekday, 0);
+  assert.equal(TL.feedPlanLabel(TL.newTerrarium('kn')), 'Jeden Sonntag');
+  assert.equal(TL.feedPlanLabel(TL.newTerrarium('jc')), 'Alle 2 Tage');
+  assert.equal(TL.feedPlanLabel(TL.newTerrarium('rg')), 'Alle 2 Tage');
+  assert.equal(TL.feedPlanLabel(TL.newTerrarium('other')), 'Kein Futterplan');
+});
+
+test('Migration auf Schema 4: Futterplan und Platzhalter-Tiere, vorhandene Tiere bleiben', () => {
+  const c = TL.defaultConfig(); c.v = 3;
+  c.terrariums.forEach(t => delete t.feed);
+  c.terrariums[0].count = 3;
+  c.animals = [{ id: 'a1', tid: c.terrariums[1].id, name: 'Kiwi' }];
+  assert.equal(TL.migrateConfig(c), true);
+  assert.equal(c.v, TL.SCHEMA);
+  assert.ok(c.terrariums.every(t => t.feed && t.feed.preset));
+  const snakes = c.animals.filter(a => a.tid === c.terrariums[0].id);
+  assert.deepEqual(snakes.map(a => a.name), ['Schlange 1', 'Schlange 2', 'Schlange 3']);
+  assert.deepEqual(c.animals.filter(a => a.tid === c.terrariums[1].id).map(a => a.name), ['Kiwi']);
+  assert.deepEqual(c.animals.filter(a => a.tid === c.terrariums[2].id).map(a => a.name), ['Gecko']);
+  // Eigener Plan wird nicht überschrieben
+  const d = TL.defaultConfig(); d.v = 3; d.terrariums[1].feed = { mode: 'every', every: 3, weekday: 0 };
+  TL.migrateConfig(d);
+  assert.equal(d.terrariums[1].feed.every, 3);
+  assert.equal(TL.migrateConfig(d), false);
+});
+
+test('Futterplan Sonntag: heute fällig, erledigt, überfällig', () => {
+  const t = TL.newTerrarium('kn'); const a = { id: 's1', tid: t.id };
+  // Noch nichts eingetragen, heute Sonntag
+  let s = TL.feedStatus(t, a, [], SUN);
+  assert.equal(s.level, 'yellow'); assert.equal(s.label, 'Heute füttern');
+  // Sonntag gefüttert: nächster Termin in 7 Tagen
+  s = TL.feedStatus(t, a, [feed('s1', SUN, 'yes', 'yes')], SUN);
+  assert.equal(s.level, 'green'); assert.equal(s.daysLeft, 7);
+  // Dienstag, Sonntag nicht eingetragen, letzte Fütterung eine Woche davor: 2 Tage überfällig
+  s = TL.feedStatus(t, a, [feed('s1', at(SUN, -7), 'yes', 'yes')], TUE);
+  assert.equal(s.level, 'orange'); assert.equal(s.daysLeft, -2); assert.match(s.label, /Seit 2 Tagen überfällig/);
+  assert.ok(s.warnings.some(w => w.level === 'orange'));
+  // Samstag davor gefüttert zählt für Sonntag
+  s = TL.feedStatus(t, a, [feed('s1', at(SUN, -1), 'yes', 'yes')], TUE);
+  assert.equal(s.level, 'green'); assert.equal(s.daysLeft, 5);
+  // Bewusst nicht gefüttert zählt als erledigt
+  s = TL.feedStatus(t, a, [feed('s1', SUN, 'no')], TUE);
+  assert.equal(s.level, 'green'); assert.equal(s.lastFed, null);
+  // Ohne Eintrag und Termin vorbei: nächster Sonntag, keine Bewertung
+  s = TL.feedStatus(t, a, [], TUE);
+  assert.equal(s.level, 'none'); assert.equal(s.daysLeft, 5);
+});
+
+test('Futterplan alle 2 Tage: Fälligkeit ab letztem Eintrag', () => {
+  const t = TL.newTerrarium('rg'); const a = { id: 'g1', tid: t.id };
+  assert.equal(TL.feedStatus(t, a, [], TUE).label, 'Wann zuletzt gefüttert? Eintragen');
+  assert.equal(TL.feedStatus(t, a, [feed('g1', at(TUE, -1), 'yes', 'yes')], TUE).daysLeft, 1);
+  assert.equal(TL.feedStatus(t, a, [feed('g1', at(TUE, -2), 'yes', 'yes')], TUE).level, 'yellow');
+  const late = TL.feedStatus(t, a, [feed('g1', at(TUE, -5), 'yes', 'yes')], TUE);
+  assert.equal(late.level, 'orange'); assert.equal(late.daysLeft, -3);
+  // Eigenes Intervall
+  t.feed = { mode: 'every', every: 5, weekday: 0 };
+  assert.equal(TL.feedStatus(t, a, [feed('g1', at(TUE, -5), 'yes', 'yes')], TUE).level, 'yellow');
+  // Plan aus
+  t.feed = { mode: 'off', every: 2, weekday: 0 };
+  assert.equal(TL.feedStatus(t, a, [], TUE).level, 'none');
+});
+
+test('Futterplan: jedes Tier einzeln, wer hat gefressen und wer nicht', () => {
+  const c = TL.defaultConfig(); c.terrariums[0].count = 3; c.animals = TL.placeholderAnimals({ terrariums: c.terrariums, animals: [] });
+  const sn = c.animals.filter(a => a.tid === c.terrariums[0].id);
+  assert.equal(sn.length, 3);
+  const j = [feed(sn[0].id, SUN, 'yes', 'yes'), feed(sn[1].id, SUN, 'yes', 'part'), feed(sn[2].id, SUN, 'yes', 'no')];
+  const ov = TL.feedOverview(c, j, TUE).filter(x => x.t.id === c.terrariums[0].id);
+  const byName = Object.fromEntries(ov.map(x => [x.a.name, x.s.last.ate]));
+  assert.deepEqual(byName, { 'Schlange 1': 'yes', 'Schlange 2': 'part', 'Schlange 3': 'no' });
+  assert.ok(ov.every(x => x.s.level === 'green'));
+});
+
+test('Futterplan: wiederholt nicht gefressen warnt (2 gelb, 3 orange), Auslassen unterbricht nicht', () => {
+  const t = TL.newTerrarium('kn'); const a = { id: 's1', tid: t.id };
+  const one = [feed('s1', SUN, 'yes', 'no'), feed('s1', at(SUN, -7), 'yes', 'yes')];
+  assert.equal(TL.feedStatus(t, a, one, TUE).warnings.length, 0);
+  const two = [feed('s1', SUN, 'yes', 'no'), feed('s1', at(SUN, -7), 'no'), feed('s1', at(SUN, -14), 'yes', 'no')];
+  let s = TL.feedStatus(t, a, two, TUE);
+  assert.equal(s.streak, 2); assert.equal(s.top, 'yellow');
+  assert.ok(s.warnings[0].tips.some(x => /Häutung/.test(x)));
+  const three = two.concat(feed('s1', at(SUN, -21), 'yes', 'no'));
+  s = TL.feedStatus(t, a, three, TUE);
+  assert.equal(s.streak, 3); assert.equal(s.top, 'orange');
+  // Teilweise gefressen beendet die Serie
+  assert.equal(TL.refuseStreak(TL.feedEntries([feed('s1', SUN, 'yes', 'no'), feed('s1', at(SUN, -7), 'yes', 'part'), feed('s1', at(SUN, -14), 'yes', 'no')], 's1')), 1);
+});
+
+test('Futterplan: alte Tagebuch-Fütterungen ohne Angaben zählen als gefüttert', () => {
+  const e = TL.feedEntries([{ id: 'x', aid: 'g1', type: 'feed', ts: TUE, value: '', note: '' }], 'g1');
+  assert.equal(e[0].fed, 'yes'); assert.equal(e[0].ate, '');
+  const t = TL.newTerrarium('rg');
+  assert.equal(TL.feedStatus(t, { id: 'g1' }, [{ id: 'x', aid: 'g1', type: 'feed', ts: at(TUE, -1) }], TUE).streak, 0);
+});
+
+test('Futterplan: Eingaben werden geprüft', () => {
+  assert.equal(TL.validateFeeding({ aid: 'a', ts: TUE, fed: 'yes', ate: 'yes' }, TUE).ok, true);
+  assert.equal(TL.validateFeeding({ aid: 'a', ts: TUE, fed: 'no', ate: '' }, TUE).ok, true);
+  assert.ok(TL.validateFeeding({ aid: 'a', ts: TUE, fed: 'yes', ate: '' }, TUE).errors.ate);
+  assert.ok(TL.validateFeeding({ aid: 'a', ts: TUE, fed: 'no', ate: 'yes' }, TUE).errors.ate);
+  assert.ok(TL.validateFeeding({ aid: 'a', ts: TUE, fed: 'vielleicht', ate: '' }, TUE).errors.fed);
+  assert.ok(TL.validateFeeding({ aid: 'a', ts: at(TUE, 2), fed: 'yes', ate: 'yes' }, TUE).errors.ts);
+  assert.ok(TL.validateFeeding({ aid: 'a', ts: 'kein Datum', fed: 'yes', ate: 'yes' }, TUE).errors.ts);
+  assert.ok(TL.validateFeeding({ aid: '', ts: TUE, fed: 'yes', ate: 'yes' }, TUE).errors.aid);
+  assert.equal(TL.validateFeedPlan({ mode: 'weekday', weekday: 0 }).ok, true);
+  assert.equal(TL.validateFeedPlan({ mode: 'every', every: '2' }).ok, true);
+  assert.ok(TL.validateFeedPlan({ mode: 'every', every: '0' }).errors.every);
+  assert.ok(TL.validateFeedPlan({ mode: 'every', every: '1,5' }).errors.every);
+  assert.ok(TL.validateFeedPlan({ mode: 'weekday', weekday: 7 }).errors.weekday);
+  assert.ok(TL.validateFeedPlan({ mode: 'irgendwas' }).errors.mode);
+});
+
+test('Beispieldaten enthalten drei Kornnattern mit unterschiedlichem Fressverhalten', () => {
+  const docs = TL.demoData(TUE);
+  const c = docs.config, j = TL.collectJournal(docs);
+  const ov = TL.feedOverview(c, j, TUE);
+  assert.equal(ov.filter(x => x.t.species === 'kn').length, 3);
+  assert.ok(ov.some(x => x.s.streak >= 2));
 });

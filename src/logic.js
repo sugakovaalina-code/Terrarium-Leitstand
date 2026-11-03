@@ -7,7 +7,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const SCHEMA = 3;
+  const SCHEMA = 4;
   const DAY = 86400000;
   const HOUR = 3600000;
 
@@ -657,6 +657,10 @@
     if (!c.tasks.length) c.terrariums.forEach(t => { c.tasks.push(...defaultTasksFor(t)); });
     c.terrariums.forEach(t => { if (!t.equip) t.equip = { covers: '', ballast: null, notes: '' }; });
     c.lamps.forEach(l => { if (l.pos === undefined) l.pos = ''; if (l.guard === undefined) l.guard = null; if (l.uvbPct === undefined) l.uvbPct = null; if (l.night === undefined) l.night = false; if (l.fixture === undefined) l.fixture = ''; });
+    /* Schema 4: Futterplan je Terrarium, Platzhalter-Tiere für Terrarien ohne Tier. */
+    if (!Array.isArray(c.animals)) c.animals = [];
+    c.terrariums.forEach(t => { if (!t.feed) t.feed = defaultFeedFor(t.species); });
+    c.animals.push(...placeholderAnimals(c));
     c.v = SCHEMA;
     return true;
   }
@@ -781,7 +785,8 @@
       size: { l: null, b: null, h: null },
       animalLen: null,
       count: 1,
-      equip: { covers: '', ballast: null, notes: '' }
+      equip: { covers: '', ballast: null, notes: '' },
+      feed: defaultFeedFor(species || 'other')
     };
   }
 
@@ -790,7 +795,9 @@
     terrariums.forEach(applyPreset);
     const tasks = [], lamps = [];
     terrariums.forEach(t => { tasks.push(...defaultTasksFor(t)); lamps.push(...defaultLampsFor(t)); });
-    return { v: SCHEMA, terrariums, animals: [], tasks, lamps, settings: { dueSoonDays: 2 } };
+    const c = { v: SCHEMA, terrariums, animals: [], tasks, lamps, settings: { dueSoonDays: 2 } };
+    c.animals = placeholderAnimals(c);
+    return c;
   }
 
   function rangeSet(r) { return !!r && r.min !== null && r.max !== null && Number.isFinite(r.min) && Number.isFinite(r.max); }
@@ -1108,6 +1115,153 @@
     return { ok: Object.keys(errors).length === 0, errors };
   }
 
+
+  /* ---------- Futterplan ----------
+     Startwerte der App nach Alinas Vorgabe, keine Haltungsvorschrift. Jederzeit je Terrarium änderbar.
+     mode 'weekday': fester Wochentag (0 = Sonntag). mode 'every': alle n Tage ab dem letzten Eintrag. mode 'off': kein Plan. */
+  const FEED_DEFAULTS = {
+    kn: { mode: 'weekday', weekday: 0, every: 7 },
+    jc: { mode: 'every', weekday: 0, every: 2 },
+    rg: { mode: 'every', weekday: 0, every: 2 },
+    other: { mode: 'off', weekday: 0, every: 7 }
+  };
+  const WEEKDAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+  const ATE = { yes: 'gefressen', part: 'teilweise gefressen', no: 'nicht gefressen' };
+  const ANIMAL_WORD = { kn: 'Schlange', jc: 'Chamäleon', rg: 'Gecko', other: 'Tier' };
+  /** Ab so vielen „nicht gefressen“ hintereinander: gelb, dann orange. */
+  const REFUSE_WATCH = 2, REFUSE_ACT = 3;
+
+  function defaultFeedFor(species) {
+    return Object.assign({ preset: true }, FEED_DEFAULTS[species] || FEED_DEFAULTS.other);
+  }
+  function feedPlanOf(t) { return Object.assign({}, FEED_DEFAULTS.other, (t && t.feed) || defaultFeedFor(t && t.species)); }
+  function feedPlanLabel(t) {
+    const p = feedPlanOf(t);
+    if (p.mode === 'weekday') return 'Jeden ' + WEEKDAYS[p.weekday];
+    if (p.mode === 'every') return p.every === 1 ? 'Jeden Tag' : 'Alle ' + p.every + ' Tage';
+    return 'Kein Futterplan';
+  }
+
+  /** Legt für Terrarien ohne Tier so viele Tiere an, wie unter „Anzahl“ steht (Namen änderbar). */
+  function placeholderAnimals(c) {
+    const out = [];
+    (c.terrariums || []).forEach(t => {
+      if ((c.animals || []).some(a => a.tid === t.id)) return;
+      const n = Math.max(1, Math.min(10, Math.round(parseNum(t.count) || 1)));
+      const word = ANIMAL_WORD[t.species] || ANIMAL_WORD.other;
+      for (let i = 1; i <= n; i++) out.push({ id: uid('a'), tid: t.id, name: n > 1 ? word + ' ' + i : word, sex: '', hatch: '', morph: '', origin: '', acquired: '', notes: '', photo: '', placeholder: true });
+    });
+    return out;
+  }
+
+  function validateFeedPlan(p) {
+    const errors = {};
+    if (!['weekday', 'every', 'off'].includes(p.mode)) errors.mode = 'Bitte eine Art des Plans wählen.';
+    if (p.mode === 'weekday') { const w = Number(p.weekday); if (!Number.isInteger(w) || w < 0 || w > 6) errors.weekday = 'Bitte einen Wochentag wählen.'; }
+    if (p.mode === 'every') { const e = parseNum(p.every); if (e === null || e < 1 || e > 90 || Math.round(e) !== e) errors.every = 'Bitte ganze Tage zwischen 1 und 90.'; }
+    return { ok: Object.keys(errors).length === 0, errors };
+  }
+
+  /** Prüft einen Fütterungs-Eintrag: Datum, gefüttert ja/nein, und wenn ja, ob gefressen. */
+  function validateFeeding(p, now) {
+    const errors = {};
+    const ts = typeof p.ts === 'number' ? p.ts : Date.parse(p.ts);
+    if (!Number.isFinite(ts)) errors.ts = 'Bitte ein Datum wählen.';
+    else if (ts > now + 5 * 60000 && isoDay(ts) > isoDay(now)) errors.ts = 'Das Datum liegt in der Zukunft.';
+    if (!p.aid) errors.aid = 'Bitte ein Tier wählen.';
+    if (p.fed !== 'yes' && p.fed !== 'no') errors.fed = 'Bitte wählen: gefüttert oder nicht.';
+    else if (p.fed === 'yes' && !ATE[p.ate]) errors.ate = 'Bitte wählen, ob das Tier gefressen hat.';
+    else if (p.fed === 'no' && p.ate) errors.ate = 'Ohne Fütterung gibt es kein „gefressen“.';
+    return { ok: Object.keys(errors).length === 0, errors };
+  }
+
+  /** Fütterungs-Einträge eines Tieres, neueste zuerst. Alte Tagebuch-Einträge ohne Angaben zählen als gefüttert, Fressen unbekannt. */
+  function feedEntries(journal, aid) {
+    return (journal || []).filter(e => e.type === 'feed' && e.aid === aid)
+      .map(e => Object.assign({}, e, { fed: e.fed === 'no' ? 'no' : 'yes', ate: e.fed === 'no' ? '' : (ATE[e.ate] ? e.ate : '') }))
+      .sort((a, b) => b.ts - a.ts);
+  }
+
+  function dayStart(ts) { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  function daysBetween(a, b) { return Math.round((dayStart(b) - dayStart(a)) / DAY); }
+  function addDays(ts, n) { const d = new Date(dayStart(ts)); d.setDate(d.getDate() + n); return d.getTime(); }
+
+  /** „Nicht gefressen“ hintereinander, vom neuesten Eintrag an. Ausgelassene Fütterungen werden übersprungen. */
+  function refuseStreak(entries) {
+    let n = 0;
+    for (const e of entries) {
+      if (e.fed === 'no') continue;
+      if (e.ate === 'no') n++; else break;
+    }
+    return n;
+  }
+
+  /**
+   * Fälligkeit und Fressverhalten eines Tieres.
+   * Fester Wochentag: Der letzte Termin gilt als erledigt, wenn ab drei Tagen davor etwas eingetragen ist (auch „nicht gefüttert“).
+   * Intervall: nächster Termin = letzter Eintrag + n Tage.
+   * Heute fällig = gelb, überfällig = orange. Rot gibt es hier nicht, weil eine verspätete Fütterung allein kein Notfall ist.
+   */
+  function feedStatus(t, animal, journal, now) {
+    const p = feedPlanOf(t);
+    const entries = feedEntries(journal, animal.id);
+    const last = entries[0] || null;
+    const lastFed = entries.find(e => e.fed === 'yes') || null;
+    const streak = refuseStreak(entries);
+    const today = dayStart(now);
+    let level = 'green', label = '', dueAt = null, daysLeft = null;
+    if (p.mode === 'off') { level = 'none'; label = 'Kein Futterplan'; }
+    else if (p.mode === 'weekday') {
+      const back = (new Date(today).getDay() - p.weekday + 7) % 7;
+      const slot = addDays(today, -back);
+      const covered = last && dayStart(last.ts) >= addDays(slot, -3);
+      dueAt = covered ? addDays(slot, 7) : slot;
+      daysLeft = daysBetween(today, dueAt);
+      if (!last && daysLeft < 0) { dueAt = addDays(slot, 7); daysLeft = daysBetween(today, dueAt); }
+    } else {
+      if (last) { dueAt = addDays(last.ts, p.every); daysLeft = daysBetween(today, dueAt); }
+    }
+    if (p.mode !== 'off') {
+      if (daysLeft === null) { level = 'none'; label = 'Wann zuletzt gefüttert? Eintragen'; }
+      else if (daysLeft < 0) { level = 'orange'; label = 'Seit ' + (-daysLeft) + (daysLeft === -1 ? ' Tag' : ' Tagen') + ' überfällig'; }
+      else if (daysLeft === 0) { level = 'yellow'; label = 'Heute füttern'; }
+      else if (daysLeft === 1) { level = 'green'; label = 'Morgen'; }
+      else { level = 'green'; label = 'In ' + daysLeft + ' Tagen · ' + WEEKDAYS[new Date(dueAt).getDay()].slice(0, 2) + ' ' + new Date(dueAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); }
+      if (!last && level === 'green') level = 'none';
+    }
+    const warnings = [];
+    if (streak >= REFUSE_WATCH) {
+      warnings.push({
+        level: streak >= REFUSE_ACT ? 'orange' : 'yellow',
+        text: streak + '-mal hintereinander nicht gefressen.',
+        tips: refuseTips(t.species)
+      });
+    }
+    if (level === 'orange') warnings.push({ level: 'orange', text: 'Fütterung ' + label.toLowerCase() + '.', tips: ['Füttern und eintragen. Wenn du bewusst auslässt (zum Beispiel vor der Häutung), trag „nicht gefüttert“ ein, dann gilt der Termin als erledigt.'] });
+    const all = [level].concat(warnings.map(w => w.level));
+    const top = all.reduce((a, b) => (LEVELS.indexOf(b) > LEVELS.indexOf(a) ? b : a), 'none');
+    return { plan: p, level, label, dueAt, daysLeft, last, lastFed, streak, warnings, top: top === 'none' ? level : top, entries };
+  }
+
+  /** Allgemeine Prüfpunkte bei Futterverweigerung. Keine Diagnose. */
+  function refuseTips(species) {
+    const tips = ['Temperatur am Sonnenplatz und im ganzen Terrarium prüfen. Zu kühl ist ein häufiger Grund.'];
+    if (species === 'kn') tips.push('Steht eine Häutung an (trübe, bläuliche Augen)? Dann fressen Kornnattern oft nicht.', 'Futtertier-Größe und Auftauen prüfen (ganz durchgewärmt?).');
+    else if (species === 'jc') tips.push('UV-B-Lampe: Alter und Abstand prüfen.', 'Futterinsekten abwechseln, Stress durch Sichtkontakt zu anderen Tieren vermeiden.');
+    else if (species === 'rg') tips.push('Futterbrei frisch? Ein paar Tage Pause sind bei Riesengeckos nicht ungewöhnlich.', 'Steht eine Häutung an?');
+    tips.push('Gewicht eintragen und beobachten. Bei Gewichtsverlust, Mattigkeit oder längerer Verweigerung zum Reptilien-Tierarzt.');
+    return tips;
+  }
+
+  /** Futterplan-Übersicht für alle Tiere, dringendste zuerst. */
+  function feedOverview(cfg, journal, now) {
+    const out = [];
+    (cfg.terrariums || []).forEach(t => {
+      (cfg.animals || []).filter(a => a.tid === t.id).forEach(a => out.push({ t, a, s: feedStatus(t, a, journal, now) }));
+    });
+    return out.sort((x, y) => LEVELS.indexOf(y.s.top) - LEVELS.indexOf(x.s.top) || (x.s.daysLeft ?? 9999) - (y.s.daysLeft ?? 9999));
+  }
+
   /* ---------- Export und Backup ---------- */
 
   function csvEscape(v) {
@@ -1195,16 +1349,22 @@
     cfg.lamps.forEach((l, i) => { l.installed = d(lampAge[i]); l.model = 'Beispiel'; if (l.type === 'heat') { l.lifeHours = 2000; l.hoursPerDay = 10; } });
     cfg.animals = [
       { id: uid('a'), tid: ids[0], name: 'Mais', sex: 'w', hatch: '' },
+      { id: uid('a'), tid: ids[0], name: 'Zimt', sex: 'm', hatch: '' },
+      { id: uid('a'), tid: ids[0], name: 'Paprika', sex: 'w', hatch: '' },
       { id: uid('a'), tid: ids[1], name: 'Kiwi', sex: 'm', hatch: '' },
       { id: uid('a'), tid: ids[2], name: 'Brocken', sex: '', hatch: '' }
     ];
     const jr = [];
-    [0, 1, 2].forEach(k => {
-      for (let w = 8; w >= 0; w--) jr.push({ id: uid('j'), aid: cfg.animals[k].id, type: 'weight', ts: now - w * 7 * DAY, value: [310, 142, 265][k] + (8 - w) * [3, 1.5, 2][k] + Math.round(rnd() * 4), note: '' });
+    [0, 3, 4].forEach((k, i) => {
+      for (let w = 8; w >= 0; w--) jr.push({ id: uid('j'), aid: cfg.animals[k].id, type: 'weight', ts: now - w * 7 * DAY, value: [310, 142, 265][i] + (8 - w) * [3, 1.5, 2][i] + Math.round(rnd() * 4), note: '' });
     });
-    jr.push({ id: uid('j'), aid: cfg.animals[0].id, type: 'feed', ts: now - 3 * DAY, value: '', note: 'Beispiel' });
+    const sunBack = new Date(now).getDay() || 7;
+    jr.push({ id: uid('j'), aid: cfg.animals[0].id, type: 'feed', ts: now - sunBack * DAY, value: '', fed: 'yes', ate: 'yes', note: 'Beispiel' });
+    jr.push({ id: uid('j'), aid: cfg.animals[1].id, type: 'feed', ts: now - sunBack * DAY, value: '', fed: 'yes', ate: 'part', note: 'Beispiel' });
+    [sunBack, sunBack + 7].forEach(b => jr.push({ id: uid('j'), aid: cfg.animals[2].id, type: 'feed', ts: now - b * DAY, value: '', fed: 'yes', ate: 'no', note: 'Beispiel' }));
+    jr.push({ id: uid('j'), aid: cfg.animals[3].id, type: 'feed', ts: now - 3 * DAY, value: '', fed: 'yes', ate: 'yes', note: 'Beispiel' });
+    jr.push({ id: uid('j'), aid: cfg.animals[4].id, type: 'feed', ts: now - 2 * DAY, value: '', fed: 'yes', ate: 'yes', note: 'Beispiel' });
     jr.push({ id: uid('j'), aid: cfg.animals[0].id, type: 'shed', ts: now - 12 * DAY, value: '', note: 'Vollständig, Beispiel' });
-    jr.push({ id: uid('j'), aid: cfg.animals[1].id, type: 'feed', ts: now - 1 * DAY, value: '', note: 'Beispiel' });
     for (const r of jr) {
       const key = journalDocKey(r.ts);
       docs[key] = docs[key] || { year: new Date(r.ts).getFullYear(), rows: [] };
@@ -1223,6 +1383,7 @@
     validateReading, validateProfile, validateTask, validateJournal,
     stats, patterns, dueInfo,
     readingsCsv, buildBackup, checkBackup, collectReadings, collectJournal, readingDocKey, journalDocKey,
-    demoData
+    demoData,
+    FEED_DEFAULTS, WEEKDAYS, ATE, REFUSE_WATCH, REFUSE_ACT, defaultFeedFor, feedPlanOf, feedPlanLabel, placeholderAnimals, validateFeedPlan, validateFeeding, feedEntries, refuseStreak, feedStatus, feedOverview
   };
 });
