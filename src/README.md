@@ -62,3 +62,16 @@ Außerhalb: localStorage des Browsers. Dokumente: `config` (Terrarien, Zielwerte
 - Je Terrarium „Aufwärmphase nach Licht an“ und „Abkühlphase nach Licht aus“ in Minuten (Startwert 120, 0 = aus). In diesen Phasen gilt alles zwischen Tag- und Nachtbereich als im Ziel; Werte außerhalb beider Bereiche warnen weiter.
 - Kacheln zeigen „Aufwärmphase“ / „Abkühlphase“, das grüne Band im Verlauf wird in diesen Phasen breiter, die Muster („nachts zu warm“) zählen Übergangswerte nicht mehr als Fehler.
 - Tests: 52.
+
+## Version 9 (03.11.2026): Futterplan
+
+- Neuer Bereich „Futterplan“ (Seitenleiste und Tab-Leiste „Futter“). Je Terrarium ein Plan, je Tier ein eigener Eintrag.
+- Startwerte der App nach Alinas Vorgabe, keine Haltungsvorschrift, je Terrarium über „Plan“ änderbar: Kornnattern jeden Sonntag, Jemenchamäleon und Riesengecko alle 2 Tage. Möglich sind fester Wochentag, alle n Tage (1–90) oder kein Plan.
+- Je Fütterung: Datum, gefüttert ja/nein, gefressen / teilweise / nicht gefressen. Was gefüttert wurde, wird bewusst nicht abgefragt. Schnellknöpfe für heute; ein zweiter Eintrag am selben Tag ersetzt den ersten (Vertippen korrigieren).
+- Fälligkeit: heute fällig = gelb, überfällig = orange. Fester Wochentag: ein Eintrag bis zu drei Tage vorher zählt für den Termin. „Nicht gefüttert“ zählt als erledigt (bewusstes Auslassen).
+- Ab 2-mal „nicht gefressen“ hintereinander gelber Hinweis, ab 3-mal orange, mit Prüfpunkten je Art. Ausgelassene Fütterungen unterbrechen die Zählung nicht, „teilweise“ beendet sie.
+- Anzeige in Übersicht („Als Nächstes zu tun“, Hinweis-Chips), Warnungen und im Tier-Tagebuch.
+- Speicherung: Fütterungen sind Tagebuch-Einträge (`type: 'feed'`) mit den neuen Feldern `fed` und `ate`, alte Einträge zählen als gefüttert. Der Plan steht in `terrarium.feed`.
+- Schema 4: ergänzt den Plan und legt für Terrarien ohne Tier Platzhalter-Tiere nach „Anzahl“ an (z. B. Schlange 1–3, Namen änderbar). Nichts wird überschrieben.
+- Tests: `TZ=Europe/Berlin node --test test/logic.test.js` (61 Tests).
+

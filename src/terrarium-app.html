@@ -49,7 +49,7 @@ p { margin: 0; }
 .topbar .title { flex: 1; min-width: 0; }
 .topbar h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .content { padding: 18px max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left)); display: flex; flex-direction: column; gap: 18px; max-width: 1400px; }
-.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--side); border-top: 1px solid var(--sideline); padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); display: grid; grid-template-columns: repeat(5, 1fr); }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--side); border-top: 1px solid var(--sideline); padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); display: grid; grid-template-columns: repeat(6, 1fr); }
 .tabbar button { background: none; border: 0; color: var(--sidemuted); display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 500; padding: 6px 2px; border-radius: 10px; position: relative; cursor: pointer; min-height: 48px; }
 .tabbar button.on { color: var(--sidefg); background: var(--side2); }
 .cnt { position: absolute; top: 2px; right: calc(50% - 22px); background: var(--o); color: #1a0c00; font: 600 10.5px/16px var(--mono); min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px; text-align: center; }
@@ -556,9 +556,21 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       .sort((a, b) => (a.i.daysLeft ?? 99999) - (b.i.daysLeft ?? 99999));
   }
   const urgent = l => l === 'orange' || l === 'red';
+  function feedOv() { return TL.feedOverview(cfg(), allJournal(), now()); }
+  /** Speichert eine Fütterung. Gibt es für das Tier am selben Tag schon einen Eintrag, wird er ersetzt (Vertippen korrigieren). */
+  function saveFeeding(e) {
+    const key = TL.journalDocKey(e.ts);
+    const d = clone(docs()[key] || { year: new Date(e.ts).getFullYear(), rows: [] });
+    const day = TL.isoDay(e.ts);
+    const old = d.rows.find(x => x.type === 'feed' && x.aid === e.aid && TL.isoDay(x.ts) === day);
+    if (old) { e.id = old.id; if (!e.note && old.note) e.note = old.note; }
+    d.rows = d.rows.filter(x => !(old && x.id === old.id)).concat(e);
+    Store.put(key, d);
+    return !!old;
+  }
   function climateIssues() { return terrs().map(t => ({ t, a: assessOf(t) })).filter(x => rank(x.a.level) >= rank('yellow')); }
   function counts() {
-    const tl = taskList(), ll = lampList();
+    const tl = taskList(), ll = lampList(), fo = feedOv();
     return {
       tasksDue: tl.filter(x => urgent(x.d.level)).length,
       tasksSoon: tl.filter(x => x.d.level === 'yellow').length,
@@ -567,7 +579,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       lampsSoon: ll.filter(x => x.i.level === 'yellow').length,
       lampsNoDate: ll.filter(x => x.i.daysLeft === null).length,
       climate: climateIssues().filter(x => urgent(x.a.level)).length,
-      lampWarn: terrs().reduce((n, t) => n + TL.lampAdvice(t, lamps()).filter(a => urgent(a.level)).length, 0)
+      lampWarn: terrs().reduce((n, t) => n + TL.lampAdvice(t, lamps()).filter(a => urgent(a.level)).length, 0),
+      feedLate: fo.filter(x => x.s.level === 'orange').length,
+      feedToday: fo.filter(x => x.s.level === 'yellow').length,
+      feedRefuse: fo.filter(x => x.s.streak >= TL.REFUSE_WATCH).length
     };
   }
 
@@ -598,7 +613,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     check: '<path d="M5 12l5 5 9-10"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
     moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>',
-    swap: '<path d="M4 8h13l-3-3M20 16H7l3 3"/>'
+    swap: '<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+    food: '<path d="M3 11h18a9 9 0 0 1-18 0zM8 7c0-1 1-2 1-3M12 7c0-1 1-2 1-3M16 7c0-1 1-2 1-3"/>'
   };
   const icon = (n, s) => '<svg width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[n] || ICONS.other) + '</svg>';
   const lampIcon = l => (TL.LAMP_TYPES[l.type] || {}).group === 'uvb' ? 'uvb' : 'lamp';
@@ -808,13 +824,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const openImp = list.reduce((n, t) => n + (t.improve || []).filter(x => !x.done && (x.level === 'orange' || x.level === 'red')).length, 0);
     const todo = [];
     if (c.climate) todo.push(['warn', c.climate + (c.climate === 1 ? ' Terrarium' : ' Terrarien') + ' mit Klima außerhalb', 'r']);
+    if (c.feedLate) todo.push(['feed', c.feedLate + (c.feedLate === 1 ? ' Fütterung überfällig' : ' Fütterungen überfällig'), 'o']);
+    if (c.feedToday) todo.push(['feed', c.feedToday + (c.feedToday === 1 ? ' Tier heute füttern' : ' Tiere heute füttern'), 'y']);
+    if (c.feedRefuse) todo.push(['feed', c.feedRefuse + (c.feedRefuse === 1 ? ' Tier frisst nicht' : ' Tiere fressen nicht'), 'y']);
     if (c.tasksDue) todo.push(['tasks', c.tasksDue + (c.tasksDue === 1 ? ' Aufgabe fällig' : ' Aufgaben fällig'), 'o']);
     if (c.lampsDue) todo.push(['lamps', c.lampsDue + (c.lampsDue === 1 ? ' Lampe tauschen' : ' Lampen tauschen'), 'o']);
     if (c.lampWarn) todo.push(['lamps', c.lampWarn + (c.lampWarn === 1 ? ' Lampen-Hinweis' : ' Lampen-Hinweise'), 'y']);
     if (openImp) todo.push(['warn', openImp + ' wichtige Verbesserung' + (openImp === 1 ? '' : 'en'), 'y']);
     let h = '<section class="hero"><div class="grow"><h2>' + greet + '</h2><p>' + (todo.length ? 'Das braucht heute deine Aufmerksamkeit:' : latest ? 'Alles ruhig, kein Terrarium braucht dich gerade.' : 'Noch keine Messwerte. Trag den ersten ein oder verbinde die Sensoren.') + '</p></div>' +
       (todo.length ? '<div class="chips">' + todo.map(x => '<button class="hchip ' + x[2] + '" data-a="go" data-v="' + x[0] + '">' + esc(x[1]) + '</button>').join('') + '</div>' : '') + '</section>' +
-      '<div class="quick-row"><button class="qbtn" data-a="entry"><span class="ic">' + icon('temp', 18) + '</span><span class="sm"><b>Messwert</b></span></button><button class="qbtn" data-a="go" data-v="animals"><span class="ic">' + icon('paw', 18) + '</span><span class="sm"><b>Tier-Eintrag</b></span></button><button class="qbtn" data-a="go" data-v="check"><span class="ic">' + icon('lamp', 18) + '</span><span class="sm"><b>Lampen-Check</b></span></button><button class="qbtn" data-a="go" data-v="wissen"><span class="ic">' + icon('other', 18) + '</span><span class="sm"><b>Wissen</b></span></button></div>' +
+      '<div class="quick-row"><button class="qbtn" data-a="entry"><span class="ic">' + icon('temp', 18) + '</span><span class="sm"><b>Messwert</b></span></button><button class="qbtn" data-a="go" data-v="feed"><span class="ic">' + icon('food', 18) + '</span><span class="sm"><b>Fütterung</b></span></button><button class="qbtn" data-a="go" data-v="animals"><span class="ic">' + icon('paw', 18) + '</span><span class="sm"><b>Tier-Eintrag</b></span></button><button class="qbtn" data-a="go" data-v="check"><span class="ic">' + icon('lamp', 18) + '</span><span class="sm"><b>Lampen-Check</b></span></button><button class="qbtn" data-a="go" data-v="wissen"><span class="ic">' + icon('other', 18) + '</span><span class="sm"><b>Wissen</b></span></button></div>' +
       (animals().length ? '<section class="card"><div class="card-h"><h3>Meine Tiere</h3></div><div class="pets">' + animals().map(a => '<button class="pet ' + sp(terrs().find(x => x.id === a.tid) || { species: 'other' }) + '" data-a="gotier" data-v="' + a.id + '"><span class="sb-av">' + (a.photo ? '<img src="' + esc(a.photo) + '" alt="">' : esc((a.name || '?').slice(0, 1).toUpperCase())) + '</span><span class="col" style="gap:0;text-align:left"><b class="sm">' + esc(a.name) + '</b><span class="xs">' + esc(terrName(a.tid)) + '</span></span></button>').join('') + '</div></section>' : '') +
       '<div class="grid g-kpi">' +
       '<button class="card kpi ' + lvl(climLv) + '" data-a="go" data-v="warn"><span class="lab">Klima im Zielbereich</span><span class="val">' + inTarget + '<small> / ' + list.length + '</small></span><span class="sub">' + (c.climate ? c.climate + (c.climate === 1 ? ' Terrarium braucht dich' : ' Terrarien brauchen dich') : climateIssues().length ? 'Beobachten' : latest ? 'Alles ruhig' : 'Noch keine Messwerte') + '</span></button>' +
@@ -829,7 +848,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
         '<div class="sparks"><div><div class="spark-l"><span>Temperatur 48 Std.</span><span class="num">' + sparkSpan(rows, 't', 1, ' °C') + '</span></div>' + spark(rows, 't') + '</div><div><div class="spark-l"><span>Luftfeuchte 48 Std.</span><span class="num">' + sparkSpan(rows, 'h', 0, ' %') + '</span></div>' + spark(rows, 'h') + '</div></div>' +
         '<div class="row between"><span class="xs">' + (r ? 'Gemessen ' + esc(ageText(r.ts)) : 'Noch nicht gemessen') + '</span><div class="row" style="gap:6px"><button class="btn sm" data-a="open" data-v="' + t.id + '">Details</button><button class="btn sm pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button></div></div></section>';
     }).join('') + '</div>';
-    const tl = taskList().filter(x => x.d.daysLeft !== null).slice(0, 6);
+    const fd = feedOv().filter(x => x.s.top !== 'green' && x.s.top !== 'none');
+    const tl = taskList().filter(x => x.d.daysLeft !== null).slice(0, Math.max(3, 6 - fd.length));
     const noDate = taskList().filter(x => x.d.daysLeft === null).length;
     const ll = lampList();
     const iss = climateIssues();
@@ -838,6 +858,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     list.forEach(t => TL.patterns(t, readingsOf(t.id), now(), 7).list.slice(0, 2).forEach(p => pats.push({ t, p })));
     h += '<div class="grid g-3">' +
       '<section class="card"><div class="card-h"><h3>Als Nächstes zu tun</h3><button class="btn sm ghost" data-a="go" data-v="tasks">Alle</button></div>' +
+      (fd.length ? '<div class="list">' + fd.map(x => feedMini(x)).join('') + '</div>' : '') +
       (tl.length ? '<div class="list">' + tl.map(x => taskRow(x, true)).join('') + '</div>' : '') +
       (noDate ? '<div class="banner lv-yellow" style="margin-top:10px"><span class="grow">' + noDate + ' Aufgaben ohne Datum. Trag ein, wann du sie zuletzt gemacht hast, dann rechnet die App mit.</span><button class="btn sm" data-a="go" data-v="tasks">Eintragen</button></div>' : '') + '</section>' +
       '<section class="card"><div class="card-h"><h3>Lampen</h3><button class="btn sm ghost" data-a="go" data-v="lamps">Alle</button></div><div class="list">' +
@@ -847,6 +868,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
         pats.map(x => '<div class="li ' + lvl(x.p.level) + '"><div class="ic">' + icon(x.p.kind === 'temp' ? 'temp' : 'drop', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t">' + esc(x.t.name) + '</span><span class="xs">' + esc(x.p.text) + '</span></div></div>').join('') + '</div>'
         : '<p class="xs">Keine Auffälligkeiten in den letzten 7 Tagen.' + (allReadings().length ? '' : ' Dafür braucht die App Messwerte.') + '</p>') + '</section></div>';
     return h;
+  }
+  function feedMini(x) {
+    const s = x.s;
+    const refuse = s.streak >= TL.REFUSE_WATCH;
+    return '<div class="li stackm ' + lvl(s.top) + '"><div class="ic">' + icon('food', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t">' + esc(x.a.name) + (refuse && s.level === 'green' ? ' frisst nicht' : ' füttern') + '</span><span class="xs">' + esc(x.t.name) + ' · ' + esc(TL.feedPlanLabel(x.t)) + (refuse ? ' · ' + s.streak + '× nicht gefressen' : '') + '</span></div>' +
+      '<div class="actions" style="width:100%;justify-content:flex-start;padding-left:48px">' + (s.level !== 'green' && s.label ? pill(s.level, s.label) : refuse ? pill(s.top, s.streak + '× nicht gefressen') : '') + '<button class="btn sm" data-a="go" data-v="feed">Eintragen</button></div></div>';
   }
   function lampMini(x) {
     const l = x.l, i = x.i;
@@ -1111,6 +1138,75 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       groups.filter(g => g[1].length).map(g => '<section class="card"><div class="card-h"><h3>' + g[0] + '</h3><span class="xs">' + g[1].length + '</span></div><div class="list">' + g[1].map(x => taskRow(x, f === 'all')).join('') + '</div></section>').join('') +
       (tl.length ? '' : '<div class="empty">Keine Aufgaben.</div>') + '<p class="xs">Die vorgegebenen Intervalle sind Startwerte der App, keine Haltungsvorschrift. Mit dem Stift änderst du Intervall, Name und Terrarium.</p>';
   }
+
+  /* ===== Futterplan ===== */
+  const ATE_LV = { yes: 'green', part: 'yellow', no: 'orange' };
+  function feedResult(e) {
+    if (!e) return 'noch nichts eingetragen';
+    return (e.fed === 'no' ? 'nicht gefüttert' : 'gefüttert, ' + (e.ate ? TL.ATE[e.ate] : 'Fressen nicht eingetragen')) + ' am ' + dateLong(e.ts);
+  }
+  function feedRow(x, showTerr) {
+    const a = x.a, s = x.s, t = x.t;
+    const open = S.feedForm && S.feedForm.aid === a.id;
+    const last = s.last;
+    let h = '<div class="li stackm ' + lvl(s.top) + '"><div class="ic">' + icon('food', 18) + '</div>' +
+      '<div class="grow col" style="gap:2px"><span class="main-t">' + esc(a.name) + (a.placeholder ? ' <button class="btn sm ghost" data-a="aedit" data-v="' + a.id + '" style="min-height:0;padding:2px 8px">Namen ändern</button>' : '') + '</span>' +
+      '<span class="xs">' + (showTerr ? esc(t.name) + ' · ' : '') + esc(feedResult(last)) + (last && last.note ? ' · ' + esc(last.note) : '') + '</span></div>' +
+      '<div class="actions">' + (s.label ? pill(s.level, s.label) : '') + (s.streak >= TL.REFUSE_WATCH ? pill(s.streak >= TL.REFUSE_ACT ? 'orange' : 'yellow', s.streak + '× nicht gefressen') : '') + '</div>';
+    if (s.streak >= TL.REFUSE_WATCH) {
+      const w = s.warnings.find(x => /nicht gefressen/.test(x.text));
+      h += '<div class="banner ' + lvl(w.level) + '" style="width:100%;margin-top:6px"><div class="grow col" style="gap:6px"><b class="sm">' + esc(w.text) + ' Das solltest du prüfen:</b><ul class="adv xs">' + w.tips.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div></div>';
+    }
+    h += '<div class="row wrap" style="gap:6px;width:100%;margin-top:6px;padding-left:48px"><span class="xs" style="align-self:center">Heute:</span>' +
+      '<button class="btn sm" data-a="fq" data-v="' + a.id + ':yes:yes">' + icon('check', 16) + 'Gefressen</button>' +
+      '<button class="btn sm" data-a="fq" data-v="' + a.id + ':yes:part">Teilweise</button>' +
+      '<button class="btn sm" data-a="fq" data-v="' + a.id + ':yes:no">Nicht gefressen</button>' +
+      '<button class="btn sm ghost" data-a="fq" data-v="' + a.id + ':no:">Nicht gefüttert</button>' +
+      '<button class="btn sm ghost" data-a="fform" data-v="' + a.id + '">Anderes Datum</button></div>';
+    if (open) {
+      const f = S.feedForm;
+      h += '<form id="feed-form" class="form" style="width:100%;margin-top:10px" novalidate><fieldset><legend>Fütterung ' + esc(a.name) + '</legend><div class="f-grid">' +
+        '<label class="f' + ec('ts') + '">Datum<input type="date" id="fd-ts" value="' + esc(f.ts) + '" max="' + TL.isoDay(now()) + '">' + err('ts') + '</label>' +
+        '<label class="f' + ec('fed') + '">Gefüttert?<select id="fd-fed"><option value="yes"' + (f.fed === 'yes' ? ' selected' : '') + '>Ja, gefüttert</option><option value="no"' + (f.fed === 'no' ? ' selected' : '') + '>Nein, ausgelassen</option></select>' + err('fed') + '</label>' +
+        '<label class="f' + ec('ate') + '">Gefressen?<select id="fd-ate"><option value="">–</option>' + Object.entries(TL.ATE).map(([k, l]) => '<option value="' + k + '"' + (f.ate === k ? ' selected' : '') + '>' + esc(l[0].toUpperCase() + l.slice(1)) + '</option>').join('') + '</select>' + err('ate') + '</label></div>' +
+        '<div class="row"><button type="submit" class="btn pri">Eintragen</button><button type="button" class="btn" data-a="fcancel">Abbrechen</button></div></fieldset></form>';
+    }
+    return h + '</div>';
+  }
+  function feedPlanForm(t) {
+    const p = S.feedPlan;
+    return '<form id="feedplan-form" class="form" style="margin:10px 0" novalidate><fieldset><legend>Futterplan ' + esc(t.name) + '</legend><div class="f-grid">' +
+      '<label class="f' + ec('mode') + '">Art<select id="fp-mode"><option value="weekday"' + (p.mode === 'weekday' ? ' selected' : '') + '>Fester Wochentag</option><option value="every"' + (p.mode === 'every' ? ' selected' : '') + '>Alle paar Tage</option><option value="off"' + (p.mode === 'off' ? ' selected' : '') + '>Kein Plan</option></select>' + err('mode') + '</label>' +
+      '<label class="f' + ec('weekday') + '">Wochentag<select id="fp-wd">' + TL.WEEKDAYS.map((w, i) => '<option value="' + i + '"' + (Number(p.weekday) === i ? ' selected' : '') + '>' + w + '</option>').join('') + '</select>' + err('weekday') + '</label>' +
+      '<label class="f' + ec('every') + '">Alle wie viele Tage?<input class="num-in" inputmode="numeric" id="fp-every" value="' + esc(p.every) + '">' + err('every') + '</label></div>' +
+      '<p class="xs">Wochentag gilt bei „Fester Wochentag“, Tage bei „Alle paar Tage“ (gezählt ab dem letzten Eintrag).</p>' +
+      '<div class="row"><button type="submit" class="btn pri">Speichern</button><button type="button" class="btn" data-a="fpcancel">Abbrechen</button>' + (t.feed && !t.feed.preset ? '<button type="button" class="btn ghost" data-a="fpreset" data-v="' + t.id + '">Startwert</button>' : '') + '</div></fieldset></form>';
+  }
+  function viewFeed() {
+    const ov = feedOv(), j = allJournal();
+    let h = '';
+    terrs().forEach(t => {
+      const rows = ov.filter(x => x.t.id === t.id).sort((x, y) => animals().indexOf(x.a) - animals().indexOf(y.a));
+      const ids = rows.map(x => x.a.id);
+      const log = j.filter(e => e.type === 'feed' && ids.includes(e.aid)).slice(0, 15);
+      const plan = TL.feedPlanOf(t);
+      h += '<section class="card ' + sp(t) + '"><div class="card-h"><div class="col" style="gap:2px"><h3>' + esc(t.name) + '</h3><span class="xs">' + esc(TL.feedPlanLabel(t)) + (plan.preset ? ' · Startwert der App' : '') + ' · ' + rows.length + (rows.length === 1 ? ' Tier' : ' Tiere') + '</span></div>' +
+        '<div class="row" style="gap:6px"><button class="btn sm ghost" data-a="fplan" data-v="' + t.id + '">' + icon('edit', 16) + 'Plan</button><button class="btn sm ghost" data-a="anew" data-v="' + t.id + '">' + icon('plus', 16) + 'Tier</button></div></div>' +
+        (S.feedPlan && S.feedPlan.tid === t.id ? feedPlanForm(t) : '') +
+        (rows.length ? '<div class="list">' + rows.map(x => feedRow(x, false)).join('') + '</div>' : '<div class="empty">Noch kein Tier in diesem Terrarium.<button class="btn pri" data-a="anew" data-v="' + t.id + '">Tier anlegen</button></div>');
+      if (log.length) {
+        h += '<details style="margin-top:12px"><summary class="sm" style="cursor:pointer"><b>Protokoll</b> (letzte ' + log.length + ')</summary><div class="list" style="margin-top:6px">' + log.map(e => {
+          const an = animals().find(a => a.id === e.aid) || { name: '?' };
+          const fed = e.fed === 'no' ? 'no' : 'yes', ate = fed === 'yes' && TL.ATE[e.ate] ? e.ate : '';
+          return '<div class="li"><div class="grow col" style="gap:2px"><span class="sm"><b>' + esc(an.name) + '</b> · ' + esc(dateLong(e.ts)) + '</span><span class="xs">' + (fed === 'no' ? 'nicht gefüttert' : 'gefüttert') + (e.note ? ' · ' + esc(e.note) : '') + '</span></div>' +
+            (fed === 'yes' ? pill(ate ? ATE_LV[ate] : 'none', ate ? TL.ATE[ate] : 'Fressen offen') : pill('none', 'ausgelassen')) +
+            (S.confirm === 'j:' + e.id ? '<button class="btn sm dangerfill" data-a="jdel" data-v="' + e.id + '">Löschen</button><button class="btn sm" data-a="cancel">Nein</button>' : '<button class="btn sm ghost" data-a="ask" data-v="j:' + e.id + '" aria-label="Eintrag löschen">' + icon('trash', 16) + '</button>') + '</div>';
+        }).join('') + '</div></details>';
+      }
+      h += '</section>';
+    });
+    return h + '<p class="xs">Die Fütterungs-Intervalle sind Startwerte der App nach deiner Vorgabe, keine Haltungsvorschrift. Mit „Plan“ änderst du sie je Terrarium. Fester Wochentag: ein Eintrag bis zu drei Tage vorher zählt für diesen Termin. Ein Eintrag „nicht gefüttert“ zählt als erledigt, damit bewusstes Auslassen (z. B. vor der Häutung) keine Warnung auslöst. Ab ' + TL.REFUSE_WATCH + '-mal „nicht gefressen“ hintereinander zeigt die App einen Hinweis, ab ' + TL.REFUSE_ACT + '-mal eine Warnung.</p>';
+  }
   /* ===== Wissen: Artenprofile, Checkliste, Lexikon ===== */
   function viewWissen() {
     const ts = terrs(); const w = S.wissen = S.wissen || { tab: 'profil', tid: null };
@@ -1265,7 +1361,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const col = (title, items, emptyTxt) => '<section class="card"><div class="card-h"><h3>' + title + '</h3><span class="xs">' + items.length + '</span></div>' + (items.length ? '<div class="list">' + items.join('') + '</div>' : '<p class="xs">' + emptyTxt + '</p>') + '</section>';
     const climItems = iss.map(x => '<div class="li stackm ' + lvl(x.a.level) + '"><div class="ic">' + icon('bell', 18) + '</div><div class="grow col" style="gap:4px"><div class="row between"><span class="main-t">' + esc(x.t.name) + '</span>' + pill(x.a.level) + '</div><span class="xs">' + esc(describe(x.a)) + '</span><ul class="adv xs">' + TL.adviceFor(x.a).slice(0, 3).map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></div></div>');
     terrs().forEach(t => TL.patterns(t, readingsOf(t.id), now(), 7).list.forEach(p => climItems.push('<div class="li ' + lvl(p.level) + '"><div class="ic">' + icon(p.kind === 'temp' ? 'temp' : 'drop', 18) + '</div><div class="grow col" style="gap:2px"><span class="main-t sm">' + esc(t.name) + '</span><span class="xs">' + esc(p.text) + ' ' + esc(p.tip) + '</span></div></div>')));
-    return '<div class="grid g-3">' + col('Klima', climItems, 'Alle Terrarien im Zielbereich oder noch ohne Messwert.') + col('Lampen', terrs().flatMap(t => TL.lampAdvice(t, lamps()).filter(a => a.level !== 'none').map(a => adviceLine(Object.assign({}, a, { text: t.name + ': ' + a.text }), false))).concat(ll.map(x => lampMini(x))), 'Alle Lampen passen und haben noch Zeit.') + col('Aufgaben', tl.map(x => taskRow(x, true)), 'Nichts fällig.') + '</div>';
+    return '<div class="grid g-2">' + col('Klima', climItems, 'Alle Terrarien im Zielbereich oder noch ohne Messwert.') + col('Lampen', terrs().flatMap(t => TL.lampAdvice(t, lamps()).filter(a => a.level !== 'none').map(a => adviceLine(Object.assign({}, a, { text: t.name + ': ' + a.text }), false))).concat(ll.map(x => lampMini(x))), 'Alle Lampen passen und haben noch Zeit.') + col('Aufgaben', tl.map(x => taskRow(x, true)), 'Nichts fällig.') + col('Fütterung', feedOv().filter(x => x.s.top === 'yellow' || urgent(x.s.top)).map(x => feedMini(x)), 'Keine Fütterung fällig, kein Tier verweigert.') + '</div>';
   }
 
   function viewAnimals() {
@@ -1299,9 +1395,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       const e = S.edit, ty = TL.JOURNAL_TYPES[e.type];
       h += '<form id="journal-form" class="form" style="margin-top:14px" novalidate><fieldset><legend>' + esc(ty.label) + '</legend><div class="f-grid"><label class="f' + ec('ts') + '">Datum<input type="date" id="j-ts" value="' + esc(e.ts) + '" max="' + TL.isoDay(now()) + '">' + err('ts') + '</label>' +
         (e.type === 'weight' ? '<label class="f' + ec('value') + '">Gewicht in g<input class="num-in" inputmode="decimal" id="j-value" value="' + esc(e.value) + '">' + err('value') + '</label>' : '<span></span>') + '</div>' +
+        (e.type === 'feed' ? '<div class="f-grid"><label class="f' + ec('fed') + '">Gefüttert?<select id="j-fed"><option value="yes"' + (e.fed !== 'no' ? ' selected' : '') + '>Ja, gefüttert</option><option value="no"' + (e.fed === 'no' ? ' selected' : '') + '>Nein, ausgelassen</option></select>' + err('fed') + '</label><label class="f' + ec('ate') + '">Gefressen?<select id="j-ate"><option value="">–</option>' + Object.entries(TL.ATE).map(([k, l]) => '<option value="' + k + '"' + ((e.ate ?? 'yes') === k ? ' selected' : '') + '>' + esc(l[0].toUpperCase() + l.slice(1)) + '</option>').join('') + '</select>' + err('ate') + '</label></div>' : '') +
         '<label class="f' + ec('note') + '">Notiz<textarea id="j-note">' + esc(e.note) + '</textarea>' + err('note') + '</label><div class="row"><button type="submit" class="btn pri">Eintragen</button><button type="button" class="btn" data-a="jcancel">Abbrechen</button></div></fieldset></form>';
     }
-    h += '</section><section class="card"><div class="card-h"><h3>Tagebuch</h3><span class="xs">' + j.length + '</span></div>' + (j.length ? '<div class="list">' + j.slice(0, 40).map(e => '<div class="li"><div class="grow col" style="gap:2px"><span class="sm"><b>' + esc(TL.JOURNAL_TYPES[e.type]?.label || e.type) + '</b>' + (e.type === 'weight' ? ' · <span class="num">' + fmt(e.value, 0) + ' g</span>' : '') + '</span><span class="xs">' + esc(dateLong(e.ts)) + (e.note ? ' · ' + esc(e.note) : '') + '</span></div>' +
+    h += '</section><section class="card"><div class="card-h"><h3>Tagebuch</h3><span class="xs">' + j.length + '</span></div>' + (j.length ? '<div class="list">' + j.slice(0, 40).map(e => '<div class="li"><div class="grow col" style="gap:2px"><span class="sm"><b>' + esc(TL.JOURNAL_TYPES[e.type]?.label || e.type) + '</b>' + (e.type === 'weight' ? ' · <span class="num">' + fmt(e.value, 0) + ' g</span>' : '') + (e.type === 'feed' ? ' · ' + (e.fed === 'no' ? 'nicht gefüttert' : TL.ATE[e.ate] || 'gefüttert') : '') + '</span><span class="xs">' + esc(dateLong(e.ts)) + (e.note ? ' · ' + esc(e.note) : '') + '</span></div>' +
       (S.confirm === 'j:' + e.id ? '<button class="btn sm dangerfill" data-a="jdel" data-v="' + e.id + '">Löschen</button><button class="btn sm" data-a="cancel">Nein</button>' : '<button class="btn sm ghost" data-a="ask" data-v="j:' + e.id + '" aria-label="Eintrag löschen">' + icon('trash', 16) + '</button>') + '</div>').join('') + '</div>' : '<p class="xs">Noch keine Einträge.</p>') + '</section>';
     return h;
   }
@@ -1344,7 +1441,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       '<h4 style="margin:18px 0 8px">Auf den Home-Bildschirm</h4><p class="sm">In Safari auf Teilen tippen und „Zum Home-Bildschirm“ wählen.</p></section>' +
       '<section class="card"><div class="card-h"><h3>Terrarien</h3><button class="btn sm" data-a="tnew">' + icon('plus', 16) + 'Terrarium</button></div><div class="list">' + terrs().map(t => '<div class="li ' + sp(t) + '"><div class="grow col" style="gap:2px"><span class="main-t">' + esc(t.name) + '</span><span class="sptag">' + esc((TL.SPECIES[t.species] || TL.SPECIES.other).name) + '</span></div><button class="btn sm" data-a="opentab" data-v="' + t.id + ':setup">Einrichten</button></div>').join('') + '</div></section>' +
       sensorCard() + '<section class="card" hidden><div class="card-h"><h3>Sensoren</h3>' + pill('none', 'Noch nicht verbunden') + '</div><p class="sm">Geplant: SwitchBot Thermo-Hygrometer (IP65) mit Hub Mini. Sobald die Sensoren da sind, verbinde ich sie über einen kleinen eigenen Server. Dann kommen die Werte automatisch und du musst nichts mehr eintippen. Bis dahin trägst du Werte von Hand ein.</p></section>' +
-      '<section class="card"><div class="card-h"><h3>Tiere</h3><button class="btn sm" data-a="go" data-v="animals">Öffnen</button></div><p class="sm">' + animals().length + ' Tiere mit Tagebuch für Fütterung, Gewicht und Häutung.</p></section>' +
+      '<section class="card"><div class="card-h"><h3>Tiere</h3><button class="btn sm" data-a="go" data-v="animals">Öffnen</button></div><p class="sm">' + animals().length + ' Tiere mit Tagebuch für Fütterung, Gewicht und Häutung. Den Futterplan findest du unter „Futterplan“.</p></section>' +
       '<section class="card"><div class="card-h"><h3>Warnungen</h3><button class="btn sm" data-a="go" data-v="warn">Öffnen</button></div><p class="sm">Klima, Lampen und Aufgaben auf einen Blick.</p></section></div>';
     return h;
   }
@@ -1463,8 +1560,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
   }
 
   /* ================= Rahmen und Navigation ================= */
-  const NAV = [['dash', 'Übersicht', 'dash'], ['tasks', 'Aufgaben', 'care'], ['check', 'Lampen-Check', 'lamp'], ['lamps', 'Alle Lampen', 'lamp'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
-  const TABNAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['settings', 'Mehr', 'more']];
+  const NAV = [['dash', 'Übersicht', 'dash'], ['feed', 'Futterplan', 'food'], ['tasks', 'Aufgaben', 'care'], ['check', 'Lampen-Check', 'lamp'], ['lamps', 'Alle Lampen', 'lamp'], ['warn', 'Warnungen', 'bell'], ['settings', 'Daten & Technik', 'gear']];
+  const TABNAV = [['dash', 'Übersicht', 'dash'], ['terrs', 'Terrarien', 'terr'], ['feed', 'Futter', 'food'], ['tasks', 'Aufgaben', 'care'], ['lamps', 'Lampen', 'lamp'], ['settings', 'Mehr', 'more']];
   const NAVOF = { terr: 'terrs', entry: 'dash', lampform: 'lamps', taskform: 'tasks', animalform: 'animals' };
   const FORMS = ['entry', 'lampform', 'taskform', 'animalform'];
 
@@ -1473,6 +1570,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     if (v === 'dash') return ['Übersicht', new Date(now()).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }), '<button class="btn pri" data-a="entry">' + icon('plus', 16) + 'Messwert</button>'];
     if (v === 'terrs') return ['Terrarien', terrs().length + ' Terrarien', ''];
     if (v === 'terr') { const t = terr(S.tid); return [t.name, (TL.SPECIES[t.species] || TL.SPECIES.other).name, '<button class="btn pri" data-a="entry" data-v="' + t.id + '">' + icon('plus', 16) + 'Messwert</button>']; }
+    if (v === 'feed') return ['Futterplan', 'Wer ist dran, wer hat gefressen?', ''];
     if (v === 'tasks') return ['Aufgaben', 'Pflege nach Intervall', '<button class="btn pri" data-a="knew">' + icon('plus', 16) + 'Aufgabe</button>'];
     if (v === 'lamps') return ['Lampen', 'Alter und Tauschtermin', '<button class="btn pri" data-a="lnewform">' + icon('plus', 16) + 'Lampe</button>'];
     if (v === 'wissen') return ['Wissen', 'Artenprofile, Checkliste und Lexikon, mit Quellen', ''];
@@ -1494,12 +1592,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     if (!S.ready) return;
     S.pendingRender = false;
     const v = S.view;
-    const body = v === 'dash' ? viewDash() : v === 'terrs' ? viewTerrs() : v === 'terr' ? viewTerr() : v === 'tasks' ? viewTasks() : v === 'lamps' ? viewLamps() : v === 'check' ? viewCheck() : v === 'empf' ? viewEmpf() : v === 'subs' ? viewSubs() : v === 'wissen' ? viewWissen()
+    const body = v === 'dash' ? viewDash() : v === 'terrs' ? viewTerrs() : v === 'terr' ? viewTerr() : v === 'tasks' ? viewTasks() : v === 'feed' ? viewFeed() : v === 'lamps' ? viewLamps() : v === 'check' ? viewCheck() : v === 'empf' ? viewEmpf() : v === 'subs' ? viewSubs() : v === 'wissen' ? viewWissen()
       : v === 'animals' ? viewAnimals() : v === 'warn' ? viewWarn() : v === 'entry' ? viewEntry() : v === 'lampform' ? viewLampForm() : v === 'taskform' ? viewTaskForm()
       : v === 'animalform' ? viewAnimalForm() : viewSettings();
     const active = NAVOF[v] || v;
     const c = counts();
-    const badge = { tasks: c.tasksDue, lamps: c.lampsDue + c.lampWarn, warn: c.climate + c.lampWarn };
+    const badge = { feed: c.feedLate + c.feedToday, tasks: c.tasksDue, lamps: c.lampsDue + c.lampWarn, warn: c.climate + c.lampWarn };
     const [title, sub, actions] = titleFor();
     const back = FORMS.includes(v) || v === 'terr';
     const tAc = v === 'terr' ? sp(terr(S.tid)) : '';
@@ -1515,7 +1613,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
   function softRender() {
     const ae = document.activeElement;
     if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) { S.pendingRender = true; return; }
-    if (FORMS.includes(S.view) || (S.view === 'terr' && S.tab === 'setup') || (S.edit && S.edit._journal)) { S.pendingRender = true; return; }
+    if (FORMS.includes(S.view) || (S.view === 'terr' && S.tab === 'setup') || (S.edit && S.edit._journal) || (S.view === 'feed' && (S.feedForm || S.feedPlan))) { S.pendingRender = true; return; }
     render();
   }
   function enterAnim() { document.documentElement.classList.add('enter'); clearTimeout(enterAnim.t); enterAnim.t = setTimeout(() => document.documentElement.classList.remove('enter'), 900); }
@@ -1559,7 +1657,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     const a = b.dataset.a, v = b.dataset.v;
     const c = () => clone(cfg());
     switch (a) {
-      case 'go': S.edit = null; if (v === 'animals') S.aid = S.aid || (animals()[0] || {}).id || null; go(v); break;
+      case 'go': S.edit = null; S.feedForm = null; S.feedPlan = null; if (v === 'animals') S.aid = S.aid || (animals()[0] || {}).id || null; go(v); break;
       case 'back': goBack(); break;
       case 'open': if (S.tid !== v) S.pf = null; S.tid = v; S.edit = null; if (S.view !== 'terr') S.tab = 'klima'; go('terr'); break;
       case 'opentab': { const [tid, tab] = v.split(':'); S.tid = tid; S.tab = tab; S.pf = null; go('terr'); break; }
@@ -1683,6 +1781,18 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       case 'aopen': S.aid = v; S.edit = null; S.confirm = null; if (S.view !== 'animals') go('animals'); else render(); break;
       case 'jnew': S.edit = { _journal: true, type: v, ts: TL.isoDay(now()), value: '', note: '' }; S.errors = {}; render(); setTimeout(() => { const el = document.getElementById(v === 'weight' ? 'j-value' : 'j-note'); if (el) el.focus(); }, 30); break;
       case 'jcancel': S.edit = null; S.errors = {}; render(); break;
+      case 'fq': {
+        const [aid, fed, ate] = v.split(':'); const an = animals().find(x => x.id === aid); if (!an) break;
+        const e = { id: TL.uid('j'), aid, type: 'feed', ts: new Date(TL.isoDay(now()) + 'T12:00:00').getTime(), value: '', fed, ate: fed === 'yes' ? ate : '', note: '' };
+        const res = TL.validateFeeding(e, now()); if (!res.ok) { toast(Object.values(res.errors)[0]); break; }
+        const replaced = saveFeeding(e); S.feedForm = null;
+        toast(an.name + ': ' + (fed === 'no' ? 'nicht gefüttert' : TL.ATE[ate]) + (replaced ? ' (Eintrag von heute geändert)' : '')); render(); break;
+      }
+      case 'fform': S.feedForm = { aid: v, ts: TL.isoDay(now()), fed: 'yes', ate: 'yes', note: '' }; S.errors = {}; render(); break;
+      case 'fcancel': S.feedForm = null; S.errors = {}; render(); break;
+      case 'fplan': { const t = terrs().find(x => x.id === v); if (!t) break; const p = TL.feedPlanOf(t); S.feedPlan = { tid: v, mode: p.mode, weekday: p.weekday, every: String(p.every) }; S.errors = {}; render(); break; }
+      case 'fpcancel': S.feedPlan = null; S.errors = {}; render(); break;
+      case 'fpreset': { const cc = c(); const t = cc.terrariums.find(x => x.id === v); if (!t) break; t.feed = TL.defaultFeedFor(t.species); saveConfig(cc); S.feedPlan = null; toast('Startwert: ' + TL.feedPlanLabel(t)); render(); break; }
       case 'jdel': { const e = allJournal().find(x => x.id === v); if (e) deleteJournal(e); S.confirm = null; toast('Eintrag gelöscht'); render(); break; }
       case 'demo-on': S.demoDocs = TL.demoData(now()); S.demo = true; bump(); S.tid = cfg().terrariums[0].id; S.pf = null; S.aid = null; go('dash'); break;
       case 'demo-off': S.demo = false; S.demoDocs = null; bump(); S.tid = terrs()[0].id; S.aid = null; S.edit = null; S.pf = null; go('dash'); break;
@@ -1910,18 +2020,46 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       const an = readAnimalForm();
       S.edit = an;
       if (!an.name) { S.errors = { name: 'Bitte einen Namen eingeben.' }; render(); return; }
+      delete an.placeholder;
       const cc = clone(cfg());
       if (an.id) cc.animals = cc.animals.map(x => x.id === an.id ? an : x);
       else { an.id = TL.uid('a'); cc.animals.push(an); }
       saveConfig(cc); toast('Gespeichert'); S.aid = an.id; S.edit = null; S.back = null; go('animals');
+    } else if (id === 'feed-form') {
+      const v = x => (document.getElementById(x) || {}).value ?? '';
+      const f = Object.assign({}, S.feedForm, { ts: v('fd-ts'), fed: v('fd-fed'), ate: v('fd-ate'), note: '' });
+      if (f.fed === 'no') f.ate = '';
+      S.feedForm = f;
+      const ts = Number.isFinite(Date.parse(f.ts)) ? new Date(f.ts + 'T12:00:00').getTime() : NaN;
+      const res = TL.validateFeeding(Object.assign({}, f, { ts }), now());
+      S.errors = res.errors;
+      if (!res.ok) { render(); return; }
+      const replaced = saveFeeding({ id: TL.uid('j'), aid: f.aid, type: 'feed', ts, value: '', fed: f.fed, ate: f.ate, note: f.note });
+      S.feedForm = null; S.errors = {}; toast(replaced ? 'Eintrag für diesen Tag geändert' : 'Eingetragen'); render();
+    } else if (id === 'feedplan-form') {
+      const v = x => (document.getElementById(x) || {}).value ?? '';
+      const p = { tid: S.feedPlan.tid, mode: v('fp-mode'), weekday: Number(v('fp-wd')), every: v('fp-every').trim() };
+      S.feedPlan = p;
+      const res = TL.validateFeedPlan(p);
+      S.errors = res.errors;
+      if (!res.ok) { render(); return; }
+      const cc = clone(cfg()); const t = cc.terrariums.find(x => x.id === p.tid); if (!t) return;
+      const old = TL.feedPlanOf(t);
+      const every = p.mode === 'every' ? TL.parseNum(p.every) : old.every;
+      t.feed = { mode: p.mode, weekday: p.weekday, every, preset: false };
+      saveConfig(cc); S.feedPlan = null; S.errors = {}; toast('Futterplan: ' + TL.feedPlanLabel(t)); render();
     } else if (id === 'journal-form') {
       const v = x => (document.getElementById(x) || {}).value ?? '';
       const e = Object.assign({}, S.edit, { ts: v('j-ts'), value: v('j-value'), note: v('j-note').trim() });
+      if (e.type === 'feed') { e.fed = v('j-fed'); e.ate = e.fed === 'no' ? '' : v('j-ate'); }
       const res = TL.validateJournal(e, now());
+      if (e.type === 'feed') Object.assign(res.errors, TL.validateFeeding({ aid: S.aid, ts: Date.parse(e.ts), fed: e.fed, ate: e.ate }, now()).errors);
+      res.ok = !Object.keys(res.errors).length;
       S.errors = res.errors; S.edit = e;
       if (!res.ok) { render(); return; }
       const d = new Date(e.ts + 'T12:00:00');
-      addJournal({ id: TL.uid('j'), aid: S.aid, type: e.type, ts: d.getTime(), value: e.type === 'weight' ? TL.parseNum(e.value) : '', note: e.note });
+      if (e.type === 'feed') saveFeeding({ id: TL.uid('j'), aid: S.aid, type: 'feed', ts: d.getTime(), value: '', fed: e.fed, ate: e.ate, note: e.note });
+      else addJournal({ id: TL.uid('j'), aid: S.aid, type: e.type, ts: d.getTime(), value: e.type === 'weight' ? TL.parseNum(e.value) : '', note: e.note });
       S.edit = null; S.errors = {}; toast('Eingetragen'); render();
     }
   });
@@ -1937,7 +2075,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
     S.ready = true; bump();
     render();
     if (S.movedLocal) toast('Deine bisherigen Daten wurden in dein Konto übernommen.');
-    else if (added) toast('Zielwerte, Aufgaben und Lampen wurden ergänzt.');
+    else if (added) toast('Neu: Futterplan. Die App wurde ergänzt, deine Daten bleiben erhalten.');
   }
   Store.init().then(() => { if (Store.mode === 'login') render(); else boot(); });
 })();
