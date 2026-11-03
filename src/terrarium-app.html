@@ -1162,14 +1162,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       '<button class="btn sm" data-a="fq" data-v="' + a.id + ':yes:part">Teilweise</button>' +
       '<button class="btn sm" data-a="fq" data-v="' + a.id + ':yes:no">Nicht gefressen</button>' +
       '<button class="btn sm ghost" data-a="fq" data-v="' + a.id + ':no:">Nicht gefüttert</button>' +
-      '<button class="btn sm ghost" data-a="fform" data-v="' + a.id + '">Anderes Datum / Notiz</button></div>';
+      '<button class="btn sm ghost" data-a="fform" data-v="' + a.id + '">Anderes Datum</button></div>';
     if (open) {
       const f = S.feedForm;
       h += '<form id="feed-form" class="form" style="width:100%;margin-top:10px" novalidate><fieldset><legend>Fütterung ' + esc(a.name) + '</legend><div class="f-grid">' +
         '<label class="f' + ec('ts') + '">Datum<input type="date" id="fd-ts" value="' + esc(f.ts) + '" max="' + TL.isoDay(now()) + '">' + err('ts') + '</label>' +
         '<label class="f' + ec('fed') + '">Gefüttert?<select id="fd-fed"><option value="yes"' + (f.fed === 'yes' ? ' selected' : '') + '>Ja, gefüttert</option><option value="no"' + (f.fed === 'no' ? ' selected' : '') + '>Nein, ausgelassen</option></select>' + err('fed') + '</label>' +
         '<label class="f' + ec('ate') + '">Gefressen?<select id="fd-ate"><option value="">–</option>' + Object.entries(TL.ATE).map(([k, l]) => '<option value="' + k + '"' + (f.ate === k ? ' selected' : '') + '>' + esc(l[0].toUpperCase() + l.slice(1)) + '</option>').join('') + '</select>' + err('ate') + '</label></div>' +
-        '<label class="f">Notiz (optional)<input id="fd-note" value="' + esc(f.note) + '" placeholder="z. B. Maus 20 g, Heimchen, in Häutung"></label>' +
         '<div class="row"><button type="submit" class="btn pri">Eintragen</button><button type="button" class="btn" data-a="fcancel">Abbrechen</button></div></fieldset></form>';
     }
     return h + '</div>';
@@ -2028,7 +2027,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold2); box-shad
       saveConfig(cc); toast('Gespeichert'); S.aid = an.id; S.edit = null; S.back = null; go('animals');
     } else if (id === 'feed-form') {
       const v = x => (document.getElementById(x) || {}).value ?? '';
-      const f = Object.assign({}, S.feedForm, { ts: v('fd-ts'), fed: v('fd-fed'), ate: v('fd-ate'), note: v('fd-note').trim() });
+      const f = Object.assign({}, S.feedForm, { ts: v('fd-ts'), fed: v('fd-fed'), ate: v('fd-ate'), note: '' });
       if (f.fed === 'no') f.ate = '';
       S.feedForm = f;
       const ts = Number.isFinite(Date.parse(f.ts)) ? new Date(f.ts + 'T12:00:00').getTime() : NaN;

@@ -67,7 +67,7 @@ Außerhalb: localStorage des Browsers. Dokumente: `config` (Terrarien, Zielwerte
 
 - Neuer Bereich „Futterplan“ (Seitenleiste und Tab-Leiste „Futter“). Je Terrarium ein Plan, je Tier ein eigener Eintrag.
 - Startwerte der App nach Alinas Vorgabe, keine Haltungsvorschrift, je Terrarium über „Plan“ änderbar: Kornnattern jeden Sonntag, Jemenchamäleon und Riesengecko alle 2 Tage. Möglich sind fester Wochentag, alle n Tage (1–90) oder kein Plan.
-- Je Fütterung: Datum, gefüttert ja/nein, gefressen / teilweise / nicht gefressen, optionale Notiz. Schnellknöpfe für heute; ein zweiter Eintrag am selben Tag ersetzt den ersten (Vertippen korrigieren).
+- Je Fütterung: Datum, gefüttert ja/nein, gefressen / teilweise / nicht gefressen. Was gefüttert wurde, wird bewusst nicht abgefragt. Schnellknöpfe für heute; ein zweiter Eintrag am selben Tag ersetzt den ersten (Vertippen korrigieren).
 - Fälligkeit: heute fällig = gelb, überfällig = orange. Fester Wochentag: ein Eintrag bis zu drei Tage vorher zählt für den Termin. „Nicht gefüttert“ zählt als erledigt (bewusstes Auslassen).
 - Ab 2-mal „nicht gefressen“ hintereinander gelber Hinweis, ab 3-mal orange, mit Prüfpunkten je Art. Ausgelassene Fütterungen unterbrechen die Zählung nicht, „teilweise“ beendet sie.
 - Anzeige in Übersicht („Als Nächstes zu tun“, Hinweis-Chips), Warnungen und im Tier-Tagebuch.
